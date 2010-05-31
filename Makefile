@@ -2,7 +2,7 @@
 
 CC=gcc
 
-CFLAGS=-Wextra -Wall -ansi -pedantic
+CFLAGS=-ggdb -Wextra -Wall -ansi -pedantic
 
 all : nmea
 

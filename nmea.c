@@ -1,22 +1,215 @@
 #include "nmea.h"
+#include <stdio.h>
+#include <string.h>
+
+static void dbg_print(const char * s, int len)
+{
+	printf("#dbg: [");
+	for (; len > 0; --len, ++s) printf("%c", *s);
+	printf("]\n");
+}
+
+static uint8_t hex2i(char c)
+{
+	if ((c >= '0') && (c <= '9')) return c - '0';
+	if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
+	if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
+	return 0xff;
+}
+
+/*
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int checksum(const char * s)
+{
+	uint8_t chk = 0;
+	if (!s || !(*s) || *s != '$') return -1;
+	++s; /* skip '$' */
+	for (; *s && *s != '*'; ++s) chk ^= *s;
+	++s; /* skip '*' */
+	return chk == hex2i(s[0]) * 16 + hex2i(s[1]) ? 0 : -1;
+}
+
+static const char * find_comma(const char * s)
+{
+	while (s && *s && *s != ',') ++s;
+	return s;
+}
+
+/*
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_time(const char * s, struct nmea_time_t * time)
+{
+	if (s) {
+		time->hh = (s[0]-'0') * 10 + (s[1]-'0');
+		time->mm = (s[2]-'0') * 10 + (s[3]-'0');
+		time->ss = (s[4]-'0') * 10 + (s[5]-'0');
+		return (time->hh > 23 || time->mm > 59 || time->ss > 59) ? -1 : 0;
+	} else {
+		time->hh = 0;
+		time->mm = 0;
+		time->ss = 0;
+		return 0;
+	}
+}
+
+/*
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_date(const char * s, struct nmea_date_t * date)
+{
+	if (s) {
+		date->dd = (s[0]-'0') * 10 + (s[1]-'0');
+		date->mm = (s[2]-'0') * 10 + (s[3]-'0');
+		date->yy = (s[4]-'0') * 10 + (s[5]-'0');
+		return (date->mm > 12 || date->mm == 0 || date->dd > 31 || date->dd == 0) ? -1 : 0;
+	} else {
+		date->yy = 0;
+		date->mm = 0;
+		date->dd = 0;
+		return 0;
+	}
+}
+
+/*
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_gprmc(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_rmc_t * rmc = &nmea->sentence.rmc;
+	nmea->type = NMEA_RMC;
+	while (*s && *p && *s != '*' && state >= 0) {
+/*
+		printf("%s:%d: s:[%s]\n", __PRETTY_FUNCTION__, __LINE__, s);
+*/
+		p = find_comma(s);
+		switch (state) {
+			case 0: /* time */
+				if (parse_time((s == p) ? NULL : s, &rmc->time)) return -1;
+				break;
+			case 1: /* state */
+				rmc->status = (s == p) ? NMEA_STATUS_WARNING : *s;
+				break;
+			case 2: /* latitude */
+				if (s == p) {
+					/* TODO: clear latitude */
+/*
+					printf("%s:%d:\n", __PRETTY_FUNCTION__, __LINE__);
+*/
+				} else {
+					/* TODO: set latitude */
+/*
+					printf("%s:%d:\n", __PRETTY_FUNCTION__, __LINE__);
+*/
+				}
+				break;
+			case 3: /* latitude direction */
+				rmc->lat_dir = (s == p) ? NMEA_NORTH : *s;
+				break;
+			case 4: /* longitude */
+				if (s == p) {
+					/* TODO: clear longitude */
+/*
+					printf("%s:%d:\n", __PRETTY_FUNCTION__, __LINE__);
+*/
+				} else {
+					/* TODO: set longitude */
+/*
+					printf("%s:%d:\n", __PRETTY_FUNCTION__, __LINE__);
+*/
+				}
+				break;
+			case 5: /* longitude direction */
+				rmc->lon_dir = (s == p) ? NMEA_EAST : *s;
+				break;
+			case 6: /* velocity in knots */
+				if (s == p) {
+					rmc->sog = 0;
+				} else {
+					/* TODO: set velocity */
+/*
+					printf("%s:%d:\n", __PRETTY_FUNCTION__, __LINE__);
+*/
+				}
+				break;
+			case 7: /* heading over ground regarding geographic nord */
+				if (s == p) {
+					rmc->heading = 0;
+				} else {
+					/* TODO: set heading */
+/*
+					printf("%s:%d:\n", __PRETTY_FUNCTION__, __LINE__);
+*/
+				}
+				break;
+			case 8: /* date */
+				if (parse_date((s == p) ? NULL : s, &rmc->date)) return -1;
+				break;
+			case 9: /* magnetic deviation */
+				if (s == p) {
+					rmc->m = 0;
+				} else {
+					/* TODO: set magnetic deviation */
+/*
+					printf("%s:%d:\n", __PRETTY_FUNCTION__, __LINE__);
+*/
+				}
+				break;
+			case 10: /* magnetic deviation direction */
+				rmc->m_dir = (s == p) ? NMEA_EAST : *s;
+				break;
+			case 11:
+				rmc->sig_integrity = (s == p) ? NMEA_SIG_INT_DATANOTVALID : *s;
+				state = -2;
+				break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
 
 /*
  * @param[in]  s read sentence
  * @param[out] nmea data of the parsed structure
  * @retval  0 success
+ * @retval  1 unknown sentence
  * @retval -1 parameter error
  * @retval -2 checksum error
  */
 int nmea_read(const char * s, struct nmea_t * nmea)
 {
+	struct entry_t {
+		const char * tag;
+		int (*parser)(const char *, struct nmea_t *);
+	};
+
+	static const struct entry_t TAB[] = {
+		{ "GPRMC", parse_gprmc },
+		{ NULL,    NULL        }
+	};
+
 	const char * p = s;
-	uint8_t check_sum = 0;
+	const struct entry_t * entry = NULL;
 
 	if (!s || !nmea) return -1;
-
-	/* TODO */
-
-	return 0;
+	if (checksum(s)) return -2;
+	if (*s != '$') return -1;
+	++s;
+	p = find_comma(s);
+	for (entry = TAB; entry && entry->tag; ++entry) {
+		if (!strncmp(s, entry->tag, p-s)) {
+			return entry->parser(p+1, nmea) ? -1 : 0;
+		}
+	}
+	return 1;
 }
 
 int main() /* TEMP {{{ */
@@ -189,9 +382,13 @@ int main() /* TEMP {{{ */
 
 	struct nmea_t info;
 	int rc;
+	unsigned int i;
 
-	rc = nmea_read(S[0], &info);
-	printf("rc=%d\n", rc);
+	for (i = 0; i < sizeof(S)/sizeof(const char *); ++i) {
+		rc = nmea_read(S[i], &info);
+		printf("rc=%2d  [%s]\n", rc, S[i]);
+	}
+
 	return 0;
 } /* }}} */
 
