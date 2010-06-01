@@ -26,26 +26,32 @@
 #define NMEA_SIG_INT_DATANOTVALID 'N'
 
 struct nmea_time_t {
-	uint8_t hh;
-	uint8_t mm;
-	uint8_t ss;
+	uint8_t h;
+	uint8_t m;
+	uint8_t s;
 };
 
 struct nmea_date_t {
-	uint16_t yy;
-	uint8_t  mm;
-	uint8_t  dd;
+	uint16_t y;
+	uint8_t  m;
+	uint8_t  d;
+};
+
+struct nmea_angle_t {
+	uint8_t d;
+	uint8_t m;
+	uint32_t s; /* fixpoint: xx.xxxx */
 };
 
 struct nmea_rmc_t {
 	struct nmea_time_t time; /* HHMMSS */
 	char status; /* A:OK, V:WARNING */
-	/* BBBB.BBBB (LATITUDE) */ /* TODO */
+	struct nmea_angle_t lat; /* BBBB.BBBB */
 	char lat_dir; /* N:NORTH, S:SOUTH */
-	/* LLLLL.LLLL (LONGITUDE) */ /* TODO */
+	struct nmea_angle_t lon; /* LLLLL.LLLL */
 	char lon_dir; /* E:EAST, W:WEST */
 	uint16_t sog; /* fixpoint, GG.G (SPEED OVER GROUND IN KNOTS) */
-	uint16_t heading; /* fixpoint, RR.R (HEADING OVER GROUND IN DEGREES REGARDING GEOGRAPIC NORTH) */
+	uint16_t head; /* fixpoint, RRR.R (HEADING OVER GROUND IN DEGREES REGARDING GEOGRAPIC NORTH) */
 	struct nmea_date_t date; /* DDMMYY */
 	uint8_t m; /* fixpoint, M.M (MAGNETIC DEVIATION) */
 	char m_dir; /* MAGNETIC DEVIATION E:EAST, W:WEST */
