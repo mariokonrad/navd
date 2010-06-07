@@ -32,10 +32,19 @@ static int checksum(const char * s)
  * @param[in] s the string to parse
  * @return the position of the next comma or, if none found, the end of the string
  */
-static const char * find_comma(const char * s)
+static const char * find_token_end(const char * s)
 {
-	while (s && *s && *s != ',')  ++s;
+	while (s && *s && *s != ',' && *s != '*')  ++s;
 	return s;
+}
+
+/*
+ * @retval 1 token seems to be valid
+ * @retval 0 token seems to be invalid
+ */
+static int token_valid(const char * s, const char * p)
+{
+	return *s && *p && *s != '*' && *p != '*';
 }
 
 /*
@@ -78,7 +87,7 @@ int check_latitude(const struct nmea_angle_t * v)
 	return 1
 		&& v->d < 90
 		&& v->m < 60
-		&& v->s < 600000
+		&& v->s.i < 60
 		;
 }
 
@@ -92,8 +101,26 @@ int check_longitude(const struct nmea_angle_t * v)
 	return 1
 		&& v->d < 180
 		&& v->m < 60
-		&& v->s < 600000
+		&& v->s.i < 60
 		;
+}
+
+/*
+ * copies the string between [s,e) into v, the user has to make
+ * sure there is enough room within v.
+ *
+ * @param[in] s start of string to parse (inclusive)
+ * @param[in] e end of string to parse (exclusive)
+ * @param[out] v parsed value
+ * @return position of the last valid character
+ */
+const char * parse_str(const char * s, const char * e, char * v)
+{
+	if (!v) return e;
+	if (s != e) {
+		memcpy(v, s, e-s);
+	}
+	return e;
 }
 
 /*
@@ -119,40 +146,16 @@ const char * parse_int(const char * s, const char * e, uint32_t * v)
  * @param[out] v parsed value
  * @return position of the last valid character
  */
-const char * parse_float(const char * s, const char * e, float * v)
-{
-	int state = 0;
-	float f = 1.0f;
-	*v = 0.0f;
-	for (; *s && s < e; ++s) {
-		switch (state) {
-			case 0: /* before decimal point */
-				if (*s == '.') {
-					state = 1;
-				} else if (isdigit(*s)) {
-					*v *= 10.0f;
-					*v += *s - '0';
-				} else return s;
-				break;
-			case 1: /* after decimal point */
-				if (!isdigit(*s)) return s;
-				f *= 0.1;
-				*v += f * (*s - '0');
-				break;
-		}
-	}
-	return s;
-}
-
-/* TODO */
 const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
 {
+	uint32_t f = NMEA_FIX_DECIMALS;
 	int state = 0;
 	v->i = 0;
 	v->d = 0;
-	for (; *s && s < e; ++s) {
+	for (; *s && s < e && f > 0; ++s) {
+		/* TODO: extend state machine */
 		switch (state) {
-			case 0: /* before decimal point */
+			case 0:
 				if (*s == '.') {
 					state = 1;
 				} else if (isdigit(*s)) {
@@ -161,7 +164,9 @@ const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
 				} else return s;
 				break;
 			case 1:
-			/* TODO */
+				if (!isdigit(*s)) return s;
+				f /= 10;
+				v->d += f * (*s - '0');
 				break;
 		}
 	}
@@ -176,8 +181,7 @@ const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
  */
 const char * parse_time(const char * s, const char * e, struct nmea_time_t * v)
 {
-	float t;
-	unsigned int ft;
+	struct nmea_fix_t t;
 	const char * p;
 	if (s == e) {
 		v->h = 0;
@@ -186,13 +190,12 @@ const char * parse_time(const char * s, const char * e, struct nmea_time_t * v)
 		v->ms = 0;
 		return e;
 	}
-	p = parse_float(s, e, &t);
+	p = parse_fix(s, e, &t);
 	if (p == e) {
-		ft = (unsigned int)t;
-		v->h = (ft / 10000) % 100;
-		v->m = (ft / 100) % 100;
-		v->s = ft % 100;
-		v->ms = (unsigned int)((t - ft) * 1000);
+		v->h = (t.i / 10000) % 100;
+		v->m = (t.i / 100) % 100;
+		v->s = t.i % 100;
+		v->ms = t.d / 1000;
 	}
 	return p;
 }
@@ -230,22 +233,21 @@ const char * parse_date(const char * s, const char * e, struct nmea_date_t * v)
  */
 const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v)
 {
-	float t;
-	unsigned int ft;
+	struct nmea_fix_t t;
 	const char * p;
 	if (s == e) {
 		v->d = 0;
 		v->m = 0;
-		v->s = 0;
+		v->s.i = 0;
+		v->s.d = 0;
 		return e;
 	}
-	p = parse_float(s, e, &t);
+	p = parse_fix(s, e, &t);
 	if (p == e) {
-		ft = (unsigned int)t;
-printf("%s:%d: t=%f  ft=%u\n", __FILE__, __LINE__, t, ft);
-		v->d = ft / 100;
-		v->m = ft % 100;
-		v->s = (t-ft) * 60.0f;
+		v->d = t.i / 100;
+		v->m = t.i % 100;
+		v->s.i = (t.d * 60) / NMEA_FIX_DECIMALS;
+		v->s.d = (t.d * 60) % NMEA_FIX_DECIMALS;
 	}
 	return p;
 }
@@ -260,23 +262,23 @@ static int parse_gprmb(const char * s, struct nmea_t * nmea) /* {{{ */
 {
 	int state = 0;
 	const char * p = s;
-	struct nmea_rmb_t * rmb = &nmea->sentence.rmb;
-	while (*s && *p && *s != '*' && state >= 0) {
-		p = find_comma(s);
+	struct nmea_rmb_t * v = &nmea->sentence.rmb;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
 		switch (state) {
-			case  0: rmb->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
-			case  1: if (parse_float(s, p, &rmb->cross_track_error) != p) return -1; break;
-			case  2: rmb->steer_dir = (s == p) ? NMEA_LEFT : *s; break;
-			case  3: if (parse_int(s, p, &rmb->waypoint_to) != p) return -1; break;
-			case  4: if (parse_int(s, p, &rmb->waypoint_from) != p) return -1; break;
-			case  5: if (parse_angle(s, p, &rmb->lat) != p && !check_latitude(&rmb->lat)) return -1; break;
-			case  6: rmb->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
-			case  7: if (parse_angle(s, p, &rmb->lon) != p && !check_longitude(&rmb->lon)) return -1; break;
-			case  8: rmb->lon_dir = (s == p) ? NMEA_EAST : *s; break;
-			case  9: if (parse_float(s, p, &rmb->range) != p) return -1; break;
-			case 10: if (parse_float(s, p, &rmb->bearing) != p) return -1; break;
-			case 11: if (parse_float(s, p, &rmb->dst_velocity) != p) return -1; break;
-			case 12: rmb->arrival_status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
+			case  0: v->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
+			case  1: if (parse_fix(s, p, &v->cross_track_error) != p) return -1; break;
+			case  2: v->steer_dir = (s == p) ? NMEA_LEFT : *s; break;
+			case  3: if (parse_int(s, p, &v->waypoint_to) != p) return -1; break;
+			case  4: if (parse_int(s, p, &v->waypoint_from) != p) return -1; break;
+			case  5: if (parse_angle(s, p, &v->lat) != p && !check_latitude(&v->lat)) return -1; break;
+			case  6: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
+			case  7: if (parse_angle(s, p, &v->lon) != p && !check_longitude(&v->lon)) return -1; break;
+			case  8: v->lon_dir = (s == p) ? NMEA_EAST : *s; break;
+			case  9: if (parse_fix(s, p, &v->range) != p) return -1; break;
+			case 10: if (parse_fix(s, p, &v->bearing) != p) return -1; break;
+			case 11: if (parse_fix(s, p, &v->dst_velocity) != p) return -1; break;
+			case 12: v->arrival_status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
 			default: break;
 		}
 		s = p+1;
@@ -295,22 +297,22 @@ static int parse_gprmc(const char * s, struct nmea_t * nmea) /* {{{ */
 {
 	int state = 0;
 	const char * p = s;
-	struct nmea_rmc_t * rmc = &nmea->sentence.rmc;
-	while (*s && *p && *s != '*' && state >= 0) {
-		p = find_comma(s);
+	struct nmea_rmc_t * v = &nmea->sentence.rmc;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
 		switch (state) {
-			case  0: if (parse_time(s, p, &rmc->time) != p && !check_time(&rmc->time)) return -1; break;
-			case  1: rmc->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
-			case  2: if (parse_angle(s, p, &rmc->lat) != p && !check_latitude(&rmc->lat)) return -1; break;
-			case  3: rmc->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
-			case  4: if (parse_angle(s, p, &rmc->lon) != p && !check_longitude(&rmc->lon)) return -1; break;
-			case  5: rmc->lon_dir = (s == p) ? NMEA_EAST : *s; break;
-			case  6: if (parse_float(s, p, &rmc->sog) != p) return -1; break;
-			case  7: if (parse_float(s, p, &rmc->head) != p) return -1; break;
-			case  8: if (parse_date(s, p, &rmc->date) != p || !check_date(&rmc->date)) return -1; break;
-			case  9: if (parse_float(s, p, &rmc->m) != p) return -1; break;
-			case 10: rmc->m_dir = (s == p) ? NMEA_EAST : *s; break;
-			case 11: rmc->sig_integrity = (s == p) ? NMEA_SIG_INT_DATANOTVALID : *s; break;
+			case  0: if (parse_time(s, p, &v->time) != p && !check_time(&v->time)) return -1; break;
+			case  1: v->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
+			case  2: if (parse_angle(s, p, &v->lat) != p && !check_latitude(&v->lat)) return -1; break;
+			case  3: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
+			case  4: if (parse_angle(s, p, &v->lon) != p && !check_longitude(&v->lon)) return -1; break;
+			case  5: v->lon_dir = (s == p) ? NMEA_EAST : *s; break;
+			case  6: if (parse_fix(s, p, &v->sog) != p) return -1; break;
+			case  7: if (parse_fix(s, p, &v->head) != p) return -1; break;
+			case  8: if (parse_date(s, p, &v->date) != p || !check_date(&v->date)) return -1; break;
+			case  9: if (parse_fix(s, p, &v->m) != p) return -1; break;
+			case 10: v->m_dir = (s == p) ? NMEA_EAST : *s; break;
+			case 11: v->sig_integrity = (s == p) ? NMEA_SIG_INT_DATANOTVALID : *s; break;
 			default: break;
 		}
 		s = p+1;
@@ -329,24 +331,24 @@ static int parse_gpgga(const char * s, struct nmea_t * nmea) /* {{{ */
 {
 	int state = 0;
 	const char * p = s;
-	struct nmea_gga_t * gga = &nmea->sentence.gga;
-	while (*s && *p && *s != '*' && state >= 0) {
-		p = find_comma(s);
+	struct nmea_gga_t * v = &nmea->sentence.gga;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
 		switch (state) {
-			case  0: if (parse_time(s, p, &gga->time) != p && !check_time(&gga->time)) return -1; break;
-			case  1: if (parse_angle(s, p, &gga->lat) != p && !check_latitude(&gga->lat)) return -1; break;
-			case  2: gga->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
-			case  3: if (parse_angle(s, p, &gga->lon) != p && !check_longitude(&gga->lon)) return -1; break;
-			case  4: gga->lon_dir = (s == p) ? NMEA_EAST : *s;  break;
-			case  5: if (parse_int(s, p, &gga->quality) != p) return -1; break;
-			case  6: if (parse_int(s, p, &gga->n_satelites) != p) return -1; break;
-			case  7: if (parse_float(s, p, &gga->hor_dilution) != p) return -1; break;
-			case  8: if (parse_float(s, p, &gga->height_antenna) != p) return -1; break;
-			case  9: gga->unit_antenna = (s == p) ? NMEA_UNIT_METER : *s; break;
-			case 10: if (parse_float(s, p, &gga->geodial_separation) != p) return -1; break;
-			case 11: gga->unit_geodial_separation = (s == p) ? NMEA_UNIT_METER : *s; break;
-			case 12: if (parse_float(s, p, &gga->dgps_age) != p) return -1; break;
-			case 13: if (parse_int(s, p, &gga->dgps_ref) != p) return -1; break;
+			case  0: if (parse_time(s, p, &v->time) != p && !check_time(&v->time)) return -1; break;
+			case  1: if (parse_angle(s, p, &v->lat) != p && !check_latitude(&v->lat)) return -1; break;
+			case  2: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
+			case  3: if (parse_angle(s, p, &v->lon) != p && !check_longitude(&v->lon)) return -1; break;
+			case  4: v->lon_dir = (s == p) ? NMEA_EAST : *s;  break;
+			case  5: if (parse_int(s, p, &v->quality) != p) return -1; break;
+			case  6: if (parse_int(s, p, &v->n_satelites) != p) return -1; break;
+			case  7: if (parse_fix(s, p, &v->hor_dilution) != p) return -1; break;
+			case  8: if (parse_fix(s, p, &v->height_antenna) != p) return -1; break;
+			case  9: v->unit_antenna = (s == p) ? NMEA_UNIT_METER : *s; break;
+			case 10: if (parse_fix(s, p, &v->geodial_separation) != p) return -1; break;
+			case 11: v->unit_geodial_separation = (s == p) ? NMEA_UNIT_METER : *s; break;
+			case 12: if (parse_fix(s, p, &v->dgps_age) != p) return -1; break;
+			case 13: if (parse_int(s, p, &v->dgps_ref) != p) return -1; break;
 			default: break;
 		}
 		s = p+1;
@@ -365,28 +367,28 @@ static int parse_gpgsv(const char * s, struct nmea_t * nmea) /* {{{ */
 {
 	int state = 0;
 	const char * p = s;
-	struct nmea_gsv_t * gsv = &nmea->sentence.gsv;
-	while (*s && *p && *s != '*' && state >= 0) {
-		p = find_comma(s);
+	struct nmea_gsv_t * v = &nmea->sentence.gsv;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
 		switch (state) {
-			case  0: if (parse_int(s, p, &gsv->n_messages) != p) return -1; break;
-			case  1: if (parse_int(s, p, &gsv->message_number) != p) return -1; break;
-			case  2: if (parse_int(s, p, &gsv->sat[0].id) != p) return -1; break;
-			case  3: if (parse_int(s, p, &gsv->sat[0].elevation) != p) return -1; break;
-			case  4: if (parse_int(s, p, &gsv->sat[0].azimuth) != p) return -1; break;
-			case  5: if (parse_int(s, p, &gsv->sat[0].snr) != p) return -1; break;
-			case  6: if (parse_int(s, p, &gsv->sat[1].id) != p) return -1; break;
-			case  7: if (parse_int(s, p, &gsv->sat[1].elevation) != p) return -1; break;
-			case  8: if (parse_int(s, p, &gsv->sat[1].azimuth) != p) return -1; break;
-			case  9: if (parse_int(s, p, &gsv->sat[1].snr) != p) return -1; break;
-			case 10: if (parse_int(s, p, &gsv->sat[2].id) != p) return -1; break;
-			case 11: if (parse_int(s, p, &gsv->sat[2].elevation) != p) return -1; break;
-			case 12: if (parse_int(s, p, &gsv->sat[2].azimuth) != p) return -1; break;
-			case 13: if (parse_int(s, p, &gsv->sat[2].snr) != p) return -1; break;
-			case 14: if (parse_int(s, p, &gsv->sat[3].id) != p) return -1; break;
-			case 15: if (parse_int(s, p, &gsv->sat[3].elevation) != p) return -1; break;
-			case 16: if (parse_int(s, p, &gsv->sat[3].azimuth) != p) return -1; break;
-			case 17: if (parse_int(s, p, &gsv->sat[3].snr) != p) return -1; break;
+			case  0: if (parse_int(s, p, &v->n_messages) != p) return -1; break;
+			case  1: if (parse_int(s, p, &v->message_number) != p) return -1; break;
+			case  2: if (parse_int(s, p, &v->sat[0].id) != p) return -1; break;
+			case  3: if (parse_int(s, p, &v->sat[0].elevation) != p) return -1; break;
+			case  4: if (parse_int(s, p, &v->sat[0].azimuth) != p) return -1; break;
+			case  5: if (parse_int(s, p, &v->sat[0].snr) != p) return -1; break;
+			case  6: if (parse_int(s, p, &v->sat[1].id) != p) return -1; break;
+			case  7: if (parse_int(s, p, &v->sat[1].elevation) != p) return -1; break;
+			case  8: if (parse_int(s, p, &v->sat[1].azimuth) != p) return -1; break;
+			case  9: if (parse_int(s, p, &v->sat[1].snr) != p) return -1; break;
+			case 10: if (parse_int(s, p, &v->sat[2].id) != p) return -1; break;
+			case 11: if (parse_int(s, p, &v->sat[2].elevation) != p) return -1; break;
+			case 12: if (parse_int(s, p, &v->sat[2].azimuth) != p) return -1; break;
+			case 13: if (parse_int(s, p, &v->sat[2].snr) != p) return -1; break;
+			case 14: if (parse_int(s, p, &v->sat[3].id) != p) return -1; break;
+			case 15: if (parse_int(s, p, &v->sat[3].elevation) != p) return -1; break;
+			case 16: if (parse_int(s, p, &v->sat[3].azimuth) != p) return -1; break;
+			case 17: if (parse_int(s, p, &v->sat[3].snr) != p) return -1; break;
 			default: break;
 		}
 		s = p+1;
@@ -405,27 +407,27 @@ static int parse_gpgsa(const char * s, struct nmea_t * nmea) /* {{{ */
 {
 	int state = 0;
 	const char * p = s;
-	struct nmea_gsa_t * gsa = &nmea->sentence.gsa;
-	while (*s && *p && *s != '*' && state >= 0) {
-		p = find_comma(s);
+	struct nmea_gsa_t * v = &nmea->sentence.gsa;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
 		switch (state) {
-			case  0: gsa->selection_mode = (s == p) ? '?' : *s; break; /* TODO */
-			case  1: if (parse_int(s, p, &gsa->mode) != p) return -1; break;
-			case  2: if (parse_int(s, p, &gsa->id[ 0]) != p) return -1; break;
-			case  3: if (parse_int(s, p, &gsa->id[ 1]) != p) return -1; break;
-			case  4: if (parse_int(s, p, &gsa->id[ 2]) != p) return -1; break;
-			case  5: if (parse_int(s, p, &gsa->id[ 3]) != p) return -1; break;
-			case  6: if (parse_int(s, p, &gsa->id[ 4]) != p) return -1; break;
-			case  7: if (parse_int(s, p, &gsa->id[ 5]) != p) return -1; break;
-			case  8: if (parse_int(s, p, &gsa->id[ 6]) != p) return -1; break;
-			case  9: if (parse_int(s, p, &gsa->id[ 7]) != p) return -1; break;
-			case 10: if (parse_int(s, p, &gsa->id[ 8]) != p) return -1; break;
-			case 11: if (parse_int(s, p, &gsa->id[ 9]) != p) return -1; break;
-			case 12: if (parse_int(s, p, &gsa->id[10]) != p) return -1; break;
-			case 13: if (parse_int(s, p, &gsa->id[11]) != p) return -1; break;
-			case 14: if (parse_float(s, p, &gsa->pdop) != p) return -1; break;
-			case 15: if (parse_float(s, p, &gsa->hdop) != p) return -1; break;
-			case 16: if (parse_float(s, p, &gsa->vdop) != p) return -1; break;
+			case  0: v->selection_mode = (s == p) ? '?' : *s; break; /* TODO */
+			case  1: if (parse_int(s, p, &v->mode) != p) return -1; break;
+			case  2:
+			case  3:
+			case  4:
+			case  5:
+			case  6:
+			case  7:
+			case  8:
+			case  9:
+			case 10:
+			case 11:
+			case 12:
+			case 13: if (parse_int(s, p, &v->id[state-2]) != p) return -1; break;
+			case 14: if (parse_fix(s, p, &v->pdop) != p) return -1; break;
+			case 15: if (parse_fix(s, p, &v->hdop) != p) return -1; break;
+			case 16: if (parse_fix(s, p, &v->vdop) != p) return -1; break;
 			default: break;
 		}
 		s = p+1;
@@ -444,16 +446,212 @@ static int parse_gpgll(const char * s, struct nmea_t * nmea) /* {{{ */
 {
 	int state = 0;
 	const char * p = s;
-	struct nmea_gll_t * gll = &nmea->sentence.gll;
-	while (*s && *p && *s != '*' && state >= 0) {
-		p = find_comma(s);
+	struct nmea_gll_t * v = &nmea->sentence.gll;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
 		switch (state) {
-			case 0: if (parse_angle(s, p, &gll->lat) != p && !check_latitude(&gll->lat)) return -1; break;
-			case 1: gll->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
-			case 2: if (parse_angle(s, p, &gll->lon) != p && !check_longitude(&gll->lon)) return -1; break;
-			case 3: gll->lon_dir = (s == p) ? NMEA_EAST : *s; break;
-			case 4: if (parse_time(s, p, &gll->time) != p && !check_time(&gll->time)) return -1; break;
-			case 5: gll->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
+			case 0: if (parse_angle(s, p, &v->lat) != p && !check_latitude(&v->lat)) return -1; break;
+			case 1: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
+			case 2: if (parse_angle(s, p, &v->lon) != p && !check_longitude(&v->lon)) return -1; break;
+			case 3: v->lon_dir = (s == p) ? NMEA_EAST : *s; break;
+			case 4: if (parse_time(s, p, &v->time) != p && !check_time(&v->time)) return -1; break;
+			case 5: v->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
+			default: break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
+
+/*
+ * @param[in] s sentence to parse
+ * @param[out] nmea parsed sentence
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_gpbod(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_bod_t * v = &nmea->sentence.bod;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
+		switch (state) {
+			case 0: if (parse_fix(s, p, &v->bearing_true) != p) return -1; break;
+			case 1: v->type_true = (s == p) ? NMEA_TRUE : *s; break;
+			case 2: if (parse_fix(s, p, &v->bearing_magn) != p) return -1; break;
+			case 3: v->type_magn = (s == p) ? NMEA_MAGNETIC : *s; break;
+			case 4: if (parse_int(s, p, &v->waypoint_to) != p) return -1; break;
+			case 5: if (parse_int(s, p, &v->waypoint_from) != p) return -1; break;
+			default: break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
+
+/*
+ * @param[in] s sentence to parse
+ * @param[out] nmea parsed sentence
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_gpvtg(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_vtg_t * v = &nmea->sentence.vtg;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
+		switch (state) {
+			case 0: if (parse_fix(s, p, &v->track_true) != p) return -1; break;
+			case 1: v->type_true = (s == p) ? NMEA_TRUE : *s; break;
+			case 2: if (parse_fix(s, p, &v->track_magn) != p) return -1; break;
+			case 3: v->type_magn = (s == p) ? NMEA_MAGNETIC : *s; break;
+			case 4: if (parse_fix(s, p, &v->speed_kn) != p) return -1; break;
+			case 5: v->unit_speed_kn = (s == p) ? NMEA_UNIT_KNOT : *s; break;
+			case 6: if (parse_fix(s, p, &v->speed_kmh) != p) return -1; break;
+			case 7: v->unit_speed_kmh = (s == p) ? NMEA_UNIT_KMH : *s; break;
+			default: break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
+
+/*
+ * @param[in] s sentence to parse
+ * @param[out] nmea parsed sentence
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_gprte(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_rte_t * v = &nmea->sentence.rte;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
+		switch (state) {
+			case  0: if (parse_int(s, p, &v->n_messages) != p) return -1; break;
+			case  1: if (parse_int(s, p, &v->message_number) != p) return -1; break;
+			case  2: v->message_mode = (s == p) ? NMEA_COMPLETE_ROUTE : *s; break;
+			case  3:
+			case  4:
+			case  5:
+			case  6:
+			case  7:
+			case  8:
+			case  9:
+			case 10:
+			case 11:
+			case 12: if ((unsigned int)(p-s+1) < sizeof(v->waypoint_id[state-3]) && parse_str(s, p, v->waypoint_id[state-3]) != p) return -1; break;
+			default: break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
+
+/*
+ * @param[in] s sentence to parse
+ * @param[out] nmea parsed sentence
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_pgrme(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_garmin_rme_t * v = &nmea->sentence.garmin_rme;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
+		switch (state) {
+			case 0: if (parse_fix(s, p, &v->hpe) != p) return -1; break;
+			case 1: v->unit_hpe = (s == p) ? NMEA_UNIT_METER : *s; break;
+			case 2: if (parse_fix(s, p, &v->vpe) != p) return -1; break;
+			case 3: v->unit_vpe = (s == p) ? NMEA_UNIT_METER : *s; break;
+			case 4: if (parse_fix(s, p, &v->sepe) != p) return -1; break;
+			case 5: v->unit_sepe= (s == p) ? NMEA_UNIT_METER : *s; break;
+			default: break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
+
+/*
+ * @param[in] s sentence to parse
+ * @param[out] nmea parsed sentence
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_pgrmz(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_garmin_rmz_t * v = &nmea->sentence.garmin_rmz;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
+		switch (state) {
+			case 0: if (parse_fix(s, p, &v->alt) != p) return -1; break;
+			case 1: v->unit_alt = (s == p) ? NMEA_UNIT_FEET : *s; break;
+			case 2: if (parse_int(s, p, &v->pos_fix_dim) != p) return -1; break;
+			default: break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
+
+/*
+ * @param[in] s sentence to parse
+ * @param[out] nmea parsed sentence
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_hchdg(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_hc_hdg_t * v = &nmea->sentence.hc_hdg;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
+		switch (state) {
+			case 0: if (parse_fix(s, p, &v->heading) != p) return -1; break;
+			case 1: if (parse_fix(s, p, &v->magn_dev) != p) return -1; break;
+			case 2: v->magn_dev_dir = (s == p) ? NMEA_EAST : *s; break;
+			case 3: if (parse_fix(s, p, &v->magn_var) != p) return -1; break;
+			case 4: v->magn_dev_dir = (s == p) ? NMEA_EAST : *s; break;
+			default: break;
+		}
+		s = p+1;
+		++state;
+	}
+	return 0;
+} /* }}} */
+
+/*
+ * @param[in] s sentence to parse
+ * @param[out] nmea parsed sentence
+ * @retval  0 success
+ * @retval -1 failure
+ */
+static int parse_pgrmm(const char * s, struct nmea_t * nmea) /* {{{ */
+{
+	int state = 0;
+	const char * p = s;
+	struct nmea_garmin_rmm_t * v = &nmea->sentence.garmin_rmm;
+	while (token_valid(s, p) && state >= 0) {
+		p = find_token_end(s);
+		switch (state) {
+			case 0: if ((unsigned int)(p-s+1) < sizeof(v->map_datum) && parse_str(s, p, v->map_datum) != p) return -1; break;
 			default: break;
 		}
 		s = p+1;
@@ -479,12 +677,19 @@ int nmea_read(const char * s, struct nmea_t * nmea) /* {{{ */
 	};
 
 	static const struct entry_t TAB[] = {
-		{ "GPRMB", parse_gprmb, NMEA_RMB },
-		{ "GPRMC", parse_gprmc, NMEA_RMC },
-		{ "GPGGA", parse_gpgga, NMEA_GGA },
-		{ "GPGSV", parse_gpgsv, NMEA_GSV },
-		{ "GPGSA", parse_gpgsa, NMEA_GSA },
-		{ "GPGLL", parse_gpgll, NMEA_GLL },
+		{ "GPRMB", parse_gprmb, NMEA_RMB        },
+		{ "GPRMC", parse_gprmc, NMEA_RMC        },
+		{ "GPGGA", parse_gpgga, NMEA_GGA        },
+		{ "GPGSV", parse_gpgsv, NMEA_GSV        },
+		{ "GPGSA", parse_gpgsa, NMEA_GSA        },
+		{ "GPGLL", parse_gpgll, NMEA_GLL        },
+		{ "GPBOD", parse_gpbod, NMEA_BOD        },
+		{ "GPVTG", parse_gpvtg, NMEA_VTG        },
+		{ "GPRTE", parse_gprte, NMEA_RTE        },
+		{ "PGRME", parse_pgrme, NMEA_GARMIN_RME },
+		{ "PGRMM", parse_pgrmm, NMEA_GARMIN_RMM },
+		{ "PGRMZ", parse_pgrmz, NMEA_GARMIN_RMZ },
+		{ "HCHDG", parse_hchdg, NMEA_HC_HDG     },
 		{ NULL,    NULL,        0        }
 	};
 
@@ -496,7 +701,7 @@ int nmea_read(const char * s, struct nmea_t * nmea) /* {{{ */
 	if (*s != '$') return -1;
 	memset(nmea, 0, sizeof(*nmea));
 	++s;
-	p = find_comma(s);
+	p = find_token_end(s);
 	for (entry = TAB; entry && entry->tag; ++entry) {
 		if (!strncmp(s, entry->tag, p-s)) {
 			nmea->type = entry->type;

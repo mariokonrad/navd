@@ -6,7 +6,7 @@ CFLAGS=-ggdb -Wextra -Wall -ansi -pedantic
 
 all : nmea_test
 
-nmea_test : nmea_test.o nmea.o
+nmea_test : nmea_test.o nmea.o nmea_util.o
 	$(CC) -o $@ $^
 
 clean :

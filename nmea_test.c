@@ -10,12 +10,12 @@ static void test_int(const char * s, int outcome)
 	printf("%12s : %2d %2d => %d : [%s] : %u\n", __FUNCTION__, outcome, p == s+len, outcome == (p==s+len), s, v);
 }
 
-static void test_float(const char * s, int outcome)
+static void test_fix(const char * s, int outcome)
 {
-	float v;
+	struct nmea_fix_t v;
 	int len = strlen(s);
-	const char * p = parse_float(s, s+len, &v);
-	printf("%12s : %2d %2d => %d : [%s] : %f\n", __FUNCTION__, outcome, p == s+len, outcome == (p == s+len), s, v);
+	const char * p = parse_fix(s, s+len, &v);
+	printf("%12s : %2d %2d => %d : [%s] : %u %06u\n", __FUNCTION__, outcome, p == s+len, outcome == (p==s+len), s, v.i, v.d);
 }
 
 static void test_time(const char * s, int outcome)
@@ -39,7 +39,7 @@ static void test_lat(const char * s, int outcome)
 	struct nmea_angle_t t;
 	const char * e = s + strlen(s);
 	int r = parse_angle(s, e, &t) == e && check_latitude(&t);
-	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %f\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s);
+	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
 }
 
 static void test_lon(const char * s, int outcome)
@@ -47,7 +47,7 @@ static void test_lon(const char * s, int outcome)
 	struct nmea_angle_t t;
 	const char * e = s + strlen(s);
 	int r = parse_angle(s, e, &t) == e && check_longitude(&t);
-	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %f\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s);
+	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
 }
 
 
@@ -63,15 +63,16 @@ int main()
 	test_int(",", 0);
 	printf("\n");
 
-	test_float("0", 1);
-	test_float("0.0", 1);
-	test_float(".0", 1);
-	test_float("0.00", 1);
-	test_float("1.0", 1);
-	test_float("123.456", 1);
-	test_float("", 1);
-	test_float("123", 1);
-	test_float("123,", 0);
+	test_fix("123456789.1234567", 1);
+	test_fix("3.14159265365", 1);
+	test_fix("1.2", 1);
+	test_fix("3", 1);
+	test_fix(".5", 1);
+	test_fix("3.", 1);
+	test_fix("1.0001", 1);
+	test_fix("1.1,", 0);
+	test_fix("", 1);
+	test_fix(".", 0);
 	printf("\n");
 
 	test_date("010100", 1);
@@ -104,7 +105,7 @@ int main()
 	test_lon("12345.0000", 1);
 	test_lon("01234,0000", 0);
 	test_lon("01234.0000,", 0);
-	test_lon("09000.0000", 0);
+	test_lon("09000.0000", 1);
 	test_lon("00000.0000", 1);
 	test_lon("17959.9999", 1);
 	test_lon("17960.0000", 0);
@@ -146,7 +147,6 @@ int main()
 		"$GPRMC,,V,,,,,,,300510,0.6,E,N*39",
 		"$GPRMB,V,,,,,,,,,,,,V,N*04",
 		"$GPGGA,,,,,,0,03,,,M,,M,,*65",
-/* {{{
 		"$GPGSA,A,1,05,08,,,,17,,,,,,,,,*15",
 		"$GPGSV,3,1,10,05,07,188,24,08,15,075,35,09,40,277,00,12,20,212,00*78",
 		"$GPGSV,3,2,10,15,82,225,19,17,24,120,44,18,28,302,00,22,06,330,00*7D",
@@ -278,7 +278,6 @@ int main()
 		"$PGRMZ,1494,f,*10",
 		"$PGRMM,WGS 84*06",
 		"$HCHDG,50.3,,,0.6,E*19",
-}}} */
 	};
 	struct nmea_t info;
 	int rc;
