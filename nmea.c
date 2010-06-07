@@ -108,7 +108,6 @@ const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
 	v->i = 0;
 	v->d = 0;
 	for (; *s && s < e && f > 0; ++s) {
-		/* TODO: extend state machine */
 		switch (state) {
 			case 0:
 				if (*s == '.') {

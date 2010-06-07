@@ -61,6 +61,7 @@ int main()
 	test_int("10,", 0);
 	test_int("", 1);
 	test_int(",", 0);
+	test_int("0.0", 0);
 	printf("\n");
 
 	test_fix("123456789.1234567", 1);
@@ -72,7 +73,7 @@ int main()
 	test_fix("1.0001", 1);
 	test_fix("1.1,", 0);
 	test_fix("", 1);
-	test_fix(".", 0);
+	test_fix(".", 1);
 	printf("\n");
 
 	test_date("010100", 1);
