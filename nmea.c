@@ -308,7 +308,7 @@ static int sentence_gpgsa(int state, const char * s, const char * p, struct nmea
 	struct nmea_gsa_t * v = &nmea->sentence.gsa;
 	switch (state) {
 		case -1: nmea->type = NMEA_GSA; break;
-		case  0: v->selection_mode = (s == p) ? '?' : *s; break; /* TODO */
+		case  0: v->selection_mode = (s == p) ? NMEA_SELECTIONMODE_AUTOMATIC : *s; break;
 		case  1: if (parse_int(s, p, &v->mode) != p) return -1; break;
 		case  2:
 		case  3:

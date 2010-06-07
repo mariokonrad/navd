@@ -61,6 +61,9 @@
 #define NMEA_COMPLETE_ROUTE 'C'
 #define NMEA_WORKING_ROUTE  'W'
 
+#define NMEA_SELECTIONMODE_MANUAL    'M'
+#define NMEA_SELECTIONMODE_AUTOMATIC 'A'
+
 #define NMEA_FIX_DECIMALS 1000000
 
 struct nmea_fix_t { /* x.xxxxxx */
@@ -143,7 +146,7 @@ struct nmea_gga_t {
 };
 
 struct nmea_gsa_t {
-	char selection_mode;
+	char selection_mode; /* A:automatic, M:manual */
 	uint32_t mode;
 	uint32_t id[12];
 	struct nmea_fix_t pdop;
