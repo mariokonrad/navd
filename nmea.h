@@ -10,22 +10,36 @@
 
 #include <stdint.h>
 
-#define MAX_NMEA_SENTENCE 80
+#define MAX_NMEA_SENTENCE 82
 
-#define NMEA_RMA 0x0001
-#define NMEA_RMB 0x0002
-#define NMEA_RMC 0x0003
-#define NMEA_GGA 0x0004
-#define NMEA_GSA 0x0005
-#define NMEA_GSV 0x0006
-#define NMEA_GLL 0x0007
-#define NMEA_RTE 0x0008
-#define NMEA_VTG 0x0009
-#define NMEA_BOD 0x000a
-#define NMEA_GARMIN_RME 0x1000
-#define NMEA_GARMIN_RMM 0x1001
-#define NMEA_GARMIN_RMZ 0x1002
-#define NMEA_HC_HDG     0x2000
+#define NMEA_SENTENCE_GPRMB "GPRMB"
+#define NMEA_SENTENCE_GPRMC "GPRMC"
+#define NMEA_SENTENCE_GPGGA "GPGGA"
+#define NMEA_SENTENCE_GPGSV "GPGSV"
+#define NMEA_SENTENCE_GPGSA "GPGSA"
+#define NMEA_SENTENCE_GPGLL "GPGLL"
+#define NMEA_SENTENCE_GPBOD "GPBOD"
+#define NMEA_SENTENCE_GPVTG "GPVTG"
+#define NMEA_SENTENCE_GPRTE "GPRTE"
+#define NMEA_SENTENCE_PGRME "PGRME"
+#define NMEA_SENTENCE_PGRMM "PGRMM"
+#define NMEA_SENTENCE_PGRMZ "PGRMZ"
+#define NMEA_SENTENCE_HCHDG "HCHDG"
+
+#define NMEA_RMA        0x00000001
+#define NMEA_RMB        0x00000002
+#define NMEA_RMC        0x00000003
+#define NMEA_GGA        0x00000004
+#define NMEA_GSA        0x00000005
+#define NMEA_GSV        0x00000006
+#define NMEA_GLL        0x00000007
+#define NMEA_RTE        0x00000008
+#define NMEA_VTG        0x00000009
+#define NMEA_BOD        0x0000000a
+#define NMEA_GARMIN_RME 0x00001000
+#define NMEA_GARMIN_RMM 0x00001001
+#define NMEA_GARMIN_RMZ 0x00001002
+#define NMEA_HC_HDG     0x00002000
 
 #define NMEA_EAST  'E'
 #define NMEA_WEST  'W'
@@ -65,6 +79,9 @@
 #define NMEA_SELECTIONMODE_AUTOMATIC 'A'
 
 #define NMEA_FIX_DECIMALS 1000000
+
+#define START_TOKEN_NMEA '$'
+#define START_TOKEN_AIVDM '!'
 
 struct nmea_fix_t { /* x.xxxxxx */
 	uint32_t i;
@@ -242,7 +259,16 @@ struct nmea_t {
 	} sentence;
 };
 
+struct nmea_entry_t {
+	const char * tag;
+	int (*parser)(int, const char *, const char *, struct nmea_t *);
+};
+
+int nmea_read_tab(const char *, struct nmea_t *, const struct nmea_entry_t *);
 int nmea_read(const char *, struct nmea_t *);
+
+int nmea_fix_to_float(const struct nmea_fix_t *, float *);
+int nmea_fix_to_double(const struct nmea_fix_t *, double *);
 
 /* TEMP */
 int check_time(const struct nmea_time_t * v);

@@ -22,7 +22,7 @@ static void test_time(const char * s, int outcome)
 {
 	struct nmea_time_t t;
 	const char * e = s + strlen(s);
-	int r = parse_time(s, e, &t) == e && check_time(&t);
+	int r = parse_time(s, e, &t) == e && !check_time(&t);
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %02u : %03u\n", __FUNCTION__, outcome, r, outcome == r, s, t.h, t.m, t.s, t.ms);
 }
 
@@ -30,7 +30,7 @@ static void test_date(const char * s, int outcome)
 {
 	struct nmea_date_t t;
 	const char * e = s + strlen(s);
-	int r = parse_date(s, e, &t) == e && check_date(&t);
+	int r = parse_date(s, e, &t) == e && !check_date(&t);
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %02u\n", __FUNCTION__, outcome, r, outcome == r, s, t.y, t.m, t.d);
 }
 
@@ -38,7 +38,7 @@ static void test_lat(const char * s, int outcome)
 {
 	struct nmea_angle_t t;
 	const char * e = s + strlen(s);
-	int r = parse_angle(s, e, &t) == e && check_latitude(&t);
+	int r = parse_angle(s, e, &t) == e && !check_latitude(&t);
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
 }
 
@@ -46,12 +46,13 @@ static void test_lon(const char * s, int outcome)
 {
 	struct nmea_angle_t t;
 	const char * e = s + strlen(s);
-	int r = parse_angle(s, e, &t) == e && check_longitude(&t);
+	int r = parse_angle(s, e, &t) == e && !check_longitude(&t);
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
 }
 
 
-int main()
+
+static void test_basics(void)
 {
 	test_int("0", 1);
 	test_int("10", 1);
@@ -111,7 +112,11 @@ int main()
 	test_lon("17959.9999", 1);
 	test_lon("17960.0000", 0);
 	printf("\n");
+}
 
+
+int main()
+{
 	/*
 		GP = General Positioning System (GPS)
 
@@ -280,14 +285,16 @@ int main()
 		"$PGRMM,WGS 84*06",
 		"$HCHDG,50.3,,,0.6,E*19",
 	};
+
 	struct nmea_t info;
 	int rc;
 	unsigned int i;
 
+	test_basics();
+
 	for (i = 0; i < sizeof(S)/sizeof(const char *); ++i) {
 		rc = nmea_read(S[i], &info);
-		if (rc)
-			printf("rc=%2d  [%s]\n", rc, S[i]);
+		printf("rc=%2d  [%s]\n", rc, S[i]);
 	}
 
 	return 0;
