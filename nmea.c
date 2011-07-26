@@ -213,7 +213,7 @@ const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v
 	return p;
 }
 
-static int sentence_gprmb(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gprmb(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_rmb_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -238,7 +238,7 @@ static int sentence_gprmb(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gprmc(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gprmc(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_rmc_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -262,7 +262,7 @@ static int sentence_gprmc(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gpgga(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gpgga(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_gga_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -288,7 +288,7 @@ static int sentence_gpgga(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gpgsv(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gpgsv(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_gsv_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -318,7 +318,7 @@ static int sentence_gpgsv(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gpgsa(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gpgsa(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_gsa_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -347,7 +347,7 @@ static int sentence_gpgsa(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gpgll(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gpgll(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_gll_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -365,7 +365,7 @@ static int sentence_gpgll(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gpbod(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gpbod(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_bod_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -383,7 +383,7 @@ static int sentence_gpbod(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gpvtg(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gpvtg(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_vtg_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -403,7 +403,7 @@ static int sentence_gpvtg(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_gprte(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_gprte(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_rte_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -428,7 +428,7 @@ static int sentence_gprte(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_pgrme(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_pgrme(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_garmin_rme_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -446,7 +446,7 @@ static int sentence_pgrme(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_pgrmz(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_pgrmz(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_garmin_rmz_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -461,7 +461,7 @@ static int sentence_pgrmz(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_pgrmm(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_pgrmm(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_garmin_rmm_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -474,7 +474,7 @@ static int sentence_pgrmm(int state, const char * s, const char * p, struct nmea
 	return 0;
 } /* }}} */
 
-static int sentence_hchdg(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
+static int sentence_parser_hchdg(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_hc_hdg_t * v;
 	if (s == NULL || p == NULL || nmea == NULL) return -1;
@@ -564,10 +564,10 @@ static int parse_sentence(struct nmea_t * nmea, const char * s, int (*parse)(int
  * @retval -1 parameter error
  * @retval -2 checksum error
  */
-int nmea_read_tab(const char * s, struct nmea_t * nmea, const struct nmea_entry_t * tab) /* {{{ */
+int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_parser_t * tab) /* {{{ */
 {
 	const char * p = s;
-	const struct nmea_entry_t * entry = NULL;
+	const struct nmea_parser_t * entry = NULL;
 
 	if (!s || !nmea || !tab) return -1;
 	if (checksum(s, START_TOKEN_NMEA)) return -2;
@@ -577,7 +577,7 @@ int nmea_read_tab(const char * s, struct nmea_t * nmea, const struct nmea_entry_
 	p = find_token_end(s);
 	for (entry = tab; entry && entry->tag; ++entry) {
 		if (!strncmp(s, entry->tag, p-s)) {
-			return parse_sentence(nmea, p+1, entry->parser) ? -1 : 0;
+			return parse_sentence(nmea, p+1, entry->parse) ? -1 : 0;
 		}
 	}
 	return 1;
@@ -591,52 +591,81 @@ int nmea_read_tab(const char * s, struct nmea_t * nmea, const struct nmea_entry_
  * @retval -1 parameter error
  * @retval -2 checksum error
  */
-int nmea_read(const char * s, struct nmea_t * nmea) /* {{{ */
+int nmea_read(struct nmea_t * nmea, const char * s) /* {{{ */
 {
-	static const struct nmea_entry_t TAB[] = {
-		{ NMEA_SENTENCE_GPRMB, sentence_gprmb },
-		{ NMEA_SENTENCE_GPRMC, sentence_gprmc },
-		{ NMEA_SENTENCE_GPGGA, sentence_gpgga },
-		{ NMEA_SENTENCE_GPGSV, sentence_gpgsv },
-		{ NMEA_SENTENCE_GPGSA, sentence_gpgsa },
-		{ NMEA_SENTENCE_GPGLL, sentence_gpgll },
-		{ NMEA_SENTENCE_GPBOD, sentence_gpbod },
-		{ NMEA_SENTENCE_GPVTG, sentence_gpvtg },
-		{ NMEA_SENTENCE_GPRTE, sentence_gprte },
-		{ NMEA_SENTENCE_PGRME, sentence_pgrme },
-		{ NMEA_SENTENCE_PGRMM, sentence_pgrmm },
-		{ NMEA_SENTENCE_PGRMZ, sentence_pgrmz },
-		{ NMEA_SENTENCE_HCHDG, sentence_hchdg },
-		{ NULL,    NULL           }
+	static const struct nmea_parser_t TAB[] = {
+		{ NMEA_SENTENCE_GPRMB, sentence_parser_gprmb },
+		{ NMEA_SENTENCE_GPRMC, sentence_parser_gprmc },
+		{ NMEA_SENTENCE_GPGGA, sentence_parser_gpgga },
+		{ NMEA_SENTENCE_GPGSV, sentence_parser_gpgsv },
+		{ NMEA_SENTENCE_GPGSA, sentence_parser_gpgsa },
+		{ NMEA_SENTENCE_GPGLL, sentence_parser_gpgll },
+		{ NMEA_SENTENCE_GPBOD, sentence_parser_gpbod },
+		{ NMEA_SENTENCE_GPVTG, sentence_parser_gpvtg },
+		{ NMEA_SENTENCE_GPRTE, sentence_parser_gprte },
+		{ NMEA_SENTENCE_PGRME, sentence_parser_pgrme },
+		{ NMEA_SENTENCE_PGRMM, sentence_parser_pgrmm },
+		{ NMEA_SENTENCE_PGRMZ, sentence_parser_pgrmz },
+		{ NMEA_SENTENCE_HCHDG, sentence_parser_hchdg },
+		{ NULL,                NULL                  }
 	};
 
-	return nmea_read_tab(s, nmea, TAB);
+	return nmea_read_tab(nmea, s, TAB);
 } /* }}} */
+
+/* TODO */
+int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const struct nmea_writer_t * tab)
+{
+	const struct nmea_writer_t * entry = NULL;
+
+	 /* TODO */
+
+	for (entry = tab; entry && entry->type != NMEA_NONE && entry->write; ++entry) {
+		if (entry->type == nmea->type) {
+	/* TODO
+			return write_sentence(buf, size, nmea, entry->write) ? -1 : 0;
+	*/
+		}
+	}
+
+	return 1;
+}
+
+/* TODO */
+int nmea_write(char * buf, uint32_t size, const struct nmea_t * nmea)
+{
+	static const struct nmea_writer_t TAB[] = {
+		{ NMEA_NONE, NULL }
+	};
+
+	return nmea_write_tab(buf, size, nmea, TAB);
+}
+
 
 /*
  * converts a fix point number to float.
- * @param[in] fix the fix point number to convert
  * @param[out] v converted number
+ * @param[in] fix the fix point number to convert
  * @retval  0 success
  * @retval -1 failure
  */
-int nmea_fix_to_float(const struct nmea_fix_t * fix, float * v)
+int nmea_fix_to_float(float * v, const struct nmea_fix_t * fix)
 {
-	if (!fix || !v) return -1;
+	if (!v || !fix) return -1;
 	*v = (float)fix->i + ((float)fix->d / (float)NMEA_FIX_DECIMALS);
 	return 0;
 }
 
 /*
  * converts a fix point number to double.
- * @param[in] fix the fix point number to convert
  * @param[out] v converted number
+ * @param[in] fix the fix point number to convert
  * @retval  0 success
  * @retval -1 failure
  */
-int nmea_fix_to_double(const struct nmea_fix_t * fix, double * v)
+int nmea_fix_to_double(double * v, const struct nmea_fix_t * fix)
 {
-	if (!fix || !v) return -1;
+	if (!v || !fix) return -1;
 	*v = (double)fix->i + ((double)fix->d / (double)NMEA_FIX_DECIMALS);
 	return 0;
 }

@@ -26,6 +26,7 @@
 #define NMEA_SENTENCE_PGRMZ "PGRMZ"
 #define NMEA_SENTENCE_HCHDG "HCHDG"
 
+#define NMEA_NONE       0x00000000
 #define NMEA_RMA        0x00000001
 #define NMEA_RMB        0x00000002
 #define NMEA_RMC        0x00000003
@@ -259,16 +260,24 @@ struct nmea_t {
 	} sentence;
 };
 
-struct nmea_entry_t {
+struct nmea_parser_t {
 	const char * tag;
-	int (*parser)(int, const char *, const char *, struct nmea_t *);
+	int (*parse)(int, const char *, const char *, struct nmea_t *);
 };
 
-int nmea_read_tab(const char *, struct nmea_t *, const struct nmea_entry_t *);
-int nmea_read(const char *, struct nmea_t *);
+struct nmea_writer_t {
+	const uint32_t type;
+	int (*write)(char *, uint32_t, const struct nmea_t *);
+};
 
-int nmea_fix_to_float(const struct nmea_fix_t *, float *);
-int nmea_fix_to_double(const struct nmea_fix_t *, double *);
+int nmea_read_tab(struct nmea_t *, const char *, const struct nmea_parser_t *);
+int nmea_read(struct nmea_t *, const char *);
+
+int nmea_write_tab(char *, uint32_t, const struct nmea_t *, const struct nmea_writer_t *);
+int nmea_write(char *, uint32_t, const struct nmea_t *);
+
+int nmea_fix_to_float(float *, const struct nmea_fix_t *);
+int nmea_fix_to_double(double *, const struct nmea_fix_t *);
 
 /* TEMP */
 int check_time(const struct nmea_time_t * v);

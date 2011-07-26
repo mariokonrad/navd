@@ -293,7 +293,7 @@ int main()
 	test_basics();
 
 	for (i = 0; i < sizeof(S)/sizeof(const char *); ++i) {
-		rc = nmea_read(S[i], &info);
+		rc = nmea_read(&info, S[i]);
 		printf("rc=%2d  [%s]\n", rc, S[i]);
 	}
 
