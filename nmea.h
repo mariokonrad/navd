@@ -80,7 +80,9 @@
 #define NMEA_SELECTIONMODE_AUTOMATIC 'A'
 
 #define NMEA_FIX_DECIMALS 1000000
+#define NMEA_FIX_DECIMAL_DIGITS 6
 #define NMEA_ANGLE_DECIMALS 10000
+#define NMEA_ANGLE_DECIMAL_DIGITS 4
 
 #define START_TOKEN_NMEA '$'
 #define START_TOKEN_AIVDM '!'
@@ -261,39 +263,17 @@ struct nmea_t {
 	} sentence;
 };
 
-struct nmea_parser_t {
+struct nmea_sentence_t {
+	const uint32_t type;
 	const char * tag;
 	int (*parse)(int, const char *, const char *, struct nmea_t *);
-};
-
-struct nmea_writer_t {
-	const uint32_t type;
 	int (*write)(char *, uint32_t, const struct nmea_t *);
 };
 
-int nmea_read_tab(struct nmea_t *, const char *, const struct nmea_parser_t *);
+int nmea_read_tab(struct nmea_t *, const char *, const struct nmea_sentence_t **, uint32_t);
 int nmea_read(struct nmea_t *, const char *);
 
-int nmea_write_tab(char *, uint32_t, const struct nmea_t *, const struct nmea_writer_t *);
+int nmea_write_tab(char *, uint32_t, const struct nmea_t *, const struct nmea_sentence_t **, uint32_t);
 int nmea_write(char *, uint32_t, const struct nmea_t *);
-
-int nmea_fix_to_float(float *, const struct nmea_fix_t *);
-int nmea_fix_to_double(double *, const struct nmea_fix_t *);
-
-/* TEMP: testing */
-int check_time(const struct nmea_time_t * v);
-int check_date(const struct nmea_date_t * v);
-int check_latitude(const struct nmea_angle_t * v);
-int check_longitude(const struct nmea_angle_t * v);
-const char * parse_int(const char * s, const char * e, uint32_t * val);
-const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v);
-const char * parse_time(const char * s, const char * e, struct nmea_time_t * v);
-const char * parse_date(const char * s, const char * e, struct nmea_date_t * v);
-const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v);
-int write_string(char * buf, uint32_t size, const char * s);
-int write_time(char * buf, uint32_t size, const struct nmea_time_t * v);
-int write_date(char * buf, uint32_t size, const struct nmea_date_t * v);
-int write_lat(char * buf, uint32_t size, const struct nmea_angle_t * v);
-int write_lon(char * buf, uint32_t size, const struct nmea_angle_t * v);
 
 #endif
