@@ -216,7 +216,7 @@ int main(int argc, char ** argv)
 			ops = &simulator_operations;
 			} break;
 		case 1: {
-			config = &serial_config;
+			config = (const struct device_config_t *)&serial_config;
 			ops = &serial_device_operations;
 			} break;
 	}

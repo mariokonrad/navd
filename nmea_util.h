@@ -31,4 +31,8 @@ int write_checksum(char * buf, uint32_t size, const char * s, const char * e);
 int nmea_fix_to_float(float *, const struct nmea_fix_t *);
 int nmea_fix_to_double(double *, const struct nmea_fix_t *);
 
+const char * find_token_end(const char * s);
+const char * find_sentence_end(const char * s);
+int token_valid(const char * s, const char * p);
+
 #endif

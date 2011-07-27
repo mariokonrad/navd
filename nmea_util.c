@@ -540,3 +540,32 @@ int nmea_fix_to_double(double * v, const struct nmea_fix_t * fix)
 	return 0;
 }
 
+/* Returns a pointer to the position of the next comma within the
+ * specified string.
+ *
+ * @param[in] s the string to parse
+ * @return the position of the next comma or, if none found, the end of the string
+ */
+const char * find_token_end(const char * s)
+{
+	while (s && *s && *s != ',' && *s != '*') ++s;
+	return s;
+}
+
+/* TODO */
+const char * find_sentence_end(const char * s)
+{
+	while (s && *s && *s != '*') ++s;
+	return s;
+}
+
+/* TODO
+ *
+ * @retval 1 token seems to be valid
+ * @retval 0 token seems to be invalid
+ */
+int token_valid(const char * s, const char * p)
+{
+	return *s && *p && *s != '*' && *p != '*';
+}
+

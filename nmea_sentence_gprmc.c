@@ -2,35 +2,39 @@
 #include <nmea_util.h>
 #include <stdio.h>
 
-static int sentence_parser_gprmc(int state, const char * s, const char * p, struct nmea_t * nmea)
+static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
 	struct nmea_rmc_t * v;
-	if (nmea == NULL) return -1;
-	if (state == -1) {
-		nmea->type = NMEA_RMC;
-		return 0;
-	}
-	if (s == NULL || p == NULL) return -1;
+	int state = 0;
+	const char * p;
+
+	if (nmea == NULL || s == NULL || e == NULL) return -1;
+	nmea->type = NMEA_RMC;
 	v = &nmea->sentence.rmc;
-	switch (state) {
-		case  0: if (parse_time(s, p, &v->time) != p && check_time(&v->time)) return -1; break;
-		case  1: v->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
-		case  2: if (parse_angle(s, p, &v->lat) != p && check_latitude(&v->lat)) return -1; break;
-		case  3: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
-		case  4: if (parse_angle(s, p, &v->lon) != p && check_longitude(&v->lon)) return -1; break;
-		case  5: v->lon_dir = (s == p) ? NMEA_EAST : *s; break;
-		case  6: if (parse_fix(s, p, &v->sog) != p) return -1; break;
-		case  7: if (parse_fix(s, p, &v->head) != p) return -1; break;
-		case  8: if (parse_date(s, p, &v->date) != p && check_date(&v->date)) return -1; break;
-		case  9: if (parse_fix(s, p, &v->m) != p) return -1; break;
-		case 10: v->m_dir = (s == p) ? NMEA_EAST : *s; break;
-		case 11: v->sig_integrity = (s == p) ? NMEA_SIG_INT_DATANOTVALID : *s; break;
-		default: break;
+	p = find_token_end(s);
+	for (state = -1; state < 12 && s < e; ++state) {
+		switch (state) {
+			case  0: if (parse_time(s, p, &v->time) != p && check_time(&v->time)) return -1; break;
+			case  1: v->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
+			case  2: if (parse_angle(s, p, &v->lat) != p && check_latitude(&v->lat)) return -1; break;
+			case  3: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
+			case  4: if (parse_angle(s, p, &v->lon) != p && check_longitude(&v->lon)) return -1; break;
+			case  5: v->lon_dir = (s == p) ? NMEA_EAST : *s; break;
+			case  6: if (parse_fix(s, p, &v->sog) != p) return -1; break;
+			case  7: if (parse_fix(s, p, &v->head) != p) return -1; break;
+			case  8: if (parse_date(s, p, &v->date) != p && check_date(&v->date)) return -1; break;
+			case  9: if (parse_fix(s, p, &v->m) != p) return -1; break;
+			case 10: v->m_dir = (s == p) ? NMEA_EAST : *s; break;
+			case 11: v->sig_integrity = (s == p) ? NMEA_SIG_INT_DATANOTVALID : *s; break;
+			default: break;
+		}
+		s = p + 1;
+		p = find_token_end(s);
 	}
 	return 0;
 }
 
-static int sentence_writer_gprmc(char * buf, uint32_t size, const struct nmea_t * nmea)
+static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 {
 	const struct nmea_rmc_t * v;
 	uint32_t i = 0;
@@ -92,7 +96,7 @@ const struct nmea_sentence_t sentence_gprmc =
 {
 	.type = NMEA_RMC,
 	.tag = NMEA_SENTENCE_GPRMC,
-	.parse = sentence_parser_gprmc,
-	.write = sentence_writer_gprmc,
+	.read = read,
+	.write = write,
 };
 

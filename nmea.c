@@ -2,6 +2,7 @@
 #include <nmea_util.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <nmea_sentence_gprmb.h>
 #include <nmea_sentence_gprmc.h>
 #include <nmea_sentence_gpgga.h>
@@ -32,49 +33,9 @@ static const struct nmea_sentence_t * ALL_SENTENCES[] = {
 	&sentence_hchdg,
 };
 
-/* Returns a pointer to the position of the next comma within the
- * specified string.
+/* Reads all NMEA senteces defined defined in the specified table.
  *
- * @param[in] s the string to parse
- * @return the position of the next comma or, if none found, the end of the string
- */
-static const char * find_token_end(const char * s)
-{
-	while (s && *s && *s != ',' && *s != '*')  ++s;
-	return s;
-}
-
-/* TODO
- *
- * @retval 1 token seems to be valid
- * @retval 0 token seems to be invalid
- */
-static int token_valid(const char * s, const char * p)
-{
-	return *s && *p && *s != '*' && *p != '*';
-}
-
-/* Parses the sentence using the specified token parser.
- *
- * @param[out] nmea the structure to be filled
- * @param[in] s the sentence to parse
- * @param[in] parser the token parser
- */
-static int parse_sentence(struct nmea_t * nmea, const char * s, int (*parse)(int, const char *, const char *, struct nmea_t *))
-{
-	int state = 0;
-	const char * p = s;
-	parse(-1, NULL, NULL, nmea);
-	for (; token_valid(s, p); s = p+1, ++state) {
-		p = find_token_end(s);
-		if (parse(state, s, p, nmea)) return -1;
-	}
-	return 0;
-}
-
-/* TODO
- *
- * @param[in]  s read sentence
+ * @param[in] s read sentence
  * @param[out] nmea data of the parsed structure
  * @param[in] tab table of sentences to parse
  * @retval  0 success
@@ -90,20 +51,19 @@ int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_senten
 
 	if (s == NULL || nmea == NULL || tab == NULL || tab_size == 0) return -1;
 	if (check_checksum(s, START_TOKEN_NMEA)) return -2;
-	if (*s != '$') return -1;
-	memset(nmea, 0, sizeof(*nmea));
+	if (*s != START_TOKEN_NMEA) return -1;
 	++s;
 	p = find_token_end(s);
 	for (i = 0; i < tab_size; ++i) {
 		entry = tab[i];
-		if (entry->parse && !strncmp(s, entry->tag, p-s)) {
-			return parse_sentence(nmea, p+1, entry->parse) ? -1 : 0;
+		if (entry->read && !strncmp(s, entry->tag, p-s)) {
+			return entry->read(nmea, s, find_sentence_end(s));
 		}
 	}
 	return 1;
 }
 
-/* TODO
+/* Reads all known NMEA sentences.
  *
  * @param[in]  s read sentence
  * @param[out] nmea data of the parsed structure
@@ -119,6 +79,7 @@ int nmea_read(struct nmea_t * nmea, const char * s)
 
 /* Writes the specified NMEA sentence into the buffer. This function
  * handles all NMEA sentences specified in the table.
+ *
  * @param[out] buf The buffer to hold the data. This buffer must be large
  *    enough to carry the NMEA sentence.
  * @param[in] size Size of the buffer to hold the data.
@@ -145,6 +106,7 @@ int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const 
 }
 
 /* Writes the specified NMEA sentence into the buffer.
+ *
  * @param[out] buf The buffer to hold the data. This buffer must be large
  *    enough to carry the NMEA sentence.
  * @param[in] size Size of the buffer to hold the data.

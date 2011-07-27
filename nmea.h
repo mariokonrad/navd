@@ -266,7 +266,7 @@ struct nmea_t {
 struct nmea_sentence_t {
 	const uint32_t type;
 	const char * tag;
-	int (*parse)(int, const char *, const char *, struct nmea_t *);
+	int (*read)(struct nmea_t *, const char *, const char *);
 	int (*write)(char *, uint32_t, const struct nmea_t *);
 };
 

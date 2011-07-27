@@ -31,8 +31,9 @@ dump : dump.o nmea.o nmea_util.o $(SENTENCES)
 	$(CC) -o $@ $^
 #	$(STRIP) $(STRIPFLAGS) $@
 
-valgrind : dump
+valgrind : dump nmea_test
 	valgrind -v ./dump
+#	valgrind -v ./nmea_test
 
 index :
 	ctags -f tags *.c *.h

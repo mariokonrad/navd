@@ -2,21 +2,25 @@
 #include <nmea_util.h>
 #include <stdio.h>
 
-static int sentence_parser_pgrmz(int state, const char * s, const char * p, struct nmea_t * nmea)
+static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
 	struct nmea_garmin_rmz_t * v;
-	if (nmea == NULL) return -1;
-	if (state == -1) {
-		nmea->type = NMEA_GARMIN_RMZ;
-		return 0;
-	}
-	if (s == NULL || p == NULL) return -1;
+	int state = 0;
+	const char * p;
+
+	if (nmea == NULL || s == NULL || e == NULL) return -1;
+	nmea->type = NMEA_GARMIN_RMZ;
 	v = &nmea->sentence.garmin_rmz;
-	switch (state) {
-		case 0: if (parse_fix(s, p, &v->alt) != p) return -1; break;
-		case 1: v->unit_alt = (s == p) ? NMEA_UNIT_FEET : *s; break;
-		case 2: if (parse_int(s, p, &v->pos_fix_dim) != p) return -1; break;
-		default: break;
+	p = find_token_end(s);
+	for (state = -1; state < 3 && s < e; ++state) {
+		switch (state) {
+			case 0: if (parse_fix(s, p, &v->alt) != p) return -1; break;
+			case 1: v->unit_alt = (s == p) ? NMEA_UNIT_FEET : *s; break;
+			case 2: if (parse_int(s, p, &v->pos_fix_dim) != p) return -1; break;
+			default: break;
+		}
+		s = p + 1;
+		p = find_token_end(s);
 	}
 	return 0;
 }
@@ -25,7 +29,7 @@ const struct nmea_sentence_t sentence_pgrmz =
 {
 	.type = NMEA_GARMIN_RMZ,
 	.tag = NMEA_SENTENCE_PGRMZ,
-	.parse = sentence_parser_pgrmz,
+	.read = read,
 	.write = NULL,
 };
 

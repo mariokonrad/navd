@@ -1,4 +1,5 @@
-#include "nmea.h"
+#include <nmea.h>
+#include <nmea_util.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -306,6 +307,7 @@ static void test_sentence_parsing()
 	unsigned int i;
 
 	for (i = 0; i < sizeof(SENTENCES)/sizeof(const char *); ++i) {
+		memset(&info, 0, sizeof(info));
 		rc = nmea_read(&info, SENTENCES[i]);
 		if (rc != 0) ++errors;
 		printf("%25s : %d : [%s]\n", __FUNCTION__, rc == 0, SENTENCES[i]);
@@ -502,7 +504,7 @@ static void test_writing_sentence(const char * s)
 	rc = nmea_read(&nmea, s);
 	if (rc != 0) {
 		++errors;
-		printf("%25s : %d : [%s] : unable to parse\n", __FUNCTION__, result, s);
+		printf("%25s : %d : [%s] : unable to parse\n", __FUNCTION__, 0, s);
 	}
 	rc = nmea_write(buf, sizeof(buf), &nmea);
 	result = (rc >= 0 && !strcmp(s, buf));
