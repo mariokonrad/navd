@@ -1,8 +1,9 @@
 #include "nmea.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-static void test_int(const char * s, int outcome)
+static void test_parse_int(const char * s, int outcome)
 {
 	uint32_t v;
 	int len = strlen(s);
@@ -10,7 +11,7 @@ static void test_int(const char * s, int outcome)
 	printf("%12s : %2d %2d => %d : [%s] : %u\n", __FUNCTION__, outcome, p == s+len, outcome == (p==s+len), s, v);
 }
 
-static void test_fix(const char * s, int outcome)
+static void test_parse_fix(const char * s, int outcome)
 {
 	struct nmea_fix_t v;
 	int len = strlen(s);
@@ -18,7 +19,7 @@ static void test_fix(const char * s, int outcome)
 	printf("%12s : %2d %2d => %d : [%s] : %u %06u\n", __FUNCTION__, outcome, p == s+len, outcome == (p==s+len), s, v.i, v.d);
 }
 
-static void test_time(const char * s, int outcome)
+static void test_parse_time(const char * s, int outcome)
 {
 	struct nmea_time_t t;
 	const char * e = s + strlen(s);
@@ -26,7 +27,7 @@ static void test_time(const char * s, int outcome)
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %02u : %03u\n", __FUNCTION__, outcome, r, outcome == r, s, t.h, t.m, t.s, t.ms);
 }
 
-static void test_date(const char * s, int outcome)
+static void test_parse_date(const char * s, int outcome)
 {
 	struct nmea_date_t t;
 	const char * e = s + strlen(s);
@@ -34,7 +35,7 @@ static void test_date(const char * s, int outcome)
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %02u\n", __FUNCTION__, outcome, r, outcome == r, s, t.y, t.m, t.d);
 }
 
-static void test_lat(const char * s, int outcome)
+static void test_parse_lat(const char * s, int outcome)
 {
 	struct nmea_angle_t t;
 	const char * e = s + strlen(s);
@@ -42,7 +43,7 @@ static void test_lat(const char * s, int outcome)
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
 }
 
-static void test_lon(const char * s, int outcome)
+static void test_parse_lon(const char * s, int outcome)
 {
 	struct nmea_angle_t t;
 	const char * e = s + strlen(s);
@@ -50,72 +51,69 @@ static void test_lon(const char * s, int outcome)
 	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
 }
 
-
-
-static void test_basics(void)
+static void test_basic_parsing(void) /* {{{ */
 {
-	test_int("0", 1);
-	test_int("10", 1);
-	test_int("00", 1);
-	test_int("0123", 1);
-	test_int("9999", 1);
-	test_int("10,", 0);
-	test_int("", 1);
-	test_int(",", 0);
-	test_int("0.0", 0);
+	test_parse_int("0", 1);
+	test_parse_int("10", 1);
+	test_parse_int("00", 1);
+	test_parse_int("0123", 1);
+	test_parse_int("9999", 1);
+	test_parse_int("10,", 0);
+	test_parse_int("", 1);
+	test_parse_int(",", 0);
+	test_parse_int("0.0", 0);
 	printf("\n");
 
-	test_fix("123456789.1234567", 1);
-	test_fix("3.14159265365", 1);
-	test_fix("1.2", 1);
-	test_fix("3", 1);
-	test_fix(".5", 1);
-	test_fix("3.", 1);
-	test_fix("1.0001", 1);
-	test_fix("1.1,", 0);
-	test_fix("", 1);
-	test_fix(".", 1);
+	test_parse_fix("123456789.1234567", 1);
+	test_parse_fix("3.14159265365", 1);
+	test_parse_fix("1.2", 1);
+	test_parse_fix("3", 1);
+	test_parse_fix(".5", 1);
+	test_parse_fix("3.", 1);
+	test_parse_fix("1.0001", 1);
+	test_parse_fix("1.1,", 0);
+	test_parse_fix("", 1);
+	test_parse_fix(".", 1);
 	printf("\n");
 
-	test_date("010100", 1);
-	test_date("999999", 0);
-	test_date("320100", 0);
-	test_date("000100", 0);
-	test_date("011300", 0);
-	test_date("311299", 1);
-	test_date("999999,", 0);
-	test_date("010100,", 0);
+	test_parse_date("010100", 1);
+	test_parse_date("999999", 0);
+	test_parse_date("320100", 0);
+	test_parse_date("000100", 0);
+	test_parse_date("011300", 0);
+	test_parse_date("311299", 1);
+	test_parse_date("999999,", 0);
+	test_parse_date("010100,", 0);
 	printf("\n");
 
-	test_time("123456", 1);
-	test_time("123456,", 0);
-	test_time("123456.345", 1);
-	test_time("123456.", 1);
-	test_time("0", 1);
-	test_time("", 1);
+	test_parse_time("123456", 1);
+	test_parse_time("123456,", 0);
+	test_parse_time("123456.345", 1);
+	test_parse_time("123456.", 1);
+	test_parse_time("0", 1);
+	test_parse_time("", 1);
 	printf("\n");
 
-	test_lat("1234.0000", 1);
-	test_lat("1234,0000", 0);
-	test_lat("1234.0000,", 0);
-	test_lat("9000.0000", 0);
-	test_lat("0000.0000", 1);
-	test_lat("8959.9999", 1);
-	test_lat("8960.0000", 0);
+	test_parse_lat("1234.0000", 1);
+	test_parse_lat("1234,0000", 0);
+	test_parse_lat("1234.0000,", 0);
+	test_parse_lat("9000.0000", 0);
+	test_parse_lat("0000.0000", 1);
+	test_parse_lat("8959.9999", 1);
+	test_parse_lat("8960.0000", 0);
 	printf("\n");
 
-	test_lon("12345.0000", 1);
-	test_lon("01234,0000", 0);
-	test_lon("01234.0000,", 0);
-	test_lon("09000.0000", 1);
-	test_lon("00000.0000", 1);
-	test_lon("17959.9999", 1);
-	test_lon("17960.0000", 0);
+	test_parse_lon("12345.0000", 1);
+	test_parse_lon("01234,0000", 0);
+	test_parse_lon("01234.0000,", 0);
+	test_parse_lon("09000.0000", 1);
+	test_parse_lon("00000.0000", 1);
+	test_parse_lon("17959.9999", 1);
+	test_parse_lon("17960.0000", 0);
 	printf("\n");
-}
+} /* }}} */
 
-
-int main()
+static void test_sentence_parsing() /* {{{ */
 {
 	/*
 		GP = General Positioning System (GPS)
@@ -290,14 +288,28 @@ int main()
 	int rc;
 	unsigned int i;
 
-	test_basics();
-
 	for (i = 0; i < sizeof(S)/sizeof(const char *); ++i) {
 		rc = nmea_read(&info, S[i]);
 		printf("rc=%2d  [%s]\n", rc, S[i]);
 	}
+} /* }}} */
+
+static void test_basic_writing(void)
+{
+	/* TODO */
+}
+
+int main(int argc, char ** argv)
+{
+	int test = 0;
+	if (argc > 1) test = atoi(argv[1]);
+
+	switch (test) {
+		case 0: test_basic_parsing(); break;
+		case 1: test_sentence_parsing(); break;
+		case 2: test_basic_writing(); break;
+	}
 
 	return 0;
-
-} /* }}} */
+}
 

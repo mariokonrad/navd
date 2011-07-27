@@ -1,7 +1,7 @@
 .PHONY: all clean clean-all index test valgrind
 
 CC=gcc
-CFLAGS=-ggdb -Wextra -Wall -ansi -pedantic -O2
+CFLAGS=-ggdb -Wextra -Wall -pedantic -O2
 
 STRIP=strip
 STRIPFLAGS=-s

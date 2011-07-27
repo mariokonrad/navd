@@ -1,4 +1,5 @@
 #include "nmea.h"
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -91,7 +92,7 @@ const char * parse_int(const char * s, const char * e, uint32_t * v)
 	if (s == NULL || e == NULL || v == NULL) return NULL;
 	*v = 0;
 	for (; *s && s < e; ++s) {
-		if (!isdigit(*s)) return s;
+		if (!isdigit((int)*s)) return s;
 		*v *= 10;
 		*v += *s - '0';
 	}
@@ -116,13 +117,13 @@ const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
 			case 0:
 				if (*s == '.') {
 					state = 1;
-				} else if (isdigit(*s)) {
+				} else if (isdigit((int)*s)) {
 					v->i *= 10;
 					v->i += *s - '0';
 				} else return s;
 				break;
 			case 1:
-				if (!isdigit(*s)) return s;
+				if (!isdigit((int)*s)) return s;
 				f /= 10;
 				v->d += f * (*s - '0');
 				break;
@@ -213,6 +214,24 @@ const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v
 	return p;
 }
 
+int write_string(char * buf, uint32_t size, const char * s)
+{
+	uint32_t len;
+
+	if (buf == NULL || size == 0 || s == NULL) return -1;
+	len = strlen(s);
+	if (len > size) return -1;
+	strncat(buf, s, len);
+	return (int)len;
+}
+
+int write_time(char * buf, uint32_t size, const struct nmea_time_t * t)
+{
+	if (buf == NULL || size == 0 || t == NULL) return -1;
+	if (size < 6) return -1;
+	return snprintf(buf, size, "%02d%02d%02d", t->h, t->m, t->s);
+}
+
 static int sentence_parser_gprmb(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
 {
 	struct nmea_rmb_t * v;
@@ -260,6 +279,31 @@ static int sentence_parser_gprmc(int state, const char * s, const char * p, stru
 		default: break;
 	}
 	return 0;
+} /* }}} */
+
+static int sentence_writer_gprmc(char * buf, uint32_t size, const struct nmea_t * nmea) /* {{{ */
+{
+	const struct nmea_rmc_t * v;
+	uint32_t i = 0;
+	int rc = 0;
+	int state;
+
+	if (buf == NULL || size == 0 || nmea == NULL) return -1;
+	v = &nmea->sentence.rmc;
+
+	for (state = 0; state < 11; ++state) {
+		switch (state) {
+			case 0: rc = write_string(buf + i, size - i, "$"); break;
+			case 1: rc = write_string(buf + i, size - i, NMEA_SENTENCE_GPRMC); break;
+			case 2: rc = write_string(buf + i, size - i, ","); break;
+			case 3: rc = write_time(buf + i, size - i, &v->time); break;
+			/* TODO */
+		}
+		if (rc <= 0) break;
+		i += rc;
+	}
+
+	return (int)i;
 } /* }}} */
 
 static int sentence_parser_gpgga(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
@@ -512,6 +556,9 @@ static int token_valid(const char * s, const char * p)
 	return *s && *p && *s != '*' && *p != '*';
 }
 
+/* Converts the specified hexadecimal character to its numerical representation.
+ * If the character does not match a hexadecimal digit, 0xff will return.
+ */
 static uint8_t hex2i(char c)
 {
 	if ((c >= '0') && (c <= '9')) return c - '0';
@@ -613,31 +660,48 @@ int nmea_read(struct nmea_t * nmea, const char * s) /* {{{ */
 	return nmea_read_tab(nmea, s, TAB);
 } /* }}} */
 
-/* TODO */
-int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const struct nmea_writer_t * tab)
+/* Writes the specified NMEA sentence into the buffer. This function
+ * handles all NMEA sentences specified in the table.
+ * @param[out] buf The buffer to hold the data. This buffer must be large
+ *    enough to carry the NMEA sentence.
+ * @param[in] size Size of the buffer to hold the data.
+ * @param[in] nmea The NMEA data.
+ * @param[in] tab Table containing all known or valid NMEA sentences.
+ * @retval >= 0 Success, number of bytes written to buffer.
+ * @retval -1 Invalid parameters.
+ * @retval -2 Unknown NMEA sentence.
+ */
+int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const struct nmea_writer_t * tab) /* {{{ */
 {
-	const struct nmea_writer_t * entry = NULL;
+	const struct nmea_writer_t * entry;
 
-	 /* TODO */
-
+	if (buf == NULL || size == 0 || nmea == NULL || tab == NULL) return -1;
 	for (entry = tab; entry && entry->type != NMEA_NONE && entry->write; ++entry) {
 		if (entry->type == nmea->type) {
-	/* TODO
-			return write_sentence(buf, size, nmea, entry->write) ? -1 : 0;
-	*/
+			return entry->write(buf, size, nmea);
 		}
 	}
 
-	return 1;
-}
+	return -2;
+} /* }}} */
 
-/* TODO */
+/* Writes the specified NMEA sentence into the buffer.
+ * @param[out] buf The buffer to hold the data. This buffer must be large
+ *    enough to carry the NMEA sentence.
+ * @param[in] size Size of the buffer to hold the data.
+ * @param[in] nmea The NMEA data.
+ * @retval >= 0 Success, number of bytes written to buffer.
+ * @retval -1 Invalid parameters.
+ * @retval -2 Unknown NMEA sentence.
+ */
 int nmea_write(char * buf, uint32_t size, const struct nmea_t * nmea)
 {
 	static const struct nmea_writer_t TAB[] = {
-		{ NMEA_NONE, NULL }
+		{ NMEA_RMC,  sentence_writer_gprmc },
+		{ NMEA_NONE, NULL                  }
 	};
 
+	if (buf == NULL || size == 0 || nmea == NULL) return -1;
 	return nmea_write_tab(buf, size, nmea, TAB);
 }
 

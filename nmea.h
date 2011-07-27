@@ -279,7 +279,7 @@ int nmea_write(char *, uint32_t, const struct nmea_t *);
 int nmea_fix_to_float(float *, const struct nmea_fix_t *);
 int nmea_fix_to_double(double *, const struct nmea_fix_t *);
 
-/* TEMP */
+/* TEMP: testing */
 int check_time(const struct nmea_time_t * v);
 int check_date(const struct nmea_date_t * v);
 int check_latitude(const struct nmea_angle_t * v);
@@ -289,5 +289,7 @@ const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v);
 const char * parse_time(const char * s, const char * e, struct nmea_time_t * v);
 const char * parse_date(const char * s, const char * e, struct nmea_date_t * v);
 const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v);
+int write_string(char * buf, uint32_t size, const char * s);
+int write_time(char * buf, uint32_t size, const struct nmea_time_t * t);
 
 #endif
