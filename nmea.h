@@ -80,38 +80,39 @@
 #define NMEA_SELECTIONMODE_AUTOMATIC 'A'
 
 #define NMEA_FIX_DECIMALS 1000000
+#define NMEA_ANGLE_DECIMALS 10000
 
 #define START_TOKEN_NMEA '$'
 #define START_TOKEN_AIVDM '!'
 
 struct nmea_fix_t { /* x.xxxxxx */
-	uint32_t i;
-	uint32_t d;
+	uint32_t i; /* integer part, max. 6 digits, see NMEA_FIX_DECIMALS */
+	uint32_t d; /* decimal part, 6 digits, see NMEA_FIX_DECIMALS */
 };
 
 struct nmea_time_t {
-	uint32_t h;
-	uint32_t m;
-	uint32_t s;
-	uint32_t ms;
+	uint32_t h;  /* hour: 0..23 */
+	uint32_t m;  /* minute: 0..59 */
+	uint32_t s;  /* second: 0..59 */
+	uint32_t ms; /* millisecond: 0..999 */
 };
 
 struct nmea_date_t {
-	uint32_t y;
-	uint32_t m;
-	uint32_t d;
+	uint32_t y; /* year */
+	uint32_t m; /* month: 1..12 */
+	uint32_t d; /* day: 1..31 */
 };
 
 struct nmea_angle_t {
-	uint32_t d;
-	uint32_t m;
-	struct nmea_fix_t s;
+	uint32_t d; /* degrees */
+	uint32_t m; /* minutes */
+	struct nmea_fix_t s; /* seconds */
 };
 
 struct nmea_satelite_t {
 	uint32_t id;
 	uint32_t elevation;
-	uint32_t azimuth; /* to true */
+	uint32_t azimuth; /* azimuth against true */
 	uint32_t snr;
 };
 
@@ -290,6 +291,9 @@ const char * parse_time(const char * s, const char * e, struct nmea_time_t * v);
 const char * parse_date(const char * s, const char * e, struct nmea_date_t * v);
 const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v);
 int write_string(char * buf, uint32_t size, const char * s);
-int write_time(char * buf, uint32_t size, const struct nmea_time_t * t);
+int write_time(char * buf, uint32_t size, const struct nmea_time_t * v);
+int write_date(char * buf, uint32_t size, const struct nmea_date_t * v);
+int write_lat(char * buf, uint32_t size, const struct nmea_angle_t * v);
+int write_lon(char * buf, uint32_t size, const struct nmea_angle_t * v);
 
 #endif

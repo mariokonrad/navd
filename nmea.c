@@ -10,7 +10,8 @@
  */
 int check_time(const struct nmea_time_t * v)
 {
-	return ((v != NULL)
+	if (v == NULL) return -1;
+	return (1
 		&& (v->h < 24)
 		&& (v->m < 60)
 		&& (v->s < 60)
@@ -26,7 +27,8 @@ int check_time(const struct nmea_time_t * v)
  */
 int check_date(const struct nmea_date_t * v)
 {
-	return ((v != NULL)
+	if (v == NULL) return -1;
+	return (1
 		&& (v->m >= 1)
 		&& (v->m <= 12)
 		&& (v->d >= 1)
@@ -41,24 +43,24 @@ int check_date(const struct nmea_date_t * v)
  */
 int check_latitude(const struct nmea_angle_t * v)
 {
-	return ((v != NULL)
-		&& (v->d < 90)
-		&& (v->m < 60)
-		&& (v->s.i < 60)
+	if (v == NULL) return -1;
+	return (0
+		|| ((v->d < 90) && (v->m < 60) && (v->s.i < 60) && (v->s.d < NMEA_FIX_DECIMALS))
+		|| ((v->d == 90) && (v->m == 0) && (v->s.i == 0) && (v->s.d == 0))
 		) ? 0 : -1;
 }
 
 /*
  * @param[in] v longitude to check
- * @retval 1 success
- * @retval 0 failure
+ * @retval 0 success
+ * @retval -1 failure
  */
 int check_longitude(const struct nmea_angle_t * v)
 {
-	return ((v != NULL)
-		&& (v->d < 180)
-		&& (v->m < 60)
-		&& (v->s.i < 60)
+	if (v == NULL) return -1;
+	return (0
+		|| ((v->d < 180) && (v->m < 60) && (v->s.i < 60) && (v->s.d < NMEA_FIX_DECIMALS))
+		|| ((v->d == 180) && (v->m == 0) && (v->s.i == 0) && (v->s.d == 0))
 		) ? 0 : -1
 		;
 }
@@ -99,13 +101,20 @@ const char * parse_int(const char * s, const char * e, uint32_t * v)
 	return s;
 }
 
-/*
+/* Parses a fix point number between start and end of the string into the
+ * specified structure. This function handles the following EBNF:
+ *
+ *  fix := ['0'..'9']+ { '.' ['0' .. '9']{0,6} }
+ *
+ * Leading zeroes do not cause the number to be interpreted as octal,
+ * the number must always be in decimal.
+ *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)
  * @param[out] v parsed value
  * @return position of the last valid character
  */
-const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
+const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v) /* {{{ */
 {
 	uint32_t f = NMEA_FIX_DECIMALS;
 	int state = 0;
@@ -130,7 +139,7 @@ const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
 		}
 	}
 	return e;
-}
+} /* }}} */
 
 /*
  * @param[in] s start of string to parse (inclusive)
@@ -186,13 +195,20 @@ const char * parse_date(const char * s, const char * e, struct nmea_date_t * v)
 	return p;
 }
 
-/*
+/* Parses an angle from a string between s and e into the specified structure.
+ * This function handles angles in with the following EBNF:
+ *
+ *  angle   := degrees minutes '.' dec-min
+ *  degrees := ['0'..'9']{1,3}
+ *  minutes := ['0'..'9']{2}
+ *  dec-min := ['0'..'9']{0,4}
+ *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)
  * @param[out] v parsed value
  * @return position of the last valid character
  */
-const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v)
+const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v) /* {{{ */
 {
 	struct nmea_fix_t t;
 	const char * p;
@@ -212,24 +228,63 @@ const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v
 		v->s.d = (t.d * 60) % NMEA_FIX_DECIMALS;
 	}
 	return p;
-}
+} /* }}} */
 
-int write_string(char * buf, uint32_t size, const char * s)
+/* Writes a string into the buffer if there is enough room within the buffer.
+ * @param[out] buf The buffer to hold the data.
+ * @param[in] size Number of bytes free in buffer.
+ * @param[in] s String to write into the buffer.
+ * @retval >= 0 Number of bytes written into the buffer.
+ * @retval -1 Parameter error
+ * @retval -2 Buffer too small
+ */
+int write_string(char * buf, uint32_t size, const char * s) /* {{{ */
 {
 	uint32_t len;
 
 	if (buf == NULL || size == 0 || s == NULL) return -1;
 	len = strlen(s);
-	if (len > size) return -1;
+	if (len > size) return -2;
 	strncat(buf, s, len);
 	return (int)len;
+} /* }}} */
+
+/* TODO */
+int write_time(char * buf, uint32_t size, const struct nmea_time_t * v)
+{
+	if (buf == NULL || size == 0 || v == NULL) return -1;
+	if (size < 6) return -1;
+	if (check_time(v)) return -1;
+	return snprintf(buf, size, "%02u%02u%02u", v->h, v->m, v->s);
 }
 
-int write_time(char * buf, uint32_t size, const struct nmea_time_t * t)
+/* TODO */
+int write_date(char * buf, uint32_t size, const struct nmea_date_t * v)
 {
-	if (buf == NULL || size == 0 || t == NULL) return -1;
+	if (buf == NULL || size == 0 || v == NULL) return -1;
 	if (size < 6) return -1;
-	return snprintf(buf, size, "%02d%02d%02d", t->h, t->m, t->s);
+	if (check_date(v)) return -1;
+	return snprintf(buf, size, "%02u%02u%02u", v->d, v->m, v->y % 100);
+}
+
+/* TODO */
+int write_lat(char * buf, uint32_t size, const struct nmea_angle_t * v)
+{
+	if (buf == NULL || size == 0 || v == NULL) return -1;
+	if (size < 9) return -1;
+	if (check_latitude(v)) return -1;
+	/* FIXME: calculation of seconds */
+	return snprintf(buf, size, "%02u%02u.%04u", v->d, v->m, v->s.i / NMEA_ANGLE_DECIMALS);
+}
+
+/* TODO */
+int write_lon(char * buf, uint32_t size, const struct nmea_angle_t * v)
+{
+	if (buf == NULL || size == 0 || v == NULL) return -1;
+	if (size < 10) return -1;
+	if (check_longitude(v)) return -1;
+	/* FIXME: calculation of seconds */
+	return snprintf(buf, size, "%03u%02u.%04u", v->d, v->m, v->s.i / NMEA_ANGLE_DECIMALS);
 }
 
 static int sentence_parser_gprmb(int state, const char * s, const char * p, struct nmea_t * nmea) /* {{{ */
@@ -567,7 +622,7 @@ static uint8_t hex2i(char c)
 	return 0xff;
 }
 
-/*
+/* TODO: test
  * checks the checksum of the sentence.
  * @param[in] s sentence to check
  * @retval  0 success

@@ -3,52 +3,72 @@
 #include <string.h>
 #include <stdlib.h>
 
+static unsigned int errors = 0;
+
 static void test_parse_int(const char * s, int outcome)
 {
 	uint32_t v;
+	int result;
 	int len = strlen(s);
 	const char * p = parse_int(s, s+len, &v);
-	printf("%12s : %2d %2d => %d : [%s] : %u\n", __FUNCTION__, outcome, p == s+len, outcome == (p==s+len), s, v);
+	result = outcome == (p == s + len);
+	if (!result) ++errors;
+	printf("%25s : %d : %d : [%s] : %u\n", __FUNCTION__, result, p == s+len, s, v);
 }
 
 static void test_parse_fix(const char * s, int outcome)
 {
 	struct nmea_fix_t v;
+	int result;
 	int len = strlen(s);
 	const char * p = parse_fix(s, s+len, &v);
-	printf("%12s : %2d %2d => %d : [%s] : %u %06u\n", __FUNCTION__, outcome, p == s+len, outcome == (p==s+len), s, v.i, v.d);
+	result = outcome == (p == s + len);
+	if (!result) ++errors;
+	printf("%25s : %d : %d : [%s] : %u %06u\n", __FUNCTION__, result, p == s+len, s, v.i, v.d);
 }
 
 static void test_parse_time(const char * s, int outcome)
 {
 	struct nmea_time_t t;
+	int result;
 	const char * e = s + strlen(s);
 	int r = parse_time(s, e, &t) == e && !check_time(&t);
-	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %02u : %03u\n", __FUNCTION__, outcome, r, outcome == r, s, t.h, t.m, t.s, t.ms);
+	result = outcome == r;
+	if (!result) ++errors;
+	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.h, t.m, t.s, t.ms);
 }
 
 static void test_parse_date(const char * s, int outcome)
 {
 	struct nmea_date_t t;
+	int result;
 	const char * e = s + strlen(s);
 	int r = parse_date(s, e, &t) == e && !check_date(&t);
-	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %02u\n", __FUNCTION__, outcome, r, outcome == r, s, t.y, t.m, t.d);
+	result = outcome == r;
+	if (!result) ++errors;
+	printf("%25s : %d : [%s] : %u %u %u\n", __FUNCTION__, result, s, t.y, t.m, t.d);
 }
 
 static void test_parse_lat(const char * s, int outcome)
 {
 	struct nmea_angle_t t;
+	int result;
 	const char * e = s + strlen(s);
 	int r = parse_angle(s, e, &t) == e && !check_latitude(&t);
-	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
+	result = outcome == r;
+	if (!result) ++errors;
+	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.d, t.m, t.s.i, t.s.d);
 }
 
 static void test_parse_lon(const char * s, int outcome)
 {
 	struct nmea_angle_t t;
+	int result;
 	const char * e = s + strlen(s);
 	int r = parse_angle(s, e, &t) == e && !check_longitude(&t);
-	printf("%12s : %2d %2d => %d : [%s] : %02u : %02u : %u : %u\n", __FUNCTION__, outcome, r, outcome == r, s, t.d, t.m, t.s.i, t.s.d);
+	result = outcome == r;
+	if (!result) ++errors;
+	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.d, t.m, t.s.i, t.s.d);
 }
 
 static void test_basic_parsing(void) /* {{{ */
@@ -97,10 +117,11 @@ static void test_basic_parsing(void) /* {{{ */
 	test_parse_lat("1234.0000", 1);
 	test_parse_lat("1234,0000", 0);
 	test_parse_lat("1234.0000,", 0);
-	test_parse_lat("9000.0000", 0);
+	test_parse_lat("9000.0000", 1);
 	test_parse_lat("0000.0000", 1);
 	test_parse_lat("8959.9999", 1);
 	test_parse_lat("8960.0000", 0);
+	test_parse_lat("9000.1000", 0);
 	printf("\n");
 
 	test_parse_lon("12345.0000", 1);
@@ -110,6 +131,8 @@ static void test_basic_parsing(void) /* {{{ */
 	test_parse_lon("00000.0000", 1);
 	test_parse_lon("17959.9999", 1);
 	test_parse_lon("17960.0000", 0);
+	test_parse_lon("18000.0000", 1);
+	test_parse_lon("18000.1000", 0);
 	printf("\n");
 } /* }}} */
 
@@ -290,13 +313,187 @@ static void test_sentence_parsing() /* {{{ */
 
 	for (i = 0; i < sizeof(S)/sizeof(const char *); ++i) {
 		rc = nmea_read(&info, S[i]);
-		printf("rc=%2d  [%s]\n", rc, S[i]);
+		if (rc != 0) ++errors;
+		printf("%25s : %d : [%s]\n", __FUNCTION__, rc == 0, S[i]);
 	}
 } /* }}} */
 
+static void test_basic_string_writing(void)
+{
+	enum { SIZE = 128 };
+
+	int rc;
+	char buf[SIZE];
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_string(buf, SIZE, "");
+	if (rc != 0) { ++errors; printf("ERROR: %d\n", __LINE__); }
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_string(buf, 0, "hello");
+	if (rc != -1) { ++errors; printf("ERROR: %d\n", __LINE__); }
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_string(NULL, SIZE, "hello");
+	if (rc != -1) { ++errors; printf("ERROR: %d\n", __LINE__); }
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_string(buf, SIZE, "hello");
+	if (rc != strlen("hello")) { ++errors; printf("ERROR: %d\n", __LINE__); }
+}
+
+static void test_write_time(const struct nmea_time_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+	int result;
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_time(buf, SIZE, t);
+	result = !strncmp(buf, outcome, SIZE);
+	if (!result) ++errors;
+	printf("%25s : %d : '%02d %02d %02d %04d' / '%s' ==> '%s'\n", __FUNCTION__,
+		result, t->h, t->m, t->s, t->ms, outcome, buf);
+}
+
+static void test_write_date(const struct nmea_date_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+	int result;
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_date(buf, SIZE, t);
+	result = !strncmp(buf, outcome, SIZE);
+	if (!result) ++errors;
+	printf("%25s : %d : '%02d %02d %02d' / '%s' ==> '%s'\n", __FUNCTION__,
+		result, t->d, t->m, t->d, outcome, buf);
+}
+
+static void test_write_lat(const struct nmea_angle_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+	int result;
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_lat(buf, SIZE, t);
+	result = !strncmp(buf, outcome, SIZE);
+	if (!result) ++errors;
+	printf("%25s : %d : '%02d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,
+		result, t->d, t->m, t->s.i, t->s.d, outcome, buf);
+}
+
+static void test_write_lon(const struct nmea_angle_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+	int result;
+
+	memset(buf, 0, sizeof(buf));
+	rc = write_lon(buf, SIZE, t);
+	result = !strncmp(buf, outcome, SIZE);
+	if (!result) ++errors;
+	printf("%25s : %d : '%03d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,
+		result, t->d, t->m, t->s.i, t->s.d, outcome, buf);
+}
+
+static void test_basic_time_writing(void)
+{
+	struct nmea_time_t t;
+	t.ms = 0;
+
+	t.h =  0; t.m =  0; t.s =  0; test_write_time(&t, "000000");
+	t.h = 10; t.m =  0; t.s =  0; test_write_time(&t, "100000");
+	t.h = 23; t.m =  0; t.s =  0; test_write_time(&t, "230000");
+	t.h = 24; t.m =  0; t.s =  0; test_write_time(&t, "");
+	t.h =  0; t.m =  0; t.s =  0; test_write_time(&t, "000000");
+	t.h = 10; t.m = 10; t.s =  0; test_write_time(&t, "101000");
+	t.h = 23; t.m = 59; t.s =  0; test_write_time(&t, "235900");
+	t.h = 24; t.m = 60; t.s =  0; test_write_time(&t, "");
+	t.h =  0; t.m =  0; t.s =  0; test_write_time(&t, "000000");
+	t.h = 10; t.m = 10; t.s = 10; test_write_time(&t, "101010");
+	t.h = 23; t.m = 59; t.s = 59; test_write_time(&t, "235959");
+	t.h = 24; t.m = 60; t.s = 60; test_write_time(&t, "");
+}
+
+static void test_basic_date_writing(void)
+{
+	struct nmea_date_t t;
+
+	t.y =   0; t.m =  0; t.d =  0; test_write_date(&t, "");
+	t.y =   0; t.m =  1; t.d =  1; test_write_date(&t, "010100");
+	t.y =  99; t.m =  1; t.d =  1; test_write_date(&t, "010199");
+	t.y = 100; t.m =  1; t.d =  1; test_write_date(&t, "010100");
+	t.y =   0; t.m =  0; t.d =  1; test_write_date(&t, "");
+	t.y =  99; t.m =  1; t.d =  1; test_write_date(&t, "010199");
+	t.y = 100; t.m = 12; t.d =  1; test_write_date(&t, "011200");
+	t.y =   0; t.m = 13; t.d =  1; test_write_date(&t, "");
+	t.y =   0; t.m =  1; t.d =  1; test_write_date(&t, "010100");
+	t.y =   0; t.m =  1; t.d = 31; test_write_date(&t, "310100");
+	t.y =   0; t.m =  1; t.d = 32; test_write_date(&t, "");
+}
+
+static void test_basic_latitude_writing(void)
+{
+	struct nmea_angle_t t;
+	t.d = 0;
+	t.m = 0;
+	t.s.i = 0;
+	t.s.d = 0;
+
+	t.d =  0; t.m =  0; t.s.i =  0; test_write_lat(&t, "0000.0000");
+	t.d =  1; t.m =  0; t.s.i =  0; test_write_lat(&t, "0100.0000");
+	t.d = 89; t.m =  0; t.s.i =  0; test_write_lat(&t, "8900.0000");
+	t.d = 90; t.m =  0; t.s.i =  0; test_write_lat(&t, "9000.0000");
+	t.d = 91; t.m =  0; t.s.i =  0; test_write_lat(&t, "");
+	t.d =  0; t.m =  0; t.s.i =  0; test_write_lat(&t, "0000.0000");
+	t.d =  1; t.m =  1; t.s.i =  0; test_write_lat(&t, "0101.0000");
+	t.d = 89; t.m = 59; t.s.i =  0; test_write_lat(&t, "8959.0000");
+	t.d = 90; t.m = 60; t.s.i =  0; test_write_lat(&t, "");
+	t.d = 89; t.m = 61; t.s.i =  0; test_write_lat(&t, "");
+	t.d =  0; t.m =  0; t.s.i =  0; test_write_lat(&t, "0000.0000");
+	t.d =  1; t.m =  0; t.s.i =  1; test_write_lat(&t, "0100.0000");
+	t.d = 89; t.m =  0; t.s.i = 59; test_write_lat(&t, "8900.0000");
+	t.d = 90; t.m =  0; t.s.i = 60; test_write_lat(&t, "");
+	t.d = 89; t.m =  0; t.s.i = 61; test_write_lat(&t, "");
+}
+
+static void test_basic_longitude_writing(void)
+{
+	struct nmea_angle_t t;
+	t.d = 0;
+	t.m = 0;
+	t.s.i = 0;
+	t.s.d = 0;
+
+	t.d =   0; t.m =  0; t.s.i =  0; test_write_lon(&t, "00000.0000");
+	t.d =   1; t.m =  0; t.s.i =  0; test_write_lon(&t, "00100.0000");
+	t.d = 179; t.m =  0; t.s.i =  0; test_write_lon(&t, "17900.0000");
+	t.d = 180; t.m =  0; t.s.i =  0; test_write_lon(&t, "18000.0000");
+	t.d = 181; t.m =  0; t.s.i =  0; test_write_lon(&t, "");
+	t.d =   0; t.m =  1; t.s.i =  0; test_write_lon(&t, "00001.0000");
+	t.d = 179; t.m = 59; t.s.i =  0; test_write_lon(&t, "17959.0000");
+	t.d =   0; t.m = 60; t.s.i =  0; test_write_lon(&t, "");
+	t.d = 179; t.m = 60; t.s.i =  0; test_write_lon(&t, "");
+	t.d = 179; t.m = 61; t.s.i =  0; test_write_lon(&t, "");
+	t.d =   1; t.m =  0; t.s.i =  1; test_write_lon(&t, "00100.0000");
+	t.d = 179; t.m =  0; t.s.i = 59; test_write_lon(&t, "17900.0000");
+	t.d =   0; t.m =  0; t.s.i = 60; test_write_lon(&t, "");
+	t.d = 181; t.m =  0; t.s.i = 61; test_write_lon(&t, "");
+}
+
 static void test_basic_writing(void)
 {
-	/* TODO */
+	test_basic_string_writing();
+	test_basic_time_writing();
+	test_basic_date_writing();
+	test_basic_latitude_writing();
+	test_basic_longitude_writing();
 }
 
 int main(int argc, char ** argv)
@@ -305,9 +502,24 @@ int main(int argc, char ** argv)
 	if (argc > 1) test = atoi(argv[1]);
 
 	switch (test) {
-		case 0: test_basic_parsing(); break;
-		case 1: test_sentence_parsing(); break;
-		case 2: test_basic_writing(); break;
+		case 0:
+			test_basic_parsing();
+			test_basic_writing();
+			test_sentence_parsing();
+			break;
+		case 1:
+			test_basic_parsing();
+			break;
+		case 2:
+			test_basic_writing();
+			break;
+		case 3:
+			test_sentence_parsing();
+			break;
+	}
+
+	if (errors > 0) {
+		printf("\nERRORS: %u\n\n", errors);
 	}
 
 	return 0;
