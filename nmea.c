@@ -17,7 +17,7 @@
 #include <nmea_sentence_pgrmm.h>
 #include <nmea_sentence_hchdg.h>
 
-static const struct nmea_sentence_t * ALL_SENTENCES[] = {
+static const struct nmea_sentence_t * SENTENCES[] = {
 	&sentence_gprmb,
 	&sentence_gprmc,
 	&sentence_gpgga,
@@ -74,7 +74,7 @@ int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_senten
  */
 int nmea_read(struct nmea_t * nmea, const char * s)
 {
-	return nmea_read_tab(nmea, s, ALL_SENTENCES, sizeof(ALL_SENTENCES)/sizeof(ALL_SENTENCES[0]));
+	return nmea_read_tab(nmea, s, SENTENCES, sizeof(SENTENCES)/sizeof(SENTENCES[0]));
 }
 
 /* Writes the specified NMEA sentence into the buffer. This function
@@ -118,6 +118,6 @@ int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const 
 int nmea_write(char * buf, uint32_t size, const struct nmea_t * nmea)
 {
 	if (buf == NULL || size == 0 || nmea == NULL) return -1;
-	return nmea_write_tab(buf, size, nmea, ALL_SENTENCES, sizeof(ALL_SENTENCES)/sizeof(ALL_SENTENCES[0]));
+	return nmea_write_tab(buf, size, nmea, SENTENCES, sizeof(SENTENCES)/sizeof(SENTENCES[0]));
 }
 
