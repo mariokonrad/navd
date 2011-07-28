@@ -175,6 +175,121 @@ static const char * SENTENCES[] = {
 
 static unsigned int errors = 0;
 
+static void test_check_fix_zero(void)
+{
+	int rc;
+	int result;
+	struct nmea_fix_t t;
+
+	rc = check_fix_zero(NULL);
+	result = rc == -1;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.i = 0; t.d = 0;
+	rc = check_fix_zero(&t);
+	result = rc == 0;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.i = 1; t.d = 0;
+	rc = check_fix_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.i = 0; t.d = 1;
+	rc = check_fix_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+}
+
+static void test_check_time_zero(void)
+{
+	int rc;
+	int result;
+	struct nmea_time_t t;
+
+	rc = check_time_zero(NULL);
+	result = rc == -1;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.h = 0; t.m = 0; t.s = 0; t.ms = 0;
+	rc = check_time_zero(&t);
+	result = rc == 0;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.h = 1; t.m = 0; t.s = 0; t.ms = 0;
+	rc = check_time_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.h = 0; t.m = 1; t.s = 0; t.ms = 0;
+	rc = check_time_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.h = 0; t.m = 0; t.s = 1; t.ms = 0;
+	rc = check_time_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.h = 0; t.m = 0; t.s = 0; t.ms = 1;
+	rc = check_time_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+}
+
+static void test_check_date_zero(void)
+{
+	int rc;
+	int result;
+	struct nmea_date_t t;
+
+	rc = check_date_zero(NULL);
+	result = rc == -1;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.y = 0; t.m = 0; t.d = 0;
+	rc = check_date_zero(&t);
+	result = rc == 0;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.y = 1; t.m = 0; t.d = 0;
+	rc = check_date_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.y = 0; t.m = 1; t.d = 0;
+	rc = check_date_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+
+	t.y = 0; t.m = 0; t.d = 1;
+	rc = check_date_zero(&t);
+	result = rc == -2;
+	if (!result) ++errors;
+	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+}
+
+static void test_utils(void)
+{
+	test_check_fix_zero();
+	test_check_time_zero();
+	test_check_date_zero();
+}
+
 static void test_parse_int(const char * s, int outcome)
 {
 	uint32_t v;
@@ -528,21 +643,25 @@ int main(int argc, char ** argv)
 
 	switch (test) {
 		case 0:
+			test_utils();
 			test_basic_parsing();
 			test_basic_writing();
 			test_sentence_parsing();
 			test_sentence_writing();
 			break;
 		case 1:
-			test_basic_parsing();
+			test_utils();
 			break;
 		case 2:
-			test_basic_writing();
+			test_basic_parsing();
 			break;
 		case 3:
-			test_sentence_parsing();
+			test_basic_writing();
 			break;
 		case 4:
+			test_sentence_parsing();
+			break;
+		case 5:
 			test_sentence_writing();
 			break;
 	}

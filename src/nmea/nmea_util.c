@@ -57,7 +57,6 @@ int check_checksum(const char * s, char start_token)
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero
  */
-/* TODO:TEST */
 int check_fix_zero(const struct nmea_fix_t * v)
 {
 	if (v == NULL) return -1;
@@ -73,7 +72,6 @@ int check_fix_zero(const struct nmea_fix_t * v)
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero
  */
-/* TODO:TEST */
 int check_time_zero(const struct nmea_time_t * v)
 {
 	if (v == NULL) return -1;
@@ -85,11 +83,12 @@ int check_time_zero(const struct nmea_time_t * v)
 		) ? 0 : -2;
 }
 
-/* TODO
+/* Checks whether the specified time is valid.
  *
  * @param[in] v time to check
  * @retval 0 success
- * @retval -1 failure
+ * @retval -1 Parameter error
+ * @retval -2 Time is invalid
  */
 int check_time(const struct nmea_time_t * v)
 {
@@ -99,7 +98,7 @@ int check_time(const struct nmea_time_t * v)
 		&& (v->m < 60)
 		&& (v->s < 60)
 		&& (v->ms < 1000)
-		) ? 0 : -1
+		) ? 0 : -2
 		;
 }
 
@@ -109,7 +108,6 @@ int check_time(const struct nmea_time_t * v)
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero
  */
-/* TODO:TEST */
 int check_date_zero(const struct nmea_date_t * v)
 {
 	if (v == NULL) return -1;
@@ -120,11 +118,12 @@ int check_date_zero(const struct nmea_date_t * v)
 		) ? 0 : -2;
 }
 
-/* TODO
+/* Checks whether the specified date is valid.
  *
  * @param[in] v date to check
  * @retval 0 success
- * @retval -1 failure
+ * @retval -1 Parameter error
+ * @retval -2 Date is invalid
  */
 int check_date(const struct nmea_date_t * v)
 {
@@ -134,7 +133,7 @@ int check_date(const struct nmea_date_t * v)
 		&& (v->m <= 12)
 		&& (v->d >= 1)
 		&& (v->d <= 31)
-		) ? 0 : -1;
+		) ? 0 : -2;
 }
 
 /* Checks whether all members of the angle information are zero.
@@ -155,11 +154,12 @@ int check_angle_zero(const struct nmea_angle_t * v)
 		) ? 0 : -2;
 }
 
-/* TODO
+/* Checks whether the specified latitude is valid.
  *
  * @param[in] v latitude to check
  * @retval 0 success
- * @retval -1 failure
+ * @retval -1 Parameter error
+ * @retval -2 Latitude is invalid
  */
 int check_latitude(const struct nmea_angle_t * v)
 {
@@ -167,14 +167,15 @@ int check_latitude(const struct nmea_angle_t * v)
 	return (0
 		|| ((v->d < 90) && (v->m < 60) && (v->s.i < 60) && (v->s.d < NMEA_FIX_DECIMALS))
 		|| ((v->d == 90) && (v->m == 0) && (v->s.i == 0) && (v->s.d == 0))
-		) ? 0 : -1;
+		) ? 0 : -2;
 }
 
-/* TODO
+/* Checks whether the specified longitude is valid.
  *
  * @param[in] v longitude to check
  * @retval 0 success
- * @retval -1 failure
+ * @retval -1 Parameter error
+ * @retval -2 Longitude is invalid
  */
 int check_longitude(const struct nmea_angle_t * v)
 {
@@ -182,7 +183,7 @@ int check_longitude(const struct nmea_angle_t * v)
 	return (0
 		|| ((v->d < 180) && (v->m < 60) && (v->s.i < 60) && (v->s.d < NMEA_FIX_DECIMALS))
 		|| ((v->d == 180) && (v->m == 0) && (v->s.i == 0) && (v->s.d == 0))
-		) ? 0 : -1
+		) ? 0 : -2
 		;
 }
 
