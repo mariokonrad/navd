@@ -1,7 +1,7 @@
 #ifndef __NMEA_UTIL__H__
 #define __NMEA_UTIL__H__
 
-#include <nmea.h>
+#include <nmea0183/nmea.h>
 
 uint8_t checksum(const char * s, const char * e);
 int check_checksum(const char * s, char start_token);

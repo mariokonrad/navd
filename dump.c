@@ -4,7 +4,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <nmea.h>
+#include <nmea0183/nmea.h>
 
 #define UNUSED_ARG(a)  (void)a
 

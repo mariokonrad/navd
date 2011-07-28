@@ -1,4 +1,4 @@
-#include "nmea_util.h"
+#include <nmea0183/nmea_util.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>

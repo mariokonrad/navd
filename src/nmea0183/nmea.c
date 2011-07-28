@@ -1,21 +1,21 @@
-#include "nmea.h"
-#include <nmea_util.h>
+#include <nmea0183/nmea.h>
+#include <nmea0183/nmea_util.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <nmea_sentence_gprmb.h>
-#include <nmea_sentence_gprmc.h>
-#include <nmea_sentence_gpgga.h>
-#include <nmea_sentence_gpgsv.h>
-#include <nmea_sentence_gpgsa.h>
-#include <nmea_sentence_gpgll.h>
-#include <nmea_sentence_gpbod.h>
-#include <nmea_sentence_gpvtg.h>
-#include <nmea_sentence_gprte.h>
-#include <nmea_sentence_pgrme.h>
-#include <nmea_sentence_pgrmz.h>
-#include <nmea_sentence_pgrmm.h>
-#include <nmea_sentence_hchdg.h>
+#include <nmea0183/nmea_sentence_gprmb.h>
+#include <nmea0183/nmea_sentence_gprmc.h>
+#include <nmea0183/nmea_sentence_gpgga.h>
+#include <nmea0183/nmea_sentence_gpgsv.h>
+#include <nmea0183/nmea_sentence_gpgsa.h>
+#include <nmea0183/nmea_sentence_gpgll.h>
+#include <nmea0183/nmea_sentence_gpbod.h>
+#include <nmea0183/nmea_sentence_gpvtg.h>
+#include <nmea0183/nmea_sentence_gprte.h>
+#include <nmea0183/nmea_sentence_pgrme.h>
+#include <nmea0183/nmea_sentence_pgrmz.h>
+#include <nmea0183/nmea_sentence_pgrmm.h>
+#include <nmea0183/nmea_sentence_hchdg.h>
 
 static const struct nmea_sentence_t * SENTENCES[] = {
 	&sentence_gprmb,

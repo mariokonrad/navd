@@ -1,5 +1,5 @@
-#include <nmea_sentence_gpgga.h>
-#include <nmea_util.h>
+#include <nmea0183/nmea_sentence_gpgga.h>
+#include <nmea0183/nmea_util.h>
 #include <stdio.h>
 
 static int read(struct nmea_t * nmea, const char * s, const char * e)
