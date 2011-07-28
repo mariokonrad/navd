@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -20,8 +21,8 @@ struct device_operations_t
 {
 	int (*open)(struct device_t *, const struct device_config_t *);
 	int (*close)(struct device_t *);
-	int (*read)(struct device_t *, char *, size_t);
-	int (*write)(struct device_t *, const char *, size_t);
+	int (*read)(struct device_t *, char *, uint32_t);
+	int (*write)(struct device_t *, const char *, uint32_t);
 };
 
 static void device_init(struct device_t * device)
@@ -67,10 +68,10 @@ static int simulator_close(struct device_t * device)
 	return 0;
 }
 
-static int simulator_read(struct device_t * device, char * buf, size_t size)
+static int simulator_read(struct device_t * device, char * buf, uint32_t size)
 {
 	struct simulator_data_t * data = NULL;
-	size_t i;
+	uint32_t i;
 
 	if (device == NULL) return -1;
 	if (buf == NULL) return -1;
@@ -84,7 +85,7 @@ static int simulator_read(struct device_t * device, char * buf, size_t size)
 	return (int)size;
 }
 
-static int simulator_write(struct device_t * device, const char * buf, size_t size)
+static int simulator_write(struct device_t * device, const char * buf, uint32_t size)
 {
 	UNUSED_ARG(device);
 	UNUSED_ARG(buf);
@@ -157,7 +158,7 @@ static int serial_close(struct device_t * device)
 	return 0;
 }
 
-static int serial_read(struct device_t * device, char * buf, size_t size)
+static int serial_read(struct device_t * device, char * buf, uint32_t size)
 {
 	if (device == NULL) return -1;
 	if (buf == NULL) return -1;
@@ -165,7 +166,7 @@ static int serial_read(struct device_t * device, char * buf, size_t size)
 	return read(device->fd, buf, size);
 }
 
-static int serial_write(struct device_t * device, const char * buf, size_t size)
+static int serial_write(struct device_t * device, const char * buf, uint32_t size)
 {
 	if (device == NULL) return -1;
 	if (buf == NULL) return -1;
@@ -187,6 +188,9 @@ const struct device_operations_t serial_device_operations =
 /* }}} */
 
 /* TODO {{{ ethernet-udp */
+/* }}} */
+
+/* TODO {{{ unix local socket */
 /* }}} */
 
 int main(int argc, char ** argv)
