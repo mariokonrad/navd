@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 project(navd)
 
 if (CMAKE_COMPILER_IS_GNUCC)
@@ -8,3 +8,4 @@ if (CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 add_subdirectory(src)
+

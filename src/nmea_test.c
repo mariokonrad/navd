@@ -1,5 +1,5 @@
-#include <nmea0183/nmea.h>
-#include <nmea0183/nmea_util.h>
+#include <nmea/nmea.h>
+#include <nmea/nmea_util.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

@@ -1,16 +1,23 @@
-cmake_minimum_required(VERSION 2.6)
-
-file(GLOB NMEA0183_SRC nmea0183/*.c)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(device)
+add_subdirectory(nmea)
+
 add_executable(dump
 	dump.c
-	${NMEA0183_SRC}
+	)
+
+target_link_libraries(dump
+	devices
+	nmea
 	)
 
 add_executable(nmea_test
 	nmea_test.c
-	${NMEA0183_SRC}
+	)
+
+target_link_libraries(nmea_test
+	nmea
 	)
 
