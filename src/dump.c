@@ -11,7 +11,7 @@ int main(int argc, char ** argv)
 	int rc;
 	char c;
 	int i = 0;
-	char s[MAX_NMEA_SENTENCE + 1];
+	char s[NMEA_MAX_SENTENCE + 1];
 	struct nmea_t nmea;
 	int num_sentences = 4;
 	int type = 0;
@@ -24,7 +24,11 @@ int main(int argc, char ** argv)
 		"/dev/ttyUSB0"
 	};
 
+	UNUSED_ARG(argc);
+	UNUSED_ARG(argv);
+
 	memset(s, 0, sizeof(s));
+	nmea_init(&nmea);
 	device_init(&device);
 
 	switch (type) {
@@ -74,7 +78,7 @@ int main(int argc, char ** argv)
 				--num_sentences;
 				break;
 			default:
-				if (i < MAX_NMEA_SENTENCE) {
+				if (i < NMEA_MAX_SENTENCE) {
 					s[i++] = c;
 				} else {
 					fprintf(stderr, "sentence too long, discarding\n");

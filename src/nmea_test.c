@@ -568,8 +568,8 @@ static void test_basic_latitude_writing(void)
 	t.d = 90; t.m = 60; t.s.i =  0; test_write_lat(&t, "");
 	t.d = 89; t.m = 61; t.s.i =  0; test_write_lat(&t, "");
 	t.d =  0; t.m =  0; t.s.i =  0; test_write_lat(&t, "0000.0000");
-	t.d =  1; t.m =  0; t.s.i =  1; test_write_lat(&t, "0100.0000");
-	t.d = 89; t.m =  0; t.s.i = 59; test_write_lat(&t, "8900.0000");
+	t.d =  1; t.m =  0; t.s.i =  1; test_write_lat(&t, "0100.0166");
+	t.d = 89; t.m =  0; t.s.i = 59; test_write_lat(&t, "8900.9833");
 	t.d = 90; t.m =  0; t.s.i = 60; test_write_lat(&t, "");
 	t.d = 89; t.m =  0; t.s.i = 61; test_write_lat(&t, "");
 }
@@ -592,8 +592,8 @@ static void test_basic_longitude_writing(void)
 	t.d =   0; t.m = 60; t.s.i =  0; test_write_lon(&t, "");
 	t.d = 179; t.m = 60; t.s.i =  0; test_write_lon(&t, "");
 	t.d = 179; t.m = 61; t.s.i =  0; test_write_lon(&t, "");
-	t.d =   1; t.m =  0; t.s.i =  1; test_write_lon(&t, "00100.0000");
-	t.d = 179; t.m =  0; t.s.i = 59; test_write_lon(&t, "17900.0000");
+	t.d =   1; t.m =  0; t.s.i =  1; test_write_lon(&t, "00100.0166");
+	t.d = 179; t.m =  0; t.s.i = 59; test_write_lon(&t, "17900.9833");
 	t.d =   0; t.m =  0; t.s.i = 60; test_write_lon(&t, "");
 	t.d = 181; t.m =  0; t.s.i = 61; test_write_lon(&t, "");
 }

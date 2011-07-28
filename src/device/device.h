@@ -11,7 +11,7 @@ struct device_t
 	void * data;
 };
 
-struct device_config_t {};
+struct device_config_t;
 
 struct device_operations_t
 {

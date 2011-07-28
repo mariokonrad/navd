@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-#define MAX_NMEA_SENTENCE 82
+#define NMEA_MAX_SENTENCE 82
 
 #define NMEA_SENTENCE_GPRMB "GPRMB"
 #define NMEA_SENTENCE_GPRMC "GPRMC"
@@ -246,6 +246,7 @@ struct nmea_hc_hdg_t {
 
 struct nmea_t {
 	uint32_t type;
+	char raw[NMEA_MAX_SENTENCE+1];
 	union {
 		struct nmea_rmb_t rmb;
 		struct nmea_rmc_t rmc;
@@ -270,10 +271,13 @@ struct nmea_sentence_t {
 	int (*write)(char *, uint32_t, const struct nmea_t *);
 };
 
+int nmea_init(struct nmea_t *);
+
 int nmea_read_tab(struct nmea_t *, const char *, const struct nmea_sentence_t **, uint32_t);
 int nmea_read(struct nmea_t *, const char *);
 
 int nmea_write_tab(char *, uint32_t, const struct nmea_t *, const struct nmea_sentence_t **, uint32_t);
 int nmea_write(char *, uint32_t, const struct nmea_t *);
+int nmea_write_raw(char *, uint32_t, const struct nmea_t *);
 
 #endif
