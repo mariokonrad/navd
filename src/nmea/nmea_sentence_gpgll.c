@@ -31,8 +31,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_gpgll =
 {
 	.type = NMEA_GLL,
-	.tag = NMEA_SENTENCE_GPGLL,
+	.tag = "GPGLL",
 	.read = read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

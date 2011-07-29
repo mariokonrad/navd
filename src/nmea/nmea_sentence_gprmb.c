@@ -1,5 +1,6 @@
 #include <nmea/nmea_sentence_gprmb.h>
 #include <nmea/nmea_util.h>
+#include <nmea/nmea_int.h>
 #include <stdio.h>
 
 static int read(struct nmea_t * nmea, const char * s, const char * e)
@@ -38,8 +39,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_gprmb =
 {
 	.type = NMEA_RMB,
-	.tag = NMEA_SENTENCE_GPRMB,
+	.tag = "GPRMB",
 	.read= read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

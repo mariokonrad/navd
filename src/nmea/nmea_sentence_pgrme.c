@@ -31,8 +31,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_pgrme =
 {
 	.type = NMEA_GARMIN_RME,
-	.tag = NMEA_SENTENCE_PGRME,
+	.tag = "PGRME",
 	.read = read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

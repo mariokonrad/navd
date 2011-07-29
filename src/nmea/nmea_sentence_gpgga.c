@@ -1,5 +1,6 @@
 #include <nmea/nmea_sentence_gpgga.h>
 #include <nmea/nmea_util.h>
+#include <nmea/nmea_int.h>
 #include <stdio.h>
 
 static int read(struct nmea_t * nmea, const char * s, const char * e)
@@ -39,8 +40,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_gpgga =
 {
 	.type = NMEA_GGA,
-	.tag = NMEA_SENTENCE_GPGGA,
+	.tag = "GPGGA",
 	.read = read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

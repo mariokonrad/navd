@@ -9,7 +9,7 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	const char * p;
 
 	if (nmea == NULL || s == NULL || e == NULL) return -1;
-	nmea->type = NMEA_BOD;
+	nmea->type = NMEA_VTG;
 	v = &nmea->sentence.vtg;
 	p = find_token_end(s);
 	for (state = -1; state < 8 && s < e; ++state) {
@@ -33,8 +33,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_gpvtg =
 {
 	.type = NMEA_VTG,
-	.tag = NMEA_SENTENCE_GPVTG,
+	.tag = "GPVTG",
 	.read = read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

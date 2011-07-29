@@ -1,6 +1,9 @@
 #include <nmea/nmea_sentence_gprmc.h>
 #include <nmea/nmea_util.h>
+#include <nmea/nmea_checksum.h>
 #include <stdio.h>
+
+#define TAG "GPRMC"
 
 static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
@@ -58,7 +61,7 @@ static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 		rc = 0;
 		switch (state) {
 			case  0: rc = write_char(p, r, START_TOKEN_NMEA); chksum_start = p + 1; break;
-			case  1: rc = write_string(p, r, NMEA_SENTENCE_GPRMC); break;
+			case  1: rc = write_string(p, r, TAG); break;
 			case  2: rc = write_char(p, r, ','); break;
 			case  3: if (check_time_zero(&v->time)) rc = write_time(p, r, &v->time); break;
 			case  4: rc = write_char(p, r, ','); break;
@@ -92,11 +95,43 @@ static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 	return (int)i;
 }
 
+static void hton(struct nmea_t * nmea)
+{
+	struct nmea_rmc_t * v;
+
+	if (nmea == NULL) return;
+	v = &nmea->sentence.rmc;
+	nmea_time_hton(&v->time);
+	nmea_angle_hton(&v->lat);
+	nmea_angle_hton(&v->lon);
+	nmea_fix_hton(&v->sog);
+	nmea_fix_hton(&v->head);
+	nmea_date_hton(&v->date);
+	nmea_fix_hton(&v->m);
+}
+
+static void ntoh(struct nmea_t * nmea)
+{
+	struct nmea_rmc_t * v;
+
+	if (nmea == NULL) return;
+	v = &nmea->sentence.rmc;
+	nmea_time_ntoh(&v->time);
+	nmea_angle_ntoh(&v->lat);
+	nmea_angle_ntoh(&v->lon);
+	nmea_fix_ntoh(&v->sog);
+	nmea_fix_ntoh(&v->head);
+	nmea_date_ntoh(&v->date);
+	nmea_fix_ntoh(&v->m);
+}
+
 const struct nmea_sentence_t sentence_gprmc =
 {
 	.type = NMEA_RMC,
-	.tag = NMEA_SENTENCE_GPRMC,
+	.tag = TAG,
 	.read = read,
 	.write = write,
+	.hton = hton,
+	.ntoh = ntoh,
 };
 

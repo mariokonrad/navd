@@ -30,8 +30,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_hchdg =
 {
 	.type = NMEA_HC_HDG,
-	.tag = NMEA_SENTENCE_HCHDG,
+	.tag = "HCHDG",
 	.read = read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

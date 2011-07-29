@@ -1,5 +1,6 @@
 #include <nmea/nmea_sentence_gpgsv.h>
 #include <nmea/nmea_util.h>
+#include <nmea/nmea_int.h>
 #include <stdio.h>
 
 static int read(struct nmea_t * nmea, const char * s, const char * e)
@@ -43,8 +44,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_gpgsv =
 {
 	.type = NMEA_GSV,
-	.tag = NMEA_SENTENCE_GPGSV,
+	.tag = "GPGSV",
 	.read = read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

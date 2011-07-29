@@ -1,5 +1,6 @@
 #include <nmea/nmea_sentence_gpbod.h>
 #include <nmea/nmea_util.h>
+#include <nmea/nmea_int.h>
 #include <stdio.h>
 
 static int read(struct nmea_t * nmea, const char * s, const char * e)
@@ -31,8 +32,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 const struct nmea_sentence_t sentence_gpbod =
 {
 	.type = NMEA_BOD,
-	.tag = NMEA_SENTENCE_GPBOD,
+	.tag = "GPBOD",
 	.read = read,
 	.write = NULL,
+	.hton = NULL,
+	.ntoh = NULL,
 };
 

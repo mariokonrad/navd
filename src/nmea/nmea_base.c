@@ -1,5 +1,6 @@
 #include <nmea/nmea_base.h>
 #include <nmea/nmea_util.h>
+#include <nmea/nmea_checksum.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -23,10 +24,10 @@ int nmea_init(struct nmea_t * nmea)
  * @param[out] nmea data of the parsed structure
  * @param[in] tab table of sentences to parse
  * @retval  0 success
- * @retval  1 unknown sentence
  * @retval -1 parameter error
  * @retval -2 checksum error
  * @retval -3 format error
+ * @retval -4 unknown sentence
  */
 int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_sentence_t ** tab, uint32_t tab_size)
 {
@@ -50,7 +51,7 @@ int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_senten
 			return rc;
 		}
 	}
-	return 1;
+	return -4;
 }
 
 /* Writes the specified NMEA sentence into the buffer. This function
