@@ -269,6 +269,8 @@ struct nmea_sentence_t {
 	const char * tag;
 	int (*read)(struct nmea_t *, const char *, const char *);
 	int (*write)(char *, uint32_t, const struct nmea_t *);
+	void (*hton)(struct nmea_t *);
+	void (*ntoh)(struct nmea_t *);
 };
 
 int nmea_init(struct nmea_t *);
@@ -279,5 +281,11 @@ int nmea_read(struct nmea_t *, const char *);
 int nmea_write_tab(char *, uint32_t, const struct nmea_t *, const struct nmea_sentence_t **, uint32_t);
 int nmea_write(char *, uint32_t, const struct nmea_t *);
 int nmea_write_raw(char *, uint32_t, const struct nmea_t *);
+
+int nmea_hton_tab(struct nmea_t *, const struct nmea_sentence_t **, uint32_t);
+int nmea_ntoh_tab(struct nmea_t *, const struct nmea_sentence_t **, uint32_t);
+
+int nmea_hton(struct nmea_t *);
+int nmea_ntoh(struct nmea_t *);
 
 #endif
