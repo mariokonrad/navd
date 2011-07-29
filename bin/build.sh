@@ -82,6 +82,7 @@ case $1 in
 		exec_valgrind
 		;;
 	*)
+		echo ""
 		echo "error: unknown command: $1"
 		usage $0
 		exit -1
