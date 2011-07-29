@@ -3,6 +3,10 @@
 
 #include <nmea/nmea.h>
 
+enum MessageType {
+	MSG_NMEA = 0
+};
+
 struct message_t
 {
 	uint32_t type;

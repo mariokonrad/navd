@@ -24,3 +24,13 @@ target_link_libraries(nmea_test
 	common
 	)
 
+add_executable(check_size
+	check_size.c
+	)
+
+target_link_libraries(check_size
+	devices
+	nmea
+	common
+	)
+
