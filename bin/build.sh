@@ -43,8 +43,8 @@ function exec_index()
 
 function exec_test()
 {
-	if [ -r "${BASE}/build/src/nmea_test" ] ; then
-		${BASE}/build/src/nmea_test
+	if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
+		${BASE}/build/src/test/nmea_test
 	else
 		echo "error: test not present"
 	fi
@@ -52,8 +52,8 @@ function exec_test()
 
 function exec_valgrind()
 {
-	if [ -r "${BASE}/build/src/nmea_test" ] ; then
-		valgrind ${BASE}/build/src/nmea_test
+	if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
+		valgrind ${BASE}/build/src/test/nmea_test
 	else
 		echo "error: test not present"
 	fi
