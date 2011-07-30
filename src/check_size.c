@@ -6,7 +6,7 @@
 
 #define UNUSED_ARG(a) (void)a
 
-#define print(t) printf("%30s : %u\n", #t, sizeof(t))
+#define print(t) printf("%30s : %lu\n", #t, sizeof(t))
 
 int main(int argc, char ** argv)
 {
