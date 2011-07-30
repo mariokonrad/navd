@@ -15,7 +15,7 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	p = find_token_end(s);
 	for (state = -1; state < 3 && s < e; ++state) {
 		switch (state) {
-			case 0: if (parse_fix(s, p, &v->alt) != p) return -1; break;
+			case 0: if (nmea_fix_parse(s, p, &v->alt) != p) return -1; break;
 			case 1: v->unit_alt = (s == p) ? NMEA_UNIT_FEET : *s; break;
 			case 2: if (parse_int(s, p, &v->pos_fix_dim) != p) return -1; break;
 			default: break;

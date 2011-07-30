@@ -14,10 +14,10 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	p = find_token_end(s);
 	for (state = -1; state < 5 && s < e; ++state) {
 		switch (state) {
-			case 0: if (parse_fix(s, p, &v->heading) != p) return -1; break;
-			case 1: if (parse_fix(s, p, &v->magn_dev) != p) return -1; break;
+			case 0: if (nmea_fix_parse(s, p, &v->heading) != p) return -1; break;
+			case 1: if (nmea_fix_parse(s, p, &v->magn_dev) != p) return -1; break;
 			case 2: v->magn_dev_dir = (s == p) ? NMEA_EAST : *s; break;
-			case 3: if (parse_fix(s, p, &v->magn_var) != p) return -1; break;
+			case 3: if (nmea_fix_parse(s, p, &v->magn_var) != p) return -1; break;
 			case 4: v->magn_dev_dir = (s == p) ? NMEA_EAST : *s; break;
 			default: break;
 		}

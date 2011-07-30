@@ -9,7 +9,7 @@
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero
  */
-int check_fix_zero(const struct nmea_fix_t * v)
+int nmea_fix_check_zero(const struct nmea_fix_t * v)
 {
 	if (v == NULL) return -1;
 	return (1
@@ -31,7 +31,7 @@ int check_fix_zero(const struct nmea_fix_t * v)
  * @param[out] v parsed value
  * @return position of the last valid character
  */
-const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
+const char * nmea_fix_parse(const char * s, const char * e, struct nmea_fix_t * v)
 {
 	uint32_t f = NMEA_FIX_DECIMALS;
 	int state = 0;
@@ -69,7 +69,7 @@ const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v)
  * @param[in] nd Minimum number of decimal digits to write number. Maximum will be NMEA_FIX_DECIMAL_DIGITS.
  */
 /* TODO:TEST */
-int write_fix(char * buf, uint32_t size, const struct nmea_fix_t * v, uint32_t ni, uint32_t nd)
+int nmea_fix_write(char * buf, uint32_t size, const struct nmea_fix_t * v, uint32_t ni, uint32_t nd)
 {
 	char fmt[16];
 	uint32_t d = 1;

@@ -29,9 +29,9 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 			case 11:
 			case 12:
 			case 13: if (parse_int(s, p, &v->id[state-2]) != p) return -1; break;
-			case 14: if (parse_fix(s, p, &v->pdop) != p) return -1; break;
-			case 15: if (parse_fix(s, p, &v->hdop) != p) return -1; break;
-			case 16: if (parse_fix(s, p, &v->vdop) != p) return -1; break;
+			case 14: if (nmea_fix_parse(s, p, &v->pdop) != p) return -1; break;
+			case 15: if (nmea_fix_parse(s, p, &v->hdop) != p) return -1; break;
+			case 16: if (nmea_fix_parse(s, p, &v->vdop) != p) return -1; break;
 			default: break;
 		}
 		s = p + 1;

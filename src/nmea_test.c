@@ -176,31 +176,31 @@ static const char * SENTENCES[] = {
 
 static unsigned int errors = 0;
 
-static void test_check_fix_zero(void)
+static void test_nmea_fix_check_zero(void)
 {
 	int rc;
 	int result;
 	struct nmea_fix_t t;
 
-	rc = check_fix_zero(NULL);
+	rc = nmea_fix_check_zero(NULL);
 	result = rc == -1;
 	if (!result) ++errors;
 	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
 
 	t.i = 0; t.d = 0;
-	rc = check_fix_zero(&t);
+	rc = nmea_fix_check_zero(&t);
 	result = rc == 0;
 	if (!result) ++errors;
 	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
 
 	t.i = 1; t.d = 0;
-	rc = check_fix_zero(&t);
+	rc = nmea_fix_check_zero(&t);
 	result = rc == -2;
 	if (!result) ++errors;
 	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
 
 	t.i = 0; t.d = 1;
-	rc = check_fix_zero(&t);
+	rc = nmea_fix_check_zero(&t);
 	result = rc == -2;
 	if (!result) ++errors;
 	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
@@ -286,7 +286,7 @@ static void test_check_date_zero(void)
 
 static void test_utils(void)
 {
-	test_check_fix_zero();
+	test_nmea_fix_check_zero();
 	test_check_time_zero();
 	test_check_date_zero();
 }
@@ -302,12 +302,12 @@ static void test_parse_int(const char * s, int outcome)
 	printf("%25s : %d : %d : [%s] : %u\n", __FUNCTION__, result, p == s+len, s, v);
 }
 
-static void test_parse_fix(const char * s, int outcome)
+static void test_nmea_fix_parse(const char * s, int outcome)
 {
 	struct nmea_fix_t v;
 	int result;
 	int len = strlen(s);
-	const char * p = parse_fix(s, s+len, &v);
+	const char * p = nmea_fix_parse(s, s+len, &v);
 	result = outcome == (p == s + len);
 	if (!result) ++errors;
 	printf("%25s : %d : %d : [%s] : %u %06u\n", __FUNCTION__, result, p == s+len, s, v.i, v.d);
@@ -340,7 +340,7 @@ static void test_parse_lat(const char * s, int outcome)
 	struct nmea_angle_t t;
 	int result;
 	const char * e = s + strlen(s);
-	int r = parse_angle(s, e, &t) == e && !check_latitude(&t);
+	int r = nmea_angle_parse(s, e, &t) == e && !nmea_check_latitude(&t);
 	result = outcome == r;
 	if (!result) ++errors;
 	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.d, t.m, t.s.i, t.s.d);
@@ -351,7 +351,7 @@ static void test_parse_lon(const char * s, int outcome)
 	struct nmea_angle_t t;
 	int result;
 	const char * e = s + strlen(s);
-	int r = parse_angle(s, e, &t) == e && !check_longitude(&t);
+	int r = nmea_angle_parse(s, e, &t) == e && !nmea_check_longitude(&t);
 	result = outcome == r;
 	if (!result) ++errors;
 	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.d, t.m, t.s.i, t.s.d);
@@ -369,16 +369,16 @@ static void test_basic_parsing(void)
 	test_parse_int(",", 0);
 	test_parse_int("0.0", 0);
 
-	test_parse_fix("123456789.1234567", 1);
-	test_parse_fix("3.14159265365", 1);
-	test_parse_fix("1.2", 1);
-	test_parse_fix("3", 1);
-	test_parse_fix(".5", 1);
-	test_parse_fix("3.", 1);
-	test_parse_fix("1.0001", 1);
-	test_parse_fix("1.1,", 0);
-	test_parse_fix("", 1);
-	test_parse_fix(".", 1);
+	test_nmea_fix_parse("123456789.1234567", 1);
+	test_nmea_fix_parse("3.14159265365", 1);
+	test_nmea_fix_parse("1.2", 1);
+	test_nmea_fix_parse("3", 1);
+	test_nmea_fix_parse(".5", 1);
+	test_nmea_fix_parse("3.", 1);
+	test_nmea_fix_parse("1.0001", 1);
+	test_nmea_fix_parse("1.1,", 0);
+	test_nmea_fix_parse("", 1);
+	test_nmea_fix_parse(".", 1);
 
 	test_parse_date("010100", 1);
 	test_parse_date("999999", 0);
@@ -492,7 +492,7 @@ static void test_write_lat(const struct nmea_angle_t * t, const char * outcome)
 	int result;
 
 	memset(buf, 0, sizeof(buf));
-	rc = write_lat(buf, SIZE, t);
+	rc = nmea_write_latitude(buf, SIZE, t);
 	result = !strncmp(buf, outcome, SIZE);
 	if (!result) ++errors;
 	printf("%25s : %d : '%02d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,
@@ -507,7 +507,7 @@ static void test_write_lon(const struct nmea_angle_t * t, const char * outcome)
 	int result;
 
 	memset(buf, 0, sizeof(buf));
-	rc = write_lon(buf, SIZE, t);
+	rc = nmea_write_lonitude(buf, SIZE, t);
 	result = !strncmp(buf, outcome, SIZE);
 	if (!result) ++errors;
 	printf("%25s : %d : '%03d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,

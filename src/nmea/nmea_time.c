@@ -58,7 +58,7 @@ const char * parse_time(const char * s, const char * e, struct nmea_time_t * v)
 		v->ms = 0;
 		return e;
 	}
-	p = parse_fix(s, e, &t);
+	p = nmea_fix_parse(s, e, &t);
 	if (p == e) {
 		v->h = (t.i / 10000) % 100;
 		v->m = (t.i / 100) % 100;

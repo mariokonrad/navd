@@ -14,9 +14,9 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	p = find_token_end(s);
 	for (state = -1; state < 6 && s < e; ++state) {
 		switch (state) {
-			case  0: if (parse_angle(s, p, &v->lat) != p && check_latitude(&v->lat)) return -1; break;
+			case  0: if (nmea_angle_parse(s, p, &v->lat) != p && nmea_check_latitude(&v->lat)) return -1; break;
 			case  1: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
-			case  2: if (parse_angle(s, p, &v->lon) != p && check_longitude(&v->lon)) return -1; break;
+			case  2: if (nmea_angle_parse(s, p, &v->lon) != p && nmea_check_longitude(&v->lon)) return -1; break;
 			case  3: v->lon_dir = (s == p) ? NMEA_EAST : *s; break;
 			case  4: if (parse_time(s, p, &v->time) != p && check_time(&v->time)) return -1; break;
 			case  5: v->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;

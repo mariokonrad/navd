@@ -12,12 +12,12 @@ struct nmea_angle_t {
 	struct nmea_fix_t s; /* seconds */
 };
 
-int check_angle_zero(const struct nmea_angle_t * v);
-int check_latitude(const struct nmea_angle_t * v);
-int check_longitude(const struct nmea_angle_t * v);
-const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v);
-int write_lat(char * buf, uint32_t size, const struct nmea_angle_t * v);
-int write_lon(char * buf, uint32_t size, const struct nmea_angle_t * v);
+int nmea_angle_check_zero(const struct nmea_angle_t * v);
+int nmea_check_latitude(const struct nmea_angle_t * v);
+int nmea_check_longitude(const struct nmea_angle_t * v);
+const char * nmea_angle_parse(const char * s, const char * e, struct nmea_angle_t * v);
+int nmea_write_latitude(char * buf, uint32_t size, const struct nmea_angle_t * v);
+int nmea_write_lonitude(char * buf, uint32_t size, const struct nmea_angle_t * v);
 void nmea_angle_hton(struct nmea_angle_t * v);
 void nmea_angle_ntoh(struct nmea_angle_t * v);
 

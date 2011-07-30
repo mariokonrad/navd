@@ -9,7 +9,7 @@
  * @retval -2 Not all members are zero
  */
 /* TODO:TEST */
-int check_angle_zero(const struct nmea_angle_t * v)
+int nmea_angle_check_zero(const struct nmea_angle_t * v)
 {
 	if (v == NULL) return -1;
 	return (1
@@ -27,7 +27,7 @@ int check_angle_zero(const struct nmea_angle_t * v)
  * @retval -1 Parameter error
  * @retval -2 Latitude is invalid
  */
-int check_latitude(const struct nmea_angle_t * v)
+int nmea_check_latitude(const struct nmea_angle_t * v)
 {
 	if (v == NULL) return -1;
 	return (0
@@ -43,7 +43,7 @@ int check_latitude(const struct nmea_angle_t * v)
  * @retval -1 Parameter error
  * @retval -2 Longitude is invalid
  */
-int check_longitude(const struct nmea_angle_t * v)
+int nmea_check_longitude(const struct nmea_angle_t * v)
 {
 	if (v == NULL) return -1;
 	return (0
@@ -66,7 +66,7 @@ int check_longitude(const struct nmea_angle_t * v)
  * @param[out] v parsed value
  * @return position of the last valid character
  */
-const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v)
+const char * nmea_angle_parse(const char * s, const char * e, struct nmea_angle_t * v)
 {
 	struct nmea_fix_t t;
 	const char * p;
@@ -78,7 +78,7 @@ const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v
 		v->s.d = 0;
 		return e;
 	}
-	p = parse_fix(s, e, &t);
+	p = nmea_fix_parse(s, e, &t);
 	if (p == e) {
 		v->d = t.i / 100;
 		v->m = t.i % 100;
@@ -90,7 +90,7 @@ const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v
 
 /* Writers latitude information in the format DDMM.SSSS to the specified buffer.
  * This format is required by the NMEA data representation.
- * The latitude is written only if it passes the check_latitude() criteria.
+ * The latitude is written only if it passes the nmea_check_latitude() criteria.
  *
  * @param[out] buf The buffer to hold the written time.
  * @param[in] size Remaining size in bytes within the buffer.
@@ -99,11 +99,11 @@ const char * parse_angle(const char * s, const char * e, struct nmea_angle_t * v
  * @retval -1 Parameter error.
  * @retval -2 Latitude data is wrong.
  */
-int write_lat(char * buf, uint32_t size, const struct nmea_angle_t * v)
+int nmea_write_latitude(char * buf, uint32_t size, const struct nmea_angle_t * v)
 {
 	if (buf == NULL || size == 0 || v == NULL) return -1;
 	if (size < 9) return -1;
-	if (check_latitude(v)) return -1;
+	if (nmea_check_latitude(v)) return -1;
 
 	/* division by 100 is to achieve 4 decimal digits, maybe it would be better to use write_fix() */
 	return snprintf(buf, size, "%02u%02u.%04u", v->d, v->m, (v->s.i * NMEA_FIX_DECIMALS + v->s.d) / 60 / 100);
@@ -111,7 +111,7 @@ int write_lat(char * buf, uint32_t size, const struct nmea_angle_t * v)
 
 /* Writers longitude information in the format DDDMM.SSSS to the specified buffer.
  * This format is required by the NMEA data representation.
- * The longitude is written only if it passes the check_longitude() criteria.
+ * The longitude is written only if it passes the nmea_check_longitude() criteria.
  *
  * @param[out] buf The buffer to hold the written time.
  * @param[in] size Remaining size in bytes within the buffer.
@@ -120,11 +120,11 @@ int write_lat(char * buf, uint32_t size, const struct nmea_angle_t * v)
  * @retval -1 Parameter error.
  * @retval -2 Longitude data is wrong.
  */
-int write_lon(char * buf, uint32_t size, const struct nmea_angle_t * v)
+int nmea_write_lonitude(char * buf, uint32_t size, const struct nmea_angle_t * v)
 {
 	if (buf == NULL || size == 0 || v == NULL) return -1;
 	if (size < 10) return -1;
-	if (check_longitude(v)) return -1;
+	if (nmea_check_longitude(v)) return -1;
 
 	/* division by 100 is to achieve 4 decimal digits, maybe it would be better to use write_fix() */
 	return snprintf(buf, size, "%03u%02u.%04u", v->d, v->m, (v->s.i * NMEA_FIX_DECIMALS + v->s.d) / 60 / 100);

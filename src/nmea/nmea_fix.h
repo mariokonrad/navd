@@ -11,9 +11,9 @@ struct nmea_fix_t { /* x.xxxxxx */
 	uint32_t d; /* decimal part, 6 digits, see NMEA_FIX_DECIMALS */
 };
 
-int check_fix_zero(const struct nmea_fix_t * v);
-const char * parse_fix(const char * s, const char * e, struct nmea_fix_t * v);
-int write_fix(char * buf, uint32_t size, const struct nmea_fix_t * v, uint32_t ni, uint32_t nd);
+int nmea_fix_check_zero(const struct nmea_fix_t * v);
+const char * nmea_fix_parse(const char * s, const char * e, struct nmea_fix_t * v);
+int nmea_fix_write(char * buf, uint32_t size, const struct nmea_fix_t * v, uint32_t ni, uint32_t nd);
 void nmea_fix_hton(struct nmea_fix_t *);
 void nmea_fix_ntoh(struct nmea_fix_t *);
 
