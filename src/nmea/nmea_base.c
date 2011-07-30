@@ -25,7 +25,7 @@ int nmea_init(struct nmea_t * nmea)
  * @param[in] tab table of sentences to parse
  * @retval  0 success
  * @retval -1 parameter error
- * @retval -2 checksum error
+ * @retval -2 nmea_checksum error
  * @retval -3 format error
  * @retval -4 unknown sentence
  */
@@ -37,7 +37,7 @@ int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_senten
 	int rc;
 
 	if (s == NULL || nmea == NULL || tab == NULL || tab_size == 0) return -1;
-	if (check_checksum(s, START_TOKEN_NMEA)) return -2;
+	if (nmea_checksum_check(s, START_TOKEN_NMEA)) return -2;
 	if (*s != START_TOKEN_NMEA) return -3;
 	p = find_token_end(s+1);
 	for (i = 0; i < tab_size; ++i) {

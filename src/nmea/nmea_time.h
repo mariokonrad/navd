@@ -10,10 +10,10 @@ struct nmea_time_t {
 	uint32_t ms; /* millisecond: 0..999 */
 };
 
-int check_time_zero(const struct nmea_time_t * v);
-int check_time(const struct nmea_time_t * v);
-const char * parse_time(const char * s, const char * e, struct nmea_time_t * v);
-int write_time(char * buf, uint32_t size, const struct nmea_time_t * v);
+int nmea_time_check_zero(const struct nmea_time_t * v);
+int nmea_time_check(const struct nmea_time_t * v);
+const char * nmea_time_parse(const char * s, const char * e, struct nmea_time_t * v);
+int nmea_time_write(char * buf, uint32_t size, const struct nmea_time_t * v);
 void nmea_time_hton(struct nmea_time_t *);
 void nmea_time_ntoh(struct nmea_time_t *);
 

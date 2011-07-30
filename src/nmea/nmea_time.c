@@ -9,7 +9,7 @@
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero
  */
-int check_time_zero(const struct nmea_time_t * v)
+int nmea_time_check_zero(const struct nmea_time_t * v)
 {
 	if (v == NULL) return -1;
 	return (1
@@ -27,7 +27,7 @@ int check_time_zero(const struct nmea_time_t * v)
  * @retval -1 Parameter error
  * @retval -2 Time is invalid
  */
-int check_time(const struct nmea_time_t * v)
+int nmea_time_check(const struct nmea_time_t * v)
 {
 	if (v == NULL) return -1;
 	return (1
@@ -46,7 +46,7 @@ int check_time(const struct nmea_time_t * v)
  * @param[out] v parsed value
  * @return position of the last valid character
  */
-const char * parse_time(const char * s, const char * e, struct nmea_time_t * v)
+const char * nmea_time_parse(const char * s, const char * e, struct nmea_time_t * v)
 {
 	struct nmea_fix_t t;
 	const char * p;
@@ -70,7 +70,7 @@ const char * parse_time(const char * s, const char * e, struct nmea_time_t * v)
 
 /* Writers time information in the format HHMMSS to the specified buffer.
  * This format is required by the NMEA data representation.
- * The time is written only if it passes the check_time() criteria.
+ * The time is written only if it passes the nmea_time_check() criteria.
  *
  * @param[out] buf The buffer to hold the written time.
  * @param[in] size Remaining size in bytes within the buffer.
@@ -79,11 +79,11 @@ const char * parse_time(const char * s, const char * e, struct nmea_time_t * v)
  * @retval -1 Parameter error.
  * @retval -2 Time data is wrong.
  */
-int write_time(char * buf, uint32_t size, const struct nmea_time_t * v)
+int nmea_time_write(char * buf, uint32_t size, const struct nmea_time_t * v)
 {
 	if (buf == NULL || size == 0 || v == NULL) return -1;
 	if (size < 6) return -1;
-	if (check_time(v)) return -2;
+	if (nmea_time_check(v)) return -2;
 	return snprintf(buf, size, "%02u%02u%02u", v->h, v->m, v->s);
 }
 

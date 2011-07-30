@@ -9,7 +9,7 @@
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero
  */
-int check_date_zero(const struct nmea_date_t * v)
+int nmea_date_check_zero(const struct nmea_date_t * v)
 {
 	if (v == NULL) return -1;
 	return (1
@@ -26,7 +26,7 @@ int check_date_zero(const struct nmea_date_t * v)
  * @retval -1 Parameter error
  * @retval -2 Date is invalid
  */
-int check_date(const struct nmea_date_t * v)
+int nmea_date_check(const struct nmea_date_t * v)
 {
 	if (v == NULL) return -1;
 	return (1
@@ -44,7 +44,7 @@ int check_date(const struct nmea_date_t * v)
  * @param[out] v parsed value
  * @return position of the last valid character
  */
-const char * parse_date(const char * s, const char * e, struct nmea_date_t * v)
+const char * nmea_date_parse(const char * s, const char * e, struct nmea_date_t * v)
 {
 	uint32_t t;
 	const char * p;
@@ -66,7 +66,7 @@ const char * parse_date(const char * s, const char * e, struct nmea_date_t * v)
 
 /* Writers date information in the format DDMMYY to the specified buffer.
  * This format is required by the NMEA data representation.
- * The date is written only if it passes the check_date() criteria.
+ * The date is written only if it passes the nmea_date_check() criteria.
  *
  * @param[out] buf The buffer to hold the written time.
  * @param[in] size Remaining size in bytes within the buffer.
@@ -75,11 +75,11 @@ const char * parse_date(const char * s, const char * e, struct nmea_date_t * v)
  * @retval -1 Parameter error.
  * @retval -2 Date data is wrong.
  */
-int write_date(char * buf, uint32_t size, const struct nmea_date_t * v)
+int nmea_date_write(char * buf, uint32_t size, const struct nmea_date_t * v)
 {
 	if (buf == NULL || size == 0 || v == NULL) return -1;
 	if (size < 6) return -1;
-	if (check_date(v)) return -2;
+	if (nmea_date_check(v)) return -2;
 	return snprintf(buf, size, "%02u%02u%02u", v->d, v->m, v->y % 100);
 }
 

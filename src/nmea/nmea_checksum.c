@@ -20,11 +20,11 @@ static char i2hex(int i)
 	return (i >= 0 && i <= 15) ? TAB[i] : '\0';
 }
 
-/* Calculates and returns the checksum between the two position of a string.
- * The checksum is calculated inclusive start token and exclusive the end
+/* Calculates and returns the nmea_checksum between the two position of a string.
+ * The nmea_checksum is calculated inclusive start token and exclusive the end
  * token. If either one is wrong 0x00 will return.
  */
-uint8_t checksum(const char * s, const char * e)
+uint8_t nmea_checksum(const char * s, const char * e)
 {
 	uint8_t chk = 0x00;
 	for (; *s && *e && s != e; ++s) chk ^= *s;
@@ -32,15 +32,15 @@ uint8_t checksum(const char * s, const char * e)
 }
 
 /* TODO: test
- * Checks the checksum of the sentence.
+ * Checks the nmea_checksum of the sentence.
  *
  * @param[in] s sentence to check
  * @retval  0 success
  * @retval -1 failure
  */
-int check_checksum(const char * s, char start_token)
+int nmea_checksum_check(const char * s, char start_token)
 {
-	/* TODO: use function checksum() */
+	/* TODO: use function nmea_checksum() */
 	uint8_t chk = 0;
 	if (!s || !(*s) || *s != start_token) return -1;
 	++s; /* skip start token */
@@ -50,14 +50,14 @@ int check_checksum(const char * s, char start_token)
 }
 
 /* TODO */
-int write_checksum(char * buf, uint32_t size, const char * s, const char * e)
+int nmea_checksum_write(char * buf, uint32_t size, const char * s, const char * e)
 {
 	uint8_t sum;
 	char str[3];
 
 	if (buf == NULL || size == 0 || s == NULL || e == NULL) return -1;
 	if (size < 3) return -1;
-	sum = checksum(s, e);
+	sum = nmea_checksum(s, e);
 	str[0] = i2hex((sum >> 4) & 0x0f);
 	str[1] = i2hex((sum >> 0) & 0x0f);
 	str[2] = '\0';

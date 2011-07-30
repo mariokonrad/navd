@@ -17,7 +17,7 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	p = find_token_end(s);
 	for (state = -1; state < 12 && s < e; ++state) {
 		switch (state) {
-			case  0: if (parse_time(s, p, &v->time) != p && check_time(&v->time)) return -1; break;
+			case  0: if (nmea_time_parse(s, p, &v->time) != p && nmea_time_check(&v->time)) return -1; break;
 			case  1: v->status = (s == p) ? NMEA_STATUS_WARNING : *s; break;
 			case  2: if (nmea_angle_parse(s, p, &v->lat) != p && nmea_check_latitude(&v->lat)) return -1; break;
 			case  3: v->lat_dir = (s == p) ? NMEA_NORTH : *s; break;
@@ -25,7 +25,7 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 			case  5: v->lon_dir = (s == p) ? NMEA_EAST : *s; break;
 			case  6: if (nmea_fix_parse(s, p, &v->sog) != p) return -1; break;
 			case  7: if (nmea_fix_parse(s, p, &v->head) != p) return -1; break;
-			case  8: if (parse_date(s, p, &v->date) != p && check_date(&v->date)) return -1; break;
+			case  8: if (nmea_date_parse(s, p, &v->date) != p && nmea_date_check(&v->date)) return -1; break;
 			case  9: if (nmea_fix_parse(s, p, &v->m) != p) return -1; break;
 			case 10: v->m_dir = (s == p) ? NMEA_EAST : *s; break;
 			case 11: v->sig_integrity = (s == p) ? NMEA_SIG_INT_DATANOTVALID : *s; break;
@@ -63,7 +63,7 @@ static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 			case  0: rc = write_char(p, r, START_TOKEN_NMEA); chksum_start = p + 1; break;
 			case  1: rc = write_string(p, r, TAG); break;
 			case  2: rc = write_char(p, r, ','); break;
-			case  3: if (check_time_zero(&v->time)) rc = write_time(p, r, &v->time); break;
+			case  3: if (nmea_time_check_zero(&v->time)) rc = nmea_time_write(p, r, &v->time); break;
 			case  4: rc = write_char(p, r, ','); break;
 			case  5: rc = write_char(p, r, v->status); break;
 			case  6: rc = write_char(p, r, ','); break;
@@ -79,7 +79,7 @@ static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 			case 16: rc = write_char(p, r, ','); break;
 			case 17: if (nmea_fix_check_zero(&v->head)) rc = nmea_fix_write(p, r, &v->head, 1, 1); break;
 			case 18: rc = write_char(p, r, ','); break;
-			case 19: if (check_date_zero(&v->date)) rc = write_date(p, r, &v->date); break;
+			case 19: if (nmea_date_check_zero(&v->date)) rc = nmea_date_write(p, r, &v->date); break;
 			case 20: rc = write_char(p, r, ','); break;
 			case 21: if (nmea_fix_check_zero(&v->m)) rc = nmea_fix_write(p, r, &v->m, 1, 1); break;
 			case 22: rc = write_char(p, r, ','); break;
@@ -87,7 +87,7 @@ static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 			case 24: rc = write_char(p, r, ','); break;
 			case 25: rc = write_char(p, r, v->sig_integrity); chksum_end = p + 1; break;
 			case 26: rc = write_char(p, r, '*'); break;
-			case 27: rc = write_checksum(p, r, chksum_start, chksum_end); break;
+			case 27: rc = nmea_checksum_write(p, r, chksum_start, chksum_end); break;
 			default: rc = -1; break;
 		}
 	}

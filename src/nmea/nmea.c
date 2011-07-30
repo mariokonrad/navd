@@ -38,7 +38,7 @@ static const struct nmea_sentence_t * SENTENCES[] = {
  * @retval  0 success
  * @retval  1 unknown sentence
  * @retval -1 parameter error
- * @retval -2 checksum error
+ * @retval -2 nmea_checksum error
  */
 int nmea_read(struct nmea_t * nmea, const char * s)
 {
