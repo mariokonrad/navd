@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#define UNUSED_ARG(a)  (void)a
-
 struct device_t
 {
 	int fd;

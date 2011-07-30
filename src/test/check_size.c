@@ -3,8 +3,7 @@
 #include <device/device.h>
 #include <device/serial.h>
 #include <nmea/nmea.h>
-
-#define UNUSED_ARG(a) (void)a
+#include <common/macros.h>
 
 #define print(t) printf("%30s : %lu\n", #t, sizeof(t))
 

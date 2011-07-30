@@ -5,6 +5,7 @@
 #include <nmea/nmea.h>
 #include <device/simulator.h>
 #include <device/serial.h>
+#include <common/macros.h>
 
 int main(int argc, char ** argv)
 {

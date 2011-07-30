@@ -1,4 +1,5 @@
 #include <device/simulator.h>
+#include <common/macros.h>
 #include <stdio.h>
 #include <string.h>
 

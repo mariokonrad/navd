@@ -25,20 +25,17 @@ function exec_clean()
 
 function exec_build()
 {
+	cd ${BASE}
+	ctags --recurse -f tags src/*
 	if [ ! -d "${BASE}/build" ] ; then
 		mkdir -p ${BASE}/build
+		mkdir -p ${BASE}/build/doc
 	fi
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
 		cmake ..
 	fi
 	make
-}
-
-function exec_index()
-{
-	cd ${BASE}
-	ctags --recurse -f tags src/*
 }
 
 function exec_test()
@@ -71,9 +68,6 @@ case $1 in
 		;;
 	build)
 		exec_build
-		;;
-	index)
-		exec_index
 		;;
 	test)
 		exec_test

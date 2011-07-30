@@ -6,3 +6,14 @@ add_subdirectory(device)
 add_subdirectory(nmea)
 add_subdirectory(test)
 
+add_executable(navd
+	navd.c
+	)
+
+target_link_libraries(navd
+	devices
+	nmea
+	common
+	pthread
+	)
+
