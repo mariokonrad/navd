@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
-/* TODO
+/**
+ * @todo Documenation
  *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)

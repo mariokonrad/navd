@@ -3,7 +3,8 @@
 #include <common/endian.h>
 #include <stdio.h>
 
-/* Checks whether all members of the date information are zero.
+/**
+ * Checks whether all members of the date information are zero.
  *
  * @retval 0 All members are zero.
  * @retval -1 Parameter error
@@ -19,7 +20,8 @@ int nmea_date_check_zero(const struct nmea_date_t * v)
 		) ? 0 : -2;
 }
 
-/* Checks whether the specified date is valid.
+/**
+ * Checks whether the specified date is valid.
  *
  * @param[in] v date to check
  * @retval 0 success
@@ -37,7 +39,8 @@ int nmea_date_check(const struct nmea_date_t * v)
 		) ? 0 : -2;
 }
 
-/* TODO
+/**
+ * @todo Documenation
  *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)
@@ -64,7 +67,8 @@ const char * nmea_date_parse(const char * s, const char * e, struct nmea_date_t 
 	return p;
 }
 
-/* Writers date information in the format DDMMYY to the specified buffer.
+/**
+ * Writers date information in the format DDMMYY to the specified buffer.
  * This format is required by the NMEA data representation.
  * The date is written only if it passes the nmea_date_check() criteria.
  *
@@ -83,6 +87,9 @@ int nmea_date_write(char * buf, uint32_t size, const struct nmea_date_t * v)
 	return snprintf(buf, size, "%02u%02u%02u", v->d, v->m, v->y % 100);
 }
 
+/**
+ * @todo Documenation
+ */
 void nmea_date_hton(struct nmea_date_t * v)
 {
 	if (v == NULL) return;
@@ -91,6 +98,9 @@ void nmea_date_hton(struct nmea_date_t * v)
 	v->d = endian_hton_32(v->d);
 }
 
+/**
+ * @todo Documenation
+ */
 void nmea_date_ntoh(struct nmea_date_t * v)
 {
 	if (v == NULL) return;

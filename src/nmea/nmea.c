@@ -31,7 +31,8 @@ static const struct nmea_sentence_t * SENTENCES[] = {
 	&sentence_hchdg,
 };
 
-/* Reads all known NMEA sentences.
+/**
+ * Reads all known NMEA sentences.
  *
  * @param[in]  s read sentence
  * @param[out] nmea data of the parsed structure
@@ -45,7 +46,8 @@ int nmea_read(struct nmea_t * nmea, const char * s)
 	return nmea_read_tab(nmea, s, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
-/* Writes the specified NMEA sentence into the buffer.
+/**
+ * Writes the specified NMEA sentence into the buffer.
  *
  * @param[out] buf The buffer to hold the data. This buffer must be large
  *    enough to carry the NMEA sentence.
@@ -61,7 +63,8 @@ int nmea_write(char * buf, uint32_t size, const struct nmea_t * nmea)
 	return nmea_write_tab(buf, size, nmea, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
-/* Changes the byte order of the NMEA data from host to network byte order.
+/**
+ * Changes the byte order of the NMEA data from host to network byte order.
  *
  * @param[inout] nmea The data to convert.
  * @retval  0 success
@@ -75,7 +78,8 @@ int nmea_hton(struct nmea_t * nmea)
 	return nmea_hton_tab(nmea, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
-/* Changes the byte order of the NMEA data from network to host byte order.
+/**
+ * Changes the byte order of the NMEA data from network to host byte order.
  *
  * @param[inout] nmea The data to convert.
  * @retval  0 success

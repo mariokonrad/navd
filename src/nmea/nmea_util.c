@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Copies the string between [s,e) into v, the user has to make
+/**
+ * Copies the string between [s,e) into v, the user has to make
  * sure there is enough room within v.
  *
  * @param[in] s start of string to parse (inclusive)
@@ -19,7 +20,8 @@ const char * parse_str(const char * s, const char * e, char * v)
 	return e;
 }
 
-/* Writes a string into the buffer if there is enough room within the buffer.
+/**
+ * Writes a string into the buffer if there is enough room within the buffer.
  *
  * @param[out] buf The buffer to hold the data.
  * @param[in] size Number of bytes free in buffer.
@@ -39,7 +41,8 @@ int write_string(char * buf, uint32_t size, const char * s)
 	return (int)len;
 }
 
-/* Writes a character into the buffer if there is enough room within the buffer.
+/**
+ * Writes a character into the buffer if there is enough room within the buffer.
  *
  * @param[out] buf The buffer to hold the data.
  * @param[in] size Number of bytes free in buffer.
@@ -55,7 +58,8 @@ int write_char(char * buf, uint32_t size, const char c)
 	return 1;
 }
 
-/* Returns a pointer to the position of the next comma within the
+/**
+ * Returns a pointer to the position of the next comma within the
  * specified string.
  *
  * @param[in] s the string to parse
@@ -67,14 +71,17 @@ const char * find_token_end(const char * s)
 	return s;
 }
 
-/* TODO */
+/**
+ * @todo Documenation
+ */
 const char * find_sentence_end(const char * s)
 {
 	while (s && *s && *s != '*') ++s;
 	return s;
 }
 
-/* TODO
+/**
+ * @todo Documentation
  *
  * @retval 1 token seems to be valid
  * @retval 0 token seems to be invalid

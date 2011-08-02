@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+/**
+ * @todo Documenation
+ */
 struct device_t
 {
 	int fd;
@@ -11,6 +14,9 @@ struct device_t
 
 struct device_config_t;
 
+/**
+ * @todo Documenation
+ */
 struct device_operations_t
 {
 	int (*open)(struct device_t *, const struct device_config_t *);

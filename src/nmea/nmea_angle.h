@@ -6,6 +6,9 @@
 #define NMEA_ANGLE_DECIMALS 10000
 #define NMEA_ANGLE_DECIMAL_DIGITS 4
 
+/**
+ * @todo Documenation
+ */
 struct nmea_angle_t {
 	uint32_t d; /* degrees */
 	uint32_t m; /* minutes */

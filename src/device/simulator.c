@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * @todo Documenation
+ */
 static struct simulator_data_t
 {
 	const char * s;
@@ -10,6 +13,9 @@ static struct simulator_data_t
 	int len;
 } simulator_data;
 
+/**
+ * @todo Documenation
+ */
 static int simulator_open(struct device_t * device, const struct device_config_t * cfg)
 {
 	UNUSED_ARG(cfg);
@@ -29,6 +35,9 @@ static int simulator_open(struct device_t * device, const struct device_config_t
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 static int simulator_close(struct device_t * device)
 {
 	if (device == NULL) return -1;
@@ -37,6 +46,9 @@ static int simulator_close(struct device_t * device)
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 static int simulator_read(struct device_t * device, char * buf, uint32_t size)
 {
 	struct simulator_data_t * data = NULL;
@@ -54,6 +66,9 @@ static int simulator_read(struct device_t * device, char * buf, uint32_t size)
 	return (int)size;
 }
 
+/**
+ * @todo Documenation
+ */
 static int simulator_write(struct device_t * device, const char * buf, uint32_t size)
 {
 	UNUSED_ARG(device);
@@ -62,6 +77,9 @@ static int simulator_write(struct device_t * device, const char * buf, uint32_t 
 	return -1;
 }
 
+/**
+ * @todo Documenation
+ */
 const struct device_operations_t simulator_operations =
 {
 	.open = simulator_open,

@@ -6,6 +6,9 @@
 #define NMEA_FIX_DECIMALS 1000000
 #define NMEA_FIX_DECIMAL_DIGITS 6
 
+/**
+ * @todo Documenation
+ */
 struct nmea_fix_t { /* x.xxxxxx */
 	uint32_t i; /* integer part, max. 6 digits, see NMEA_FIX_DECIMALS */
 	uint32_t d; /* decimal part, 6 digits, see NMEA_FIX_DECIMALS */

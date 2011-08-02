@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Initializes the specified structure.
+/**
+ * Initializes the specified structure.
  *
  * @param[out] nmea The structure to initialize
  * @retval 0 Success
@@ -18,7 +19,8 @@ int nmea_init(struct nmea_t * nmea)
 	return 0;
 }
 
-/* Reads all NMEA senteces defined defined in the specified table.
+/**
+ * Reads all NMEA senteces defined defined in the specified table.
  *
  * @param[in] s read sentence
  * @param[out] nmea data of the parsed structure
@@ -54,7 +56,8 @@ int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_senten
 	return -4;
 }
 
-/* Writes the specified NMEA sentence into the buffer. This function
+/**
+ * Writes the specified NMEA sentence into the buffer. This function
  * handles all NMEA sentences specified in the table.
  *
  * @param[out] buf The buffer to hold the data. This buffer must be large
@@ -83,7 +86,8 @@ int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const 
 	return -2;
 }
 
-/* Writes the raw data to the specified buffer (if enough space available).
+/**
+ * Writes the raw data to the specified buffer (if enough space available).
  *
  * @param[out] buf The buffer to hold the data. This buffer must be large
  *    enough to carry the NMEA sentence.
@@ -103,7 +107,8 @@ int nmea_write_raw(char * buf, uint32_t size, const struct nmea_t * nmea)
 	return (int)len;
 }
 
-/* Changes the byte order of the NMEA data from host to network byte order.
+/**
+ * Changes the byte order of the NMEA data from host to network byte order.
  *
  * @param[inout] nmea The data to convert.
  * @param[in] tab Table containing all known or valid NMEA sentences.
@@ -130,7 +135,8 @@ int nmea_hton_tab(struct nmea_t * nmea, const struct nmea_sentence_t ** tab, uin
 	return -2;
 }
 
-/* Changes the byte order of the NMEA data from network to host byte order.
+/**
+ * Changes the byte order of the NMEA data from network to host byte order.
  *
  * @param[inout] nmea The data to convert.
  * @param[in] tab Table containing all known or valid NMEA sentences.

@@ -3,7 +3,8 @@
 #include <common/endian.h>
 #include <stdio.h>
 
-/* Checks whether all members of the time information are zero.
+/**
+ * Checks whether all members of the time information are zero.
  *
  * @retval 0 All members are zero.
  * @retval -1 Parameter error
@@ -20,7 +21,8 @@ int nmea_time_check_zero(const struct nmea_time_t * v)
 		) ? 0 : -2;
 }
 
-/* Checks whether the specified time is valid.
+/**
+ * Checks whether the specified time is valid.
  *
  * @param[in] v time to check
  * @retval 0 success
@@ -39,7 +41,8 @@ int nmea_time_check(const struct nmea_time_t * v)
 		;
 }
 
-/* TODO
+/**
+ * @todo Documentation
  *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)
@@ -68,7 +71,8 @@ const char * nmea_time_parse(const char * s, const char * e, struct nmea_time_t 
 	return p;
 }
 
-/* Writers time information in the format HHMMSS to the specified buffer.
+/**
+ * Writers time information in the format HHMMSS to the specified buffer.
  * This format is required by the NMEA data representation.
  * The time is written only if it passes the nmea_time_check() criteria.
  *
@@ -87,6 +91,9 @@ int nmea_time_write(char * buf, uint32_t size, const struct nmea_time_t * v)
 	return snprintf(buf, size, "%02u%02u%02u", v->h, v->m, v->s);
 }
 
+/**
+ * @todo Documenation
+ */
 void nmea_time_hton(struct nmea_time_t * v)
 {
 	if (v == NULL) return;
@@ -96,6 +103,9 @@ void nmea_time_hton(struct nmea_time_t * v)
 	v->ms = endian_hton_32(v->ms);
 }
 
+/**
+ * @todo Documenation
+ */
 void nmea_time_ntoh(struct nmea_time_t * v)
 {
 	if (v == NULL) return;

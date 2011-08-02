@@ -3,6 +3,9 @@
 
 #include <device/device.h>
 
+/**
+ * @todo Documenation
+ */
 struct serial_config_t
 {
 	char name[128];

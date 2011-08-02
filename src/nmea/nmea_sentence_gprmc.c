@@ -5,6 +5,9 @@
 
 #define TAG "GPRMC"
 
+/**
+ * @todo Documenation
+ */
 static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
 	struct nmea_rmc_t * v;
@@ -37,6 +40,9 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 {
 	const struct nmea_rmc_t * v;
@@ -95,6 +101,9 @@ static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 	return (int)i;
 }
 
+/**
+ * @todo Documenation
+ */
 static void hton(struct nmea_t * nmea)
 {
 	struct nmea_rmc_t * v;
@@ -110,6 +119,9 @@ static void hton(struct nmea_t * nmea)
 	nmea_fix_hton(&v->m);
 }
 
+/**
+ * @todo Documenation
+ */
 static void ntoh(struct nmea_t * nmea)
 {
 	struct nmea_rmc_t * v;
@@ -125,6 +137,9 @@ static void ntoh(struct nmea_t * nmea)
 	nmea_fix_ntoh(&v->m);
 }
 
+/**
+ * @todo Documenation
+ */
 const struct nmea_sentence_t sentence_gprmc =
 {
 	.type = NMEA_RMC,

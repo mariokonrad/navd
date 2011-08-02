@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+/**
+ * @todo Documenation
+ */
 struct nmea_time_t {
 	uint32_t h;  /* hour: 0..23 */
 	uint32_t m;  /* minute: 0..59 */

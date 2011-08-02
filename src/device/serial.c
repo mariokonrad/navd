@@ -5,6 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 
+/**
+ * @todo Documenation
+ */
 static int serial_open(struct device_t * device, const struct device_config_t * cfg)
 {
 	struct termios old_tio;
@@ -44,6 +47,9 @@ static int serial_open(struct device_t * device, const struct device_config_t * 
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 static int serial_close(struct device_t * device)
 {
 	if (device == NULL) return -1;
@@ -53,6 +59,9 @@ static int serial_close(struct device_t * device)
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 static int serial_read(struct device_t * device, char * buf, uint32_t size)
 {
 	if (device == NULL) return -1;
@@ -61,6 +70,9 @@ static int serial_read(struct device_t * device, char * buf, uint32_t size)
 	return read(device->fd, buf, size);
 }
 
+/**
+ * @todo Documenation
+ */
 static int serial_write(struct device_t * device, const char * buf, uint32_t size)
 {
 	if (device == NULL) return -1;
@@ -69,6 +81,9 @@ static int serial_write(struct device_t * device, const char * buf, uint32_t siz
 	return write(device->fd, buf, size);
 }
 
+/**
+ * @todo Documenation
+ */
 const struct device_operations_t serial_device_operations =
 {
 	.open = serial_open,

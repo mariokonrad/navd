@@ -1,7 +1,9 @@
 #include <device/device.h>
 #include <stdio.h>
 
-/* TODO */
+/**
+ * @todo Documenation
+ */
 void device_init(struct device_t * device)
 {
 	if (device == NULL) return;

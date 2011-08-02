@@ -1,7 +1,8 @@
 #include <nmea/nmea_checksum.h>
 #include <stdio.h>
 
-/* Converts the specified hexadecimal character to its numerical representation.
+/**
+ * Converts the specified hexadecimal character to its numerical representation.
  * If the character does not match a hexadecimal digit, 0xff will return.
  */
 static uint8_t hex2i(char c)
@@ -12,7 +13,8 @@ static uint8_t hex2i(char c)
 	return 0xff;
 }
 
-/* Returns the hexadecimal digit for the specified value.
+/**
+ * Returns the hexadecimal digit for the specified value.
  */
 static char i2hex(int i)
 {
@@ -20,7 +22,8 @@ static char i2hex(int i)
 	return (i >= 0 && i <= 15) ? TAB[i] : '\0';
 }
 
-/* Calculates and returns the nmea_checksum between the two position of a string.
+/**
+ * Calculates and returns the nmea_checksum between the two position of a string.
  * The nmea_checksum is calculated inclusive start token and exclusive the end
  * token. If either one is wrong 0x00 will return.
  */
@@ -31,8 +34,10 @@ uint8_t nmea_checksum(const char * s, const char * e)
 	return chk;
 }
 
-/* TODO: test
+/**
  * Checks the nmea_checksum of the sentence.
+ *
+ * @todo Test
  *
  * @param[in] s sentence to check
  * @retval  0 success
@@ -49,7 +54,10 @@ int nmea_checksum_check(const char * s, char start_token)
 	return chk == hex2i(s[0]) * 16 + hex2i(s[1]) ? 0 : -1;
 }
 
-/* TODO */
+/**
+ * @todo Documenation
+ * @todo Test
+ */
 int nmea_checksum_write(char * buf, uint32_t size, const char * s, const char * e)
 {
 	uint8_t sum;

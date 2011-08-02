@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
-/* Checks whether all members of the fix number are zero.
+/**
+ * Checks whether all members of the fix number are zero.
  *
  * @retval 0 All members are zero.
  * @retval -1 Parameter error
@@ -18,7 +19,8 @@ int nmea_fix_check_zero(const struct nmea_fix_t * v)
 		) ? 0 : -2;
 }
 
-/* Parses a fix point number between start and end of the string into the
+/**
+ * Parses a fix point number between start and end of the string into the
  * specified structure. This function handles the following EBNF:
  *
  *  fix := ['0'..'9']+ { '.' ['0' .. '9']{0,6} }
@@ -58,7 +60,8 @@ const char * nmea_fix_parse(const char * s, const char * e, struct nmea_fix_t * 
 	return e;
 }
 
-/* Writes a fix number to the specified buffer.
+/**
+ * Writes a fix number to the specified buffer.
  *
  * @param[out] buf The buffer to hold the data.
  * @param[in] size Remaining space in bytes within the buffer.
@@ -88,7 +91,8 @@ int nmea_fix_write(char * buf, uint32_t size, const struct nmea_fix_t * v, uint3
 	return snprintf(buf, size, fmt, v->i, v->d / d);
 }
 
-/* Converts a fix point number to float.
+/**
+ * Converts a fix point number to float.
  *
  * @param[out] v converted number
  * @param[in] fix the fix point number to convert
@@ -102,7 +106,8 @@ int nmea_fix_to_float(float * v, const struct nmea_fix_t * fix)
 	return 0;
 }
 
-/* Converts a fix point number to double.
+/**
+ * Converts a fix point number to double.
  * @param[out] v converted number
  * @param[in] fix the fix point number to convert
  * @retval  0 success
@@ -115,6 +120,9 @@ int nmea_fix_to_double(double * v, const struct nmea_fix_t * fix)
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 void nmea_fix_hton(struct nmea_fix_t * v)
 {
 	if (v == NULL) return;
@@ -122,6 +130,9 @@ void nmea_fix_hton(struct nmea_fix_t * v)
 	v->d = endian_hton_32(v->d);
 }
 
+/**
+ * @todo Documenation
+ */
 void nmea_fix_ntoh(struct nmea_fix_t * v)
 {
 	if (v == NULL) return;

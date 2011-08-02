@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+/**
+ * @todo Documenation
+ */
 struct nmea_satelite_t {
 	uint32_t id;
 	uint32_t elevation;

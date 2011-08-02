@@ -3,6 +3,9 @@
 #include <nmea/nmea_int.h>
 #include <stdio.h>
 
+/**
+ * @todo Documenation
+ */
 static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
 	struct nmea_bod_t * v;
@@ -29,6 +32,9 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 const struct nmea_sentence_t sentence_gpbod =
 {
 	.type = NMEA_BOD,

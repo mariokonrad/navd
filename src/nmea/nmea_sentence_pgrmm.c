@@ -2,6 +2,9 @@
 #include <nmea/nmea_util.h>
 #include <stdio.h>
 
+/**
+ * @todo Documenation
+ */
 static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
 	struct nmea_garmin_rmm_t * v;
@@ -23,6 +26,9 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 	return 0;
 }
 
+/**
+ * @todo Documenation
+ */
 const struct nmea_sentence_t sentence_pgrmm =
 {
 	.type = NMEA_GARMIN_RMM,

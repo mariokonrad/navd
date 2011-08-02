@@ -11,6 +11,9 @@
 
 #define NMEA_NONE 0x00000000
 
+/**
+ * @todo Documenation
+ */
 struct nmea_t {
 	uint32_t type;
 	char raw[NMEA_MAX_SENTENCE+1];
@@ -31,6 +34,9 @@ struct nmea_t {
 	} sentence;
 };
 
+/**
+ * @todo Documenation
+ */
 struct nmea_sentence_t {
 	const uint32_t type;
 	const char * tag;

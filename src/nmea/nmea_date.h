@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+/**
+ * @todo Documenation
+ */
 struct nmea_date_t {
 	uint32_t y; /* year */
 	uint32_t m; /* month: 1..12 */

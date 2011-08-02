@@ -4,6 +4,9 @@
 #include <pthread.h>
 #include <stdint.h>
 
+/**
+ * @todo Documenation
+ */
 struct pool_t
 {
 	int (*write)(struct pool_t *, void *, uint32_t);
@@ -13,6 +16,9 @@ struct pool_t
 	uint32_t size;
 };
 
+/**
+ * @todo Documenation
+ */
 struct queue_t
 {
 	pthread_mutex_t mtx;

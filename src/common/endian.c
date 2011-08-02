@@ -1,5 +1,8 @@
 #include <common/endian.h>
 
+/**
+ * @todo Documenation
+ */
 union endian_test_t {
 	uint16_t x;
 	uint8_t c[sizeof(uint16_t)];
@@ -7,6 +10,9 @@ union endian_test_t {
 
 static const union endian_test_t _endian_test = { 0x01 };
 
+/**
+ * @todo Documenation
+ */
 static int endian_is_little(void)
 {
 	static int little = -1;
@@ -14,6 +20,9 @@ static int endian_is_little(void)
 	return little;
 }
 
+/**
+ * @todo Documenation
+ */
 uint16_t byte_swap_16(uint16_t v)
 {
 	return 0
@@ -22,6 +31,9 @@ uint16_t byte_swap_16(uint16_t v)
 		;
 }
 
+/**
+ * @todo Documenation
+ */
 uint32_t byte_swap_32(uint32_t v)
 {
 	return 0
@@ -32,21 +44,33 @@ uint32_t byte_swap_32(uint32_t v)
 		;
 }
 
+/**
+ * @todo Documenation
+ */
 uint16_t endian_hton_16(uint16_t v)
 {
 	return endian_is_little() ? byte_swap_16(v) : v;
 }
 
+/**
+ * @todo Documenation
+ */
 uint32_t endian_hton_32(uint32_t v)
 {
 	return endian_is_little() ? byte_swap_32(v) : v;
 }
 
+/**
+ * @todo Documenation
+ */
 uint16_t endian_ntoh_16(uint16_t v)
 {
 	return endian_is_little() ? byte_swap_16(v) : v;
 }
 
+/**
+ * @todo Documenation
+ */
 uint32_t endian_ntoh_32(uint32_t v)
 {
 	return endian_is_little() ? byte_swap_32(v) : v;

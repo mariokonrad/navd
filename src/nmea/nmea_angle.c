@@ -2,13 +2,15 @@
 #include <common/endian.h>
 #include <stdio.h>
 
-/* Checks whether all members of the angle information are zero.
+/**
+ * Checks whether all members of the angle information are zero.
+ *
+ * @todo Test
  *
  * @retval 0 All members are zero.
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero
  */
-/* TODO:TEST */
 int nmea_angle_check_zero(const struct nmea_angle_t * v)
 {
 	if (v == NULL) return -1;
@@ -20,7 +22,8 @@ int nmea_angle_check_zero(const struct nmea_angle_t * v)
 		) ? 0 : -2;
 }
 
-/* Checks whether the specified latitude is valid.
+/**
+ * Checks whether the specified latitude is valid.
  *
  * @param[in] v latitude to check
  * @retval 0 success
@@ -36,7 +39,8 @@ int nmea_check_latitude(const struct nmea_angle_t * v)
 		) ? 0 : -2;
 }
 
-/* Checks whether the specified longitude is valid.
+/**
+ * Checks whether the specified longitude is valid.
  *
  * @param[in] v longitude to check
  * @retval 0 success
@@ -53,7 +57,8 @@ int nmea_check_longitude(const struct nmea_angle_t * v)
 		;
 }
 
-/* Parses an angle from a string between s and e into the specified structure.
+/**
+ * Parses an angle from a string between s and e into the specified structure.
  * This function handles angles in with the following EBNF:
  *
  *  angle   := degrees minutes '.' dec-min
@@ -88,7 +93,8 @@ const char * nmea_angle_parse(const char * s, const char * e, struct nmea_angle_
 	return p;
 }
 
-/* Writers latitude information in the format DDMM.SSSS to the specified buffer.
+/**
+ * Writers latitude information in the format DDMM.SSSS to the specified buffer.
  * This format is required by the NMEA data representation.
  * The latitude is written only if it passes the nmea_check_latitude() criteria.
  *
@@ -109,7 +115,8 @@ int nmea_write_latitude(char * buf, uint32_t size, const struct nmea_angle_t * v
 	return snprintf(buf, size, "%02u%02u.%04u", v->d, v->m, (v->s.i * NMEA_FIX_DECIMALS + v->s.d) / 60 / 100);
 }
 
-/* Writers longitude information in the format DDDMM.SSSS to the specified buffer.
+/**
+ * Writers longitude information in the format DDDMM.SSSS to the specified buffer.
  * This format is required by the NMEA data representation.
  * The longitude is written only if it passes the nmea_check_longitude() criteria.
  *
@@ -130,6 +137,10 @@ int nmea_write_lonitude(char * buf, uint32_t size, const struct nmea_angle_t * v
 	return snprintf(buf, size, "%03u%02u.%04u", v->d, v->m, (v->s.i * NMEA_FIX_DECIMALS + v->s.d) / 60 / 100);
 }
 
+/**
+ * @todo Documenation
+ * @todo Test
+ */
 void nmea_angle_hton(struct nmea_angle_t * v)
 {
 	if (v == NULL) return;
@@ -138,6 +149,10 @@ void nmea_angle_hton(struct nmea_angle_t * v)
 	nmea_fix_hton(&v->s);
 }
 
+/**
+ * @todo Documenation
+ * @todo Test
+ */
 void nmea_angle_ntoh(struct nmea_angle_t * v)
 {
 	if (v == NULL) return;
