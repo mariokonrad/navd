@@ -11,10 +11,18 @@ function usage()
 	echo "Commands:"
 	echo "    clean    : cleans up the build"
 	echo "    build    : builds the software"
-	echo "    index    : creates a tags file, i.e. indexes the source"
+	echo "    doc      : creates the documentation"
 	echo "    test     : executes the tests"
 	echo "    valgrind : calls valgrind on tests to check for memory problems"
 	echo ""
+}
+
+function exec_prepare()
+{
+	if [ ! -d "${BASE}/build" ] ; then
+		mkdir -p ${BASE}/build
+		mkdir -p ${BASE}/build/doc
+	fi
 }
 
 function exec_clean()
@@ -25,17 +33,20 @@ function exec_clean()
 
 function exec_build()
 {
+	exec_prepare
 	cd ${BASE}
 	ctags --recurse -f tags src/*
-	if [ ! -d "${BASE}/build" ] ; then
-		mkdir -p ${BASE}/build
-		mkdir -p ${BASE}/build/doc
-	fi
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
 		cmake ..
 	fi
 	make
+}
+
+function exec_doc()
+{
+	exec_prepare
+	doxygen ${BASE}/etc/doxygen.conf
 }
 
 function exec_test()
@@ -68,6 +79,9 @@ case $1 in
 		;;
 	build)
 		exec_build
+		;;
+	doc)
+		exec_doc
 		;;
 	test)
 		exec_test
