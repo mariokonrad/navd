@@ -14,6 +14,5 @@ target_link_libraries(navd
 	devices
 	nmea
 	common
-	pthread
 	)
 
