@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <sys/select.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <common/macros.h>
 #include <message.h>
 #include <nmea/nmea_sentence_gprmc.h>
@@ -263,7 +264,10 @@ static void gps_simulator(const config_t * config) /* <producer> {{{ */
 		}
 
 		if (rc == 0) { /* timeout */
-			write(config->hub_fd, &sim_message, sizeof(sim_message));
+			rc = write(config->hub_fd, &sim_message, sizeof(sim_message));
+			if (rc < 0) {
+				perror("write");
+			}
 			continue;
 		}
 
@@ -442,7 +446,10 @@ int main(int argc, char ** argv)
 			switch (msg.type) {
 				default:
 					printf("%s:%d: route: %08x\n", __FILE__, __LINE__, msg.type);
-					write(cfg_log.pfd, &msg, sizeof(msg));
+					rc = write(cfg_log.pfd, &msg, sizeof(msg));
+					if (rc < 0) {
+						perror("write");
+					}
 					break;
 			}
 
@@ -458,8 +465,14 @@ int main(int argc, char ** argv)
 
 	msg.type = MSG_SYSTEM;
 	msg.data.system = SYSTEM_TERMINATE;
-	write(cfg_sim.pfd, &msg, sizeof(msg));
-	write(cfg_log.pfd, &msg, sizeof(msg));
+	rc = write(cfg_sim.pfd, &msg, sizeof(msg));
+	if (rc < 0) {
+		perror("write");
+	}
+	rc = write(cfg_log.pfd, &msg, sizeof(msg));
+	if (rc < 0) {
+		perror("write");
+	}
 
 	waitpid(cfg_sim.pid, NULL, 0);
 	waitpid(cfg_log.pid, NULL, 0);
