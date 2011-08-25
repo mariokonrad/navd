@@ -1,78 +1,219 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
-#include <common/macros.h>
-#include <common/queue.h>
-#include <nmea/nmea_sentence_gprmc.h>
-#include <message.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/select.h>
+#include <sys/wait.h>
+#include <common/macros.h>
+#include <message.h>
+#include <nmea/nmea_sentence_gprmc.h>
+#include <device/serial.h>
 
-struct strategy_t
+static volatile int request_terminate = 0;
+static sigset_t signal_mask;
+
+typedef struct config_t {
+	int pid;
+	int pfd;
+	int hub_fd;
+} config_t;
+
+static void handle_signal(int sig) /* {{{ */
 {
-	const char * name;
-	int (*func)(void *);
-};
+	printf("%s:%d: pid:%d sig:%d\n", __FILE__, __LINE__, getpid(), sig);
+	request_terminate = 1;
+} /* }}} */
 
-struct action_t
-{
-	const struct strategy_t * strategy;
-	void * config;
-};
-
-/* {{{ thread */
-
-static void * thread_func(void * ptr)
+static void daemonize(void) /* {{{ */
 {
 	int rc;
-	struct action_t * action = NULL;
 
-	if (ptr != NULL) {
-		action = (struct action_t *)ptr;
-		if (action->strategy == NULL || action->strategy->func == NULL) {
-			fprintf(stderr, "%s:%d: error executable strategy\n", __FILE__, __LINE__);
-		} else {
-			rc = action->strategy->func(action->config);
-			if (rc < 0) {
-				fprintf(stderr, "%s:%d: error in strategy '%s', rc=%d\n", __FILE__, __LINE__, action->strategy->name, rc);
-			}
-		}
-	} else {
-		fprintf(stderr, "%s:%d: no action specified\n", __FILE__, __LINE__);
+	rc = fork();
+	if (rc < 0) {
+		perror("fork");
+		exit(EXIT_FAILURE);
 	}
-	pthread_exit(NULL);
-}
+	if (rc > 0) {
+		exit(rc);
+	}
+} /* }}} */
 
-/* thread }}} */
-
-/* {{{ gps simulation */
-
-struct gps_simulation_config_t
+static int start_proc(config_t * proc, void (*func)(const config_t *)) /* {{{ */
 {
-	struct queue_t * message_queue;
-	int number_of_messages;
-};
-
-/* Sends periodic position updates, RMC sentences, once per second */
-static int execute_gps_simulation(void * ptr)
-{
+	int pfd[2];
 	int rc;
-	struct message_t message;
-	struct nmea_rmc_t * rmc;
-	char buf[NMEA_MAX_SENTENCE];
-	struct gps_simulation_config_t * config;
-	int message_no;
 
-	if (ptr == NULL) {
-		fprintf(stderr, "%s:%d: invalid configuration\n", __FILE__, __LINE__);
+	if (proc == NULL) return -1;
+	if (func == NULL) return -1;
+
+	rc = pipe(pfd);
+	if (rc < 0) {
+		perror("pipe");
 		return -1;
 	}
 
-	config = (struct gps_simulation_config_t *)ptr;
+	rc = fork();
+	if (rc < 0) {
+		perror("fork");
+		return -1;
+	}
 
-	message.type = MSG_NMEA;
-	message.data.nmea.type = NMEA_RMC;
-	rmc = &message.data.nmea.sentence.rmc;
+	if (rc == 0) {
+		proc->pid = getpid();
+		proc->pfd = pfd[0];
+		close(pfd[1]);  /* close writing end of pipe, child doesn't need it */
+		func(proc); /* child code, will not return */
+		exit(EXIT_SUCCESS);
+	}
+
+	close(pfd[0]); /* close reading end of pipe, parent doesn't need it */
+
+	proc->pid = rc;
+	proc->pfd = pfd[1];
+
+	return rc;
+} /* }}} */
+
+
+static void gps_device_serial_demo(const config_t * config) /* <producer> {{{ */
+{
+	int rc;
+
+	fd_set rfds;
+	int fd_max;
+	struct message_t msg;
+	struct timespec tm;
+
+	struct device_t device;
+	const struct device_operations_t * ops = NULL;
+
+	struct nmea_t nmea;
+	char buf[NMEA_MAX_SENTENCE + 1];
+	int buf_index;
+	char c;
+
+	struct serial_config_t serial_config = {
+		"/dev/ttyUSB0"
+	};
+
+	ops = &serial_device_operations;
+	device_init(&device);
+	nmea_init(&nmea);
+	memset(buf, 0, sizeof(buf));
+	buf_index = 0;
+
+	rc = ops->open(&device, (const struct device_config_t *)&serial_config);
+	if (rc < 0) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+
+	while (!request_terminate) {
+		fd_max = -1;
+		FD_ZERO(&rfds);
+		FD_SET(config->pfd, &rfds);
+		if (config->pfd > fd_max) fd_max = config->pfd;
+		FD_SET(device.fd, &rfds);
+		if (device.fd > fd_max) fd_max = device.fd;
+
+		tm.tv_sec = 1;
+		tm.tv_nsec = 0;
+
+		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, &signal_mask);
+		if (rc < 0 && errno != EINTR) {
+			perror("select");
+			exit(EXIT_FAILURE);
+		} else if (rc < 0 && errno == EINTR) {
+			break;
+		}
+
+		if (FD_ISSET(device.fd, &rfds)) {
+			rc = ops->read(&device, &c, sizeof(c));
+			if (rc < 0) {
+				perror("read");
+				exit(EXIT_FAILURE);
+			}
+			if (rc != sizeof(c)) {
+				perror("read");
+				exit(EXIT_FAILURE);
+			}
+			switch (c) {
+				case '\r':
+					break;
+				case '\n':
+					rc = nmea_read(&nmea, buf);
+					if (rc == 0) {
+						printf("OK : [%s]\n", buf);
+						/* TODO: send message */
+					} else if (rc == 1) {
+						printf("[%s] : UNKNOWN SENTENCE\n", buf);
+					} else if (rc == -2) {
+						printf("[%s] : CHECKSUM ERROR\n", buf);
+					} else {
+						fprintf(stderr, "parameter error\n");
+						exit(EXIT_FAILURE);
+					}
+					buf_index = 0;
+					buf[buf_index] = 0;
+					break;
+				default:
+					if (buf_index < NMEA_MAX_SENTENCE) {
+						buf[buf_index++] = c;
+					} else {
+						fprintf(stderr, "sentence too long, discarding\n");
+						buf_index = 0;
+					}
+					buf[buf_index] = 0;
+					break;
+			}
+		}
+
+		if (FD_ISSET(config->pfd, &rfds)) {
+			rc = read(config->pfd, &msg, sizeof(msg));
+			if (rc < 0) {
+				perror("read");
+				continue;
+			}
+			if (rc != (int)sizeof(msg)) {
+				fprintf(stderr, "error: cannot read message\n");
+				continue;
+			}
+			switch (msg.type) {
+				case MSG_SYSTEM:
+					switch (msg.data.system) {
+						case SYSTEM_TERMINATE:
+							rc = ops->close(&device);
+							if (rc < 0) {
+								perror("close");
+								exit(EXIT_FAILURE);
+							}
+							exit(EXIT_SUCCESS);
+						default:
+							break;
+					}
+				default:
+					break;
+			}
+			continue;
+		}
+	}
+} /* }}} */
+
+static void gps_simulator(const config_t * config) /* <producer> {{{ */
+{
+	fd_set rfds;
+	struct message_t msg;
+	struct message_t sim_message;
+	int rc;
+	struct timespec tm;
+
+	struct nmea_rmc_t * rmc;
+	char buf[NMEA_MAX_SENTENCE];
+
+	sim_message.type = MSG_NMEA;
+	sim_message.data.nmea.type = NMEA_RMC;
+	rmc = &sim_message.data.nmea.sentence.rmc;
 	rmc->time.h = 20;
 	rmc->time.m = 15;
 	rmc->time.s = 30;
@@ -100,215 +241,228 @@ static int execute_gps_simulation(void * ptr)
 	rmc->m_dir = NMEA_WEST;
 	rmc->sig_integrity = NMEA_SIG_INT_SIMULATED;
 
-	rc = nmea_write(buf, sizeof(buf), &message.data.nmea);
+	rc = nmea_write(buf, sizeof(buf), &sim_message.data.nmea);
 	if (rc < 0) {
 		fprintf(stderr, "%s:%d: invalid RMC data, rc=%d\n", __FILE__, __LINE__, rc);
-		return -1;
+		exit(EXIT_FAILURE);
 	}
 
-	/* queue_read_timeout */
+	while (!request_terminate) {
+		FD_ZERO(&rfds);
+		FD_SET(config->pfd, &rfds);
 
-	for (message_no = 0; (config->number_of_messages < 0) || (message_no < config->number_of_messages); ++message_no) {
-		printf("%s:%d: sending [%s]\n", __FILE__, __LINE__, buf);
-		if (queue_write(config->message_queue, &message) < 0) {
-			fprintf(stderr, "%s:%d: error while sending messages\n", __FILE__, __LINE__);
-			return -1;
+		tm.tv_sec = 1;
+		tm.tv_nsec = 0;
+
+		rc = pselect(config->pfd + 1, &rfds, NULL, NULL, &tm, &signal_mask);
+		if (rc < 0 && errno != EINTR) {
+			perror("select");
+			exit(EXIT_FAILURE);
+		} else if (rc < 0 && errno == EINTR) {
+			break;
 		}
-		sleep(1);
+
+		if (rc == 0) { /* timeout */
+			write(config->hub_fd, &sim_message, sizeof(sim_message));
+			continue;
+		}
+
+		if (FD_ISSET(config->pfd, &rfds)) {
+			rc = read(config->pfd, &msg, sizeof(msg));
+			if (rc < 0) {
+				perror("read");
+				continue;
+			}
+			if (rc != (int)sizeof(msg)) {
+				fprintf(stderr, "error: cannot read message\n");
+				continue;
+			}
+			switch (msg.type) {
+				case MSG_SYSTEM:
+					switch (msg.data.system) {
+						case SYSTEM_TERMINATE:
+							exit(EXIT_SUCCESS);
+						default:
+							break;
+					}
+				default:
+					break;
+			}
+			continue;
+		}
 	}
+} /* }}} */
 
-	return 0;
-}
-
-static const struct strategy_t strategy_gps_simulation =
+static void message_logger(const config_t * config) /* <consumer> {{{ */
 {
-	.name = "gps_simulation",
-	.func = execute_gps_simulation,
-};
-
-/* gps simulation }}} */
-
-/* {{{ hub */
-
-struct hub_config_t
-{
-	struct queue_t * message_queue;
-};
-
-static int execute_hub(void * ptr)
-{
-	struct hub_config_t * config;
-	struct message_t message;
-	char buf[NMEA_MAX_SENTENCE];
+	fd_set rfds;
+	struct message_t msg;
 	int rc;
-	int terminate = 0;
+	char buf[NMEA_MAX_SENTENCE];
 
-	if (ptr == NULL) {
-		fprintf(stderr, "%s:%d: invalid configuration\n", __FILE__, __LINE__);
-		return -1;
-	}
+	while (!request_terminate) {
+		FD_ZERO(&rfds);
+		FD_SET(config->pfd, &rfds);
 
-	config = (struct hub_config_t *)ptr;
-
-	for (; !terminate;) {
-		if (queue_read(config->message_queue, &message) < 0) {
-			fprintf(stderr, "%s:%d: error while receiving messages\n", __FILE__, __LINE__);
-			return -1;
+		rc = pselect(config->pfd + 1, &rfds, NULL, NULL, NULL, &signal_mask);
+		if (rc < 0 && errno != EINTR) {
+			perror("select");
+			exit(EXIT_FAILURE);
+		} else if (rc < 0 && errno == EINTR) {
+			break;
+		} else if (rc == 0) {
+			continue;
 		}
-		switch (message.type) {
-			case MSG_SYSTEM:
-				terminate = message.data.system == SYSTEM_TERMINATE;
-				break;
 
-			case MSG_NMEA:
-				memset(buf, 0, sizeof(buf));
-				rc = nmea_write(buf, sizeof(buf), &message.data.nmea);
-				if (rc < 0) {
-					fprintf(stderr, "%s:%d: error while writing NMEA data to buffer\n", __FILE__, __LINE__);
-					continue;
-				}
-				printf("%s:%d: received message: [%s]\n", __FILE__, __LINE__, buf);
-				break;
+		if (FD_ISSET(config->pfd, &rfds)) {
+			rc = read(config->pfd, &msg, sizeof(msg));
+			if (rc < 0) {
+				perror("read");
+				continue;
+			}
+			if (rc != (int)sizeof(msg)) {
+				fprintf(stderr, "error: cannot read message\n");
+				continue;
+			}
+			switch (msg.type) {
+				case MSG_SYSTEM:
+					switch (msg.data.system) {
+						case SYSTEM_TERMINATE:
+							exit(EXIT_SUCCESS);
+						default:
+							break;
+					}
+					break;
 
-			default:
-				fprintf(stderr, "%s:%d: unknown message type: %u, ignoring message\n", __FILE__, __LINE__, message.type);
-				break;
+				case MSG_NMEA:
+					memset(buf, 0, sizeof(buf));
+					rc = nmea_write(buf, sizeof(buf), &msg.data.nmea);
+					if (rc < 0) {
+						fprintf(stderr, "%s:%d: error while writing NMEA data to buffer\n", __FILE__, __LINE__);
+						continue;
+					}
+					printf("%s:%d: received message: [%s]\n", __FILE__, __LINE__, buf);
+					break;
+
+				default:
+					printf("%s:%d: log  : %08x\n", __FILE__, __LINE__, msg.type);
+					break;
+			}
+			continue;
 		}
 	}
+} /* }}} */
 
-	return 0;
-}
-
-static const struct strategy_t strategy_hub =
-{
-	.name = "hub",
-	.func = execute_hub,
-};
-
-/* hub }}}*/
-
-static int message_pool_write(struct pool_t * pool, void * data, uint32_t index)
-{
-	if (pool == NULL || data == NULL) return -1;
-	((struct message_t *)pool->data)[index] = *(struct message_t *)data;
-	return 0;
-}
-
-static int message_pool_read(struct pool_t * pool, void * data, uint32_t index)
-{
-	if (pool == NULL || data == NULL) return -1;
-	*(struct message_t *)data = ((struct message_t *)pool->data)[index];
-	return 0;
-}
 
 int main(int argc, char ** argv)
 {
+	config_t cfg_sim;
+	config_t cfg_log;
+
+	struct message_t msg;
+	int pfd[2];
 	int rc;
-	struct message_t msg_terminate;
+	fd_set rfds;
+	int num_msg;
 
-	struct message_t hub_messages[8];
-	struct pool_t hub_message_pool;
-	struct queue_t hub_message_queue;
+	sigset_t mask;
+	struct sigaction act;
 
-	pthread_t tid_hub;
-	struct action_t action_hub;
-	struct hub_config_t hub_config;
+	/* daemonize process */
 
-	struct message_t gps_sim_messages[8];
-	struct pool_t gps_sim_message_pool;
-	struct queue_t gps_sim_message_queue;
-
-	pthread_t tid_gps_simulation;
-	struct action_t action_gps_simulation;
-	struct gps_simulation_config_t simulation_config;
-
-	UNUSED_ARG(argc);
-	UNUSED_ARG(argv);
-
-	/* set up system messages */
-
-	msg_terminate.type = MSG_SYSTEM;
-	msg_terminate.data.system = SYSTEM_TERMINATE;
-
-	/* set up message queues */
-
-	memset(hub_messages, 0, sizeof(hub_messages));
-	hub_message_pool.data = hub_messages;
-	hub_message_pool.size = sizeof(hub_messages) / sizeof(hub_messages[0]);
-	hub_message_pool.write = &message_pool_write;
-	hub_message_pool.read = &message_pool_read;
-	rc = queue_init(&hub_message_queue, &hub_message_pool);
-	if (rc < 0) {
-		fprintf(stderr, "error: cannot initialize hub_message_queue\n");
-		exit(-1);
+	if (argc == 2 && strcmp(argv[1], "-d") == 0) {
+		daemonize();
 	}
 
-	memset(gps_sim_messages, 0, sizeof(gps_sim_messages));
-	gps_sim_message_pool.data = gps_sim_messages;
-	gps_sim_message_pool.size = sizeof(gps_sim_messages) / sizeof(gps_sim_messages[0]);
-	gps_sim_message_pool.write = &message_pool_write;
-	gps_sim_message_pool.read = &message_pool_read;
-	rc = queue_init(&gps_sim_message_queue, &gps_sim_message_pool);
-	if (rc < 0) {
-		fprintf(stderr, "error: cannot initialize gps_sim_message_queue\n");
-		exit(-1);
+	/* set up signal handling (active also for all subprocesses, if masks are global) */
+
+	memset(&act, 0, sizeof(act));
+	act.sa_handler = handle_signal;
+	if (sigaction(SIGTERM, &act, NULL) < 0) {
+		perror("sigaction");
+		exit(EXIT_FAILURE);
+	}
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGTERM);
+	if (sigprocmask(SIG_BLOCK, &mask, &signal_mask) < 0) {
+		perror("sigprocmask");
+		exit(EXIT_FAILURE);
 	}
 
-	/* set up activities */
+	/* set up pipe from subprocesses to hub */
 
-	action_gps_simulation.strategy = &strategy_gps_simulation;
-	action_gps_simulation.config = &simulation_config;
-	simulation_config.message_queue = &hub_message_queue;
-	simulation_config.number_of_messages = 5;
-
-	action_hub.strategy = &strategy_hub;
-	action_hub.config = &hub_config;
-	hub_config.message_queue = &hub_message_queue;
-
-	/* start thread */
-
-	rc = pthread_create(&tid_hub, NULL, thread_func, (void *)&action_hub);
+	rc = pipe(pfd);
 	if (rc < 0) {
-		perror("pthread_create");
-		exit(-1);
+		perror("pipe");
+		exit(EXIT_FAILURE);
 	}
 
-	rc = pthread_create(&tid_gps_simulation, NULL, thread_func, (void *)&action_gps_simulation);
-	if (rc < 0) {
-		perror("pthread_create");
-		exit(-1);
+	/* start subprocesses */
+
+	cfg_log.hub_fd = pfd[1];
+	if (start_proc(&cfg_log, message_logger) < 0) {
+		return EXIT_FAILURE;
 	}
 
-	/* terminate system after 10s */
-
-	sleep(10);
-	queue_write(&hub_message_queue, &msg_terminate);
-
-	/* wait for termination and clean up */
-
-	rc = pthread_join(tid_gps_simulation, NULL);
-	if (rc < 0) {
-		perror("pthread_join");
-		exit(-1);
+	cfg_sim.hub_fd = pfd[1];
+	if (start_proc(&cfg_sim, gps_simulator) < 0) {
+		return EXIT_FAILURE;
 	}
 
-	rc = pthread_join(tid_hub, NULL);
-	if (rc < 0) {
-		perror("pthread_join");
-		exit(-1);
+	/* main / hub process */
+
+	num_msg = 20;
+	for (; !request_terminate;) {
+		FD_ZERO(&rfds);
+		FD_SET(pfd[0], &rfds);
+
+		rc = pselect(pfd[0] + 1, &rfds, NULL, NULL, NULL, &signal_mask);
+		if (rc < 0 && errno != EINTR) {
+			perror("select");
+			exit(EXIT_FAILURE);
+		} else if (request_terminate) {
+			break;
+		} else if (rc == 0) {
+			continue;
+		}
+
+		if (FD_ISSET(pfd[0], &rfds)) {
+			rc = read(pfd[0], &msg, sizeof(msg));
+			if (rc < 0) {
+				perror("read");
+				continue;
+			}
+			if (rc != (int)sizeof(msg)) {
+				fprintf(stderr, "%s:%d: error: cannot read message\n", __FILE__, __LINE__);
+				continue;
+			}
+
+			/* TODO: routing table */
+
+			switch (msg.type) {
+				default:
+					printf("%s:%d: route: %08x\n", __FILE__, __LINE__, msg.type);
+					write(cfg_log.pfd, &msg, sizeof(msg));
+					break;
+			}
+
+			/* TEMP: terminate after num_msg */
+			--num_msg;
+			if (num_msg <= 0) {
+				break;
+			}
+		}
 	}
 
-	rc = queue_destroy(&gps_sim_message_queue);
-	if (rc < 0) {
-		fprintf(stderr, "error while destroying gps_sim_message_queue\n");
-		exit(-1);
-	}
+	/* request subprocesses to terminate, gracefully, and wait for their termination */
 
-	rc = queue_destroy(&hub_message_queue);
-	if (rc < 0) {
-		fprintf(stderr, "error while destroying hub_message_queue\n");
-		exit(-1);
-	}
+	msg.type = MSG_SYSTEM;
+	msg.data.system = SYSTEM_TERMINATE;
+	write(cfg_sim.pfd, &msg, sizeof(msg));
+	write(cfg_log.pfd, &msg, sizeof(msg));
+
+	waitpid(cfg_sim.pid, NULL, 0);
+	waitpid(cfg_log.pid, NULL, 0);
 
 	return EXIT_SUCCESS;
 }
