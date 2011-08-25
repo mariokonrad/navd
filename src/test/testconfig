@@ -1,0 +1,12 @@
+gps_serial{ device="/dev/ttyUSB0" baud=115200 parity=none data=8 stop=1 };
+log { enable };
+
+gps_sim -> log;
+gps_sim -> ( log );
+
+gps_sim {};
+
+gps_serial -> [trn0] -> log;
+gps_serial -> [trn0] -> (log log);
+
+trn0 {};

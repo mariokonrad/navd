@@ -10,6 +10,7 @@
 #include <message.h>
 #include <nmea/nmea_sentence_gprmc.h>
 #include <device/serial.h>
+#include <config-parser.tab.h>
 
 static volatile int request_terminate = 0;
 static sigset_t signal_mask;
