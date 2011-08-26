@@ -39,6 +39,11 @@ int identifier_type(const char * s)
 %option nounput
 %option noinput
 
+%option reentrant
+%option never-interactive
+%option nounistd
+%option bison-bridge
+
 %%
 
 "->"                          { log_token(yytext); return FORWARD; }

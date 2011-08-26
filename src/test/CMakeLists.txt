@@ -28,3 +28,9 @@ target_link_libraries(check_size
 	common
 	)
 
+add_executable(config
+	config.c
+	${BISON_parser_OUTPUTS}
+	${FLEX_lexer_OUTPUTS}
+	)
+
