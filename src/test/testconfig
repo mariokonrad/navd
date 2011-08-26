@@ -1,12 +1,16 @@
-gps_serial{ device="/dev/ttyUSB0" baud=115200 parity=none data=8 stop=1 };
-log { enable };
+gps : gps_serial { device="/dev/ttyUSB0" baud=115200 parity=none data=8 stop=1 };
+log0 : message_log { enable };
+log1 : message_log { enable };
+log2 : message_log { enable };
+log3 : message_log { enable };
+log4 : message_log { enable };
+sim : gps_sim {};
 
-gps_sim -> log;
-gps_sim -> ( log );
+# test comment
+sim -> log0;
+sim -> ( log1 ); # another test comment
 
-gps_sim {};
+gps -> [nmea_only] -> log2;
+gps -> [nmea_only] -> (log3 log4);
 
-gps_serial -> [trn0] -> log;
-gps_serial -> [trn0] -> (log log);
-
-trn0 {};
+nmea_only : message_filter {};

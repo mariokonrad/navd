@@ -1,6 +1,6 @@
 
 %{
-#include "config-parser.tab.h"
+#include <config/parser.tab.h>
 
 int identifier_type(const char * s)
 {
