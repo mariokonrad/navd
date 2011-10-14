@@ -1,16 +1,13 @@
 
 %{
 #include <config/parser.tab.h>
+#include <config/config.h>
 
 int identifier_type(const char * s)
 {
-	if (strcmp("gps_sim", s) == 0) return SOURCE_TYPE;
-	if (strcmp("gps_serial", s) == 0) return SOURCE_TYPE;
-
-	if (strcmp("message_log", s) == 0) return DESTINATION_TYPE;
-
-	if (strcmp("message_filter", s) == 0) return FILTER_TYPE;
-
+	if (config_registered_as_source(s) == 0) return SOURCE_TYPE;
+	if (config_registered_as_destination(s) == 0) return DESTINATION_TYPE;
+	if (config_registered_as_filter(s) == 0) return FILTER_TYPE;
 	return IDENTIFIER;
 }
 

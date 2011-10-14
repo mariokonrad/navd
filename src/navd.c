@@ -3,6 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <getopt.h>
+#include <limits.h>
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -10,15 +12,26 @@
 #include <message.h>
 #include <nmea/nmea_sentence_gprmc.h>
 #include <device/serial.h>
+#include <config/config.h>
+
+static const char * OPTIONS_SHORT = "hdc:";
+
+static const struct option OPTIONS_LONG[] =
+{
+	{ "help",        no_argument,       0, 'h' },
+	{ "daemon",      no_argument,       0, 'd' },
+	{ "config",      required_argument, 0, 'c' },
+	{ "dump-config", no_argument,       0, 0   },
+};
 
 static volatile int request_terminate = 0;
 static sigset_t signal_mask;
 
-typedef struct config_t {
+typedef struct proc_config_t {
 	int pid;
 	int pfd;
 	int hub_fd;
-} config_t;
+} proc_config_t;
 
 static void handle_signal(int sig) /* {{{ */
 {
@@ -40,7 +53,7 @@ static void daemonize(void) /* {{{ */
 	}
 } /* }}} */
 
-static int start_proc(config_t * proc, void (*func)(const config_t *)) /* {{{ */
+static int start_proc(proc_config_t * proc, void (*func)(const proc_config_t *)) /* {{{ */
 {
 	int pfd[2];
 	int rc;
@@ -76,8 +89,62 @@ static int start_proc(config_t * proc, void (*func)(const config_t *)) /* {{{ */
 	return rc;
 } /* }}} */
 
+static void dump_config(const struct config_t * config) /* {{{ */
+{
+	size_t i;
+	size_t j;
 
-static void gps_device_serial_demo(const config_t * config) /* <producer> {{{ */
+	if (config == NULL) return;
+
+	printf("===== SOURCES ========================\n");
+	for (i = 0; i < config->num_sources; ++i) {
+		struct source_t * p = &config->sources[i];
+		printf("  %s : %s\n", p->name, p->type);
+		for (j = 0; j < p->num_properties; ++j) {
+			struct property_t * prop = &p->properties[j];
+			printf("\t%s = %s\n", prop->key, prop->value);
+		}
+	}
+	printf("===== DESTINATIONS ===================\n");
+	for (i = 0; i < config->num_destinations; ++i) {
+		struct destination_t * p = &config->destinations[i];
+		printf("  %s : %s\n", p->name, p->type);
+		for (j = 0; j < p->num_properties; ++j) {
+			struct property_t * prop = &p->properties[j];
+			printf("\t%s = %s\n", prop->key, prop->value);
+		}
+	}
+	printf("===== FILTERS ========================\n");
+	for (i = 0; i < config->num_filters; ++i) {
+		struct filter_t * p = &config->filters[i];
+		printf("  %s : %s\n", p->name, p->type);
+		for (j = 0; j < p->num_properties; ++j) {
+			struct property_t * prop = &p->properties[j];
+			printf("\t%s = %s\n", prop->key, prop->value);
+		}
+	}
+	printf("===== ROUTES =========================\n");
+	for (i = 0; i < config->num_routes; ++i) {
+		struct route_t * p = &config->routes[i];
+		printf("  %s --[%s]--> %s\n", p->name_source, p->name_filter, p->name_destination);
+	}
+} /* }}} */
+
+static void usage(const char * name) /* {{{ */
+{
+	printf("\n");
+	printf("usage: %s [options]\n", name);
+	printf("\n");
+	printf("Options:\n");
+	printf("  -h      | --help        : help information\n");
+	printf("  -d      | --daemon      : daemonize process\n");
+	printf("  -c file | --config file : configuration file\n");
+	printf("  --dump-config           : dumps the configuration and exit\n");
+	printf("\n");
+} /* }}} */
+
+
+static void gps_device_serial_demo(const proc_config_t * config) /* <source> {{{ */
 {
 	int rc;
 
@@ -201,7 +268,7 @@ static void gps_device_serial_demo(const config_t * config) /* <producer> {{{ */
 	}
 } /* }}} */
 
-static void gps_simulator(const config_t * config) /* <producer> {{{ */
+static void gps_simulator(const proc_config_t * config) /* <source> {{{ */
 {
 	fd_set rfds;
 	struct message_t msg;
@@ -297,7 +364,8 @@ static void gps_simulator(const config_t * config) /* <producer> {{{ */
 	}
 } /* }}} */
 
-static void message_logger(const config_t * config) /* <consumer> {{{ */
+
+static void message_logger(const proc_config_t * config) /* <destination> {{{ */
 {
 	fd_set rfds;
 	struct message_t msg;
@@ -358,10 +426,22 @@ static void message_logger(const config_t * config) /* <consumer> {{{ */
 } /* }}} */
 
 
+static int filter_dummy(struct message_t * out, const struct message_t * in) /* <filter> {{{ */
+{
+	if (out == NULL) return -1;
+	if (in == NULL) return -1;
+
+	memcpy(out, in, sizeof(struct message_t));
+	return 0;
+} /* }}} */
+
+
 int main(int argc, char ** argv)
 {
-	config_t cfg_sim;
-	config_t cfg_log;
+	proc_config_t cfg_sim;
+	proc_config_t cfg_log;
+
+	size_t i;
 
 	struct message_t msg;
 	int pfd[2];
@@ -372,9 +452,90 @@ int main(int argc, char ** argv)
 	sigset_t mask;
 	struct sigaction act;
 
+	struct {
+		int daemonize;
+		int config;
+		int dump_config;
+	} option;
+
+	int index;
+	char option_config_filename[PATH_MAX+1];
+	struct config_t config;
+
+	/* register known types (sources, destinations, filters) */
+
+	config_register_source("gps_sim");
+	config_register_source("gps_serial");
+	config_register_destination("message_log");
+	config_register_filter("message_filter");
+
+	/* parse command line arguments */
+
+	memset(&option, 0, sizeof(option));
+	memset(option_config_filename, 0, sizeof(option_config_filename));
+	while (optind < argc) {
+		rc = getopt_long(argc, argv, OPTIONS_SHORT, OPTIONS_LONG, &index);
+		if (rc == -1) {
+			exit(EXIT_FAILURE);
+		}
+		switch (rc) {
+			case 'h':
+				usage(argv[0]);
+				exit(EXIT_SUCCESS);
+			case 'd':
+				option.daemonize = 1;
+				break;
+			case 'c':
+				option.config = 1;
+				strncpy(option_config_filename, optarg, sizeof(option_config_filename)-1);
+				break;
+			case 0:
+				switch (index) {
+					case 3:
+						option.dump_config = 1;
+						break;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	if (optind < argc) {
+		printf("error: unknown parameters\n");
+		usage(argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	/* read configuration */
+
+	if (option.config != 1) {
+		printf("error: configuration file name not defined.\n");
+		usage(argv[0]);
+		exit(EXIT_FAILURE);
+	}
+	if (strlen(option_config_filename) <= 0) {
+		printf("error: invalid config file name.'\n");
+		exit(EXIT_FAILURE);
+	}
+	rc = config_parse_file(option_config_filename, &config);
+	if (rc < 0) {
+		printf("error: unable to read config file.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* TODO: check config (no duplicates, etc.) */
+
+	/* dump information */
+
+	if (option.dump_config) {
+		dump_config(&config);
+		config_free(&config);
+		exit(EXIT_SUCCESS);
+	}
+
 	/* daemonize process */
 
-	if (argc == 2 && strcmp(argv[1], "-d") == 0) {
+	if (option.daemonize) {
 		daemonize();
 	}
 
@@ -401,7 +562,21 @@ int main(int argc, char ** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/* start subprocesses */
+	/* start subprocesses : destinations */
+
+	for (i = 0; i < config.num_destinations; ++i) {
+		printf("TODO: start destination '%s'\n", config.destinations[i].name);
+		/* TODO */
+	}
+
+	/* start subprocesses : sources */
+
+	for (i = 0; i < config.num_sources; ++i) {
+		printf("TODO: start source '%s'\n", config.sources[i].name);
+		/* TODO */
+	}
+
+exit(-1); /* TODO:TEMP */
 
 	cfg_log.hub_fd = pfd[1];
 	if (start_proc(&cfg_log, message_logger) < 0) {

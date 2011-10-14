@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <config/config.h>
 #include <common/macros.h>
 
@@ -56,9 +57,9 @@ routing
 	: IDENTIFIER FORWARD IDENTIFIER ';'
 		{
 			struct route_t route;
-			route.name_source = $1;
+			route.name_source = strdup($1);
 			route.name_filter = NULL;
-			route.name_destination = $3;
+			route.name_destination = strdup($3);
 			config_add_route(config, route);
 		}
 	| IDENTIFIER FORWARD multiple_destinations ';'
@@ -67,7 +68,7 @@ routing
 
 			for (i = 0; i < tmp->num_dests; ++i) {
 				struct route_t route;
-				route.name_source = $1;
+				route.name_source = strdup($1);
 				route.name_filter = NULL;
 				route.name_destination = tmp->dests[i];
 				config_add_route(config, route);
@@ -77,9 +78,9 @@ routing
 	| IDENTIFIER FORWARD '[' IDENTIFIER ']' FORWARD IDENTIFIER ';'
 		{
 			struct route_t route;
-			route.name_source = $1;
-			route.name_filter = $4;
-			route.name_destination = $7;
+			route.name_source = strdup($1);
+			route.name_filter = strdup($4);
+			route.name_destination = strdup($7);
 			config_add_route(config, route);
 		}
 	| IDENTIFIER FORWARD '[' IDENTIFIER ']' FORWARD multiple_destinations ';'
@@ -88,8 +89,8 @@ routing
 
 			for (i = 0; i < tmp->num_dests; ++i) {
 				struct route_t route;
-				route.name_source = $1;
-				route.name_filter = $4;
+				route.name_source = strdup($1);
+				route.name_filter = strdup($4);
 				route.name_destination = tmp->dests[i];
 				config_add_route(config, route);
 			}
@@ -101,8 +102,8 @@ source
 	: IDENTIFIER ':' SOURCE_TYPE config ';'
 		{
 			struct source_t source;
-			source.name = $1;
-			source.type = $3;
+			source.name = strdup($1);
+			source.type = strdup($3);
 			source.num_properties = tmp->num_props;
 			source.properties = tmp->props;
 			config_clear_tmp_property(tmp);
@@ -114,8 +115,8 @@ destination
 	: IDENTIFIER ':' DESTINATION_TYPE config ';'
 		{
 			struct destination_t destination;
-			destination.name = $1;
-			destination.type = $3;
+			destination.name = strdup($1);
+			destination.type = strdup($3);
 			destination.num_properties = tmp->num_props;
 			destination.properties = tmp->props;
 			config_clear_tmp_property(tmp);
@@ -127,8 +128,8 @@ filter
 	: IDENTIFIER ':' FILTER_TYPE config ';'
 		{
 			struct filter_t filter;
-			filter.name = $1;
-			filter.type = $3;
+			filter.name = strdup($1);
+			filter.type = strdup($3);
 			filter.num_properties = tmp->num_props;
 			filter.properties = tmp->props;
 			config_clear_tmp_property(tmp);
@@ -165,14 +166,14 @@ property
 	: IDENTIFIER '=' value
 		{
 			struct property_t property;
-			property.key = $1;
-			property.value = $3;
+			property.key = strdup($1);
+			property.value = strdup($3);
 			config_add_tmp_property(tmp, property);
 		}
 	| IDENTIFIER
 		{
 			struct property_t property;
-			property.key = $1;
+			property.key = strdup($1);
 			config_add_tmp_property(tmp, property);
 		}
 	;
