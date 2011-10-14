@@ -34,5 +34,6 @@ add_executable(config_test
 
 target_link_libraries(config_test
 	config
+	common
 	)
 

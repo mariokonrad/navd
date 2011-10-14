@@ -1,5 +1,6 @@
 #include <config/config.h>
 #include <common/macros.h>
+#include <common/stringlist.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,41 +13,6 @@ extern int yyparse(void * scanner, struct config_t * config, struct parse_temp_t
 static struct string_list_t reg_sources = { 0, NULL };
 static struct string_list_t reg_destinations = { 0, NULL };
 static struct string_list_t reg_filters = { 0, NULL };
-
-
-int config_strlist_append(struct string_list_t * sl, const char * s)
-{
-	if (sl == NULL) return -1;
-	if (s == NULL) return -1;
-	
-	sl->num++;
-	sl->data = realloc(sl->data, sl->num * sizeof(char *));
-	sl->data[sl->num-1] = strdup(s);
-	return 0;
-}
-
-int config_strlist_clear(struct string_list_t * sl)
-{
-	size_t i;
-
-	if (sl == NULL) return -1;
-	for (i = 0; i < sl->num; ++i) {
-		if (sl->data[i]) free(sl->data[i]);
-	}
-	sl->num = 0;
-	return 0;
-}
-
-int config_strlist_find(const struct string_list_t * sl, const char * s)
-{
-	size_t i;
-
-	for (i = 0; i < sl->num; ++i) {
-		if (strcmp(s, sl->data[i]) == 0)
-			return 0;
-	}
-	return -1;
-}
 
 int config_find_tmp_destination(struct parse_temp_t * tmp, char * destination)
 {
@@ -132,7 +98,7 @@ void config_add_tmp_property(struct parse_temp_t * tmp, struct property_t proper
 {
 	if (config_find_tmp_propery(tmp, property)) {
 		/* TODO: error */
-		config_free_property_data(&property);
+		property_data_free(&property);
 	} else {
 		tmp->num_props++;
 		tmp->props = realloc(tmp->props,
@@ -153,20 +119,6 @@ void config_init(struct config_t * config)
 	config->routes = NULL;
 }
 
-void config_free_property_data(struct property_t * property)
-{
-	if (property == NULL) return;
-	if (property->key) free(property->key);
-	if (property->value) free(property->value);
-}
-
-void config_free_property(struct property_t * property)
-{
-	if (property == NULL) return;
-	config_free_property_data(property);
-	free(property);
-}
-
 void config_free_tmp(struct parse_temp_t * tmp)
 {
 	size_t i;
@@ -174,7 +126,7 @@ void config_free_tmp(struct parse_temp_t * tmp)
 	if (tmp == NULL) return;
 
 	for (i = 0; i < tmp->num_props; ++i) {
-		config_free_property(&tmp->props[i]);
+		property_free(&tmp->props[i]);
 	}
 	for (i = 0; i < tmp->num_dests; ++i) {
 		if (tmp->dests[i] == NULL) continue;
@@ -190,7 +142,7 @@ void config_free_source(struct source_t * source)
 	if (source->name) free(source->name);
 	if (source->type) free(source->type);
 	for (i = 0; i < source->num_properties; ++i) {
-		config_free_property_data(&source->properties[i]);
+		property_data_free(&source->properties[i]);
 	}
 }
 
@@ -202,7 +154,7 @@ void config_free_destination(struct destination_t * destination)
 	if (destination->name) free(destination->name);
 	if (destination->type) free(destination->type);
 	for (i = 0; i < destination->num_properties; ++i) {
-		config_free_property_data(&destination->properties[i]);
+		property_data_free(&destination->properties[i]);
 	}
 }
 
@@ -214,7 +166,7 @@ void config_free_filter(struct filter_t * filter)
 	if (filter->name) free(filter->name);
 	if (filter->type) free(filter->type);
 	for (i = 0; i < filter->num_properties; ++i) {
-		config_free_property_data(&filter->properties[i]);
+		property_data_free(&filter->properties[i]);
 	}
 }
 
@@ -295,32 +247,32 @@ void config_add_route(struct config_t * config, struct route_t route)
 
 int config_register_source(const char * type)
 {
-	return config_strlist_append(&reg_sources, type);
+	return strlist_append(&reg_sources, type);
 }
 
 int config_register_destination(const char * type)
 {
-	return config_strlist_append(&reg_destinations, type);
+	return strlist_append(&reg_destinations, type);
 }
 
 int config_register_filter(const char * type)
 {
-	return config_strlist_append(&reg_filters, type);
+	return strlist_append(&reg_filters, type);
 }
 
 int config_registered_as_source(const char * s)
 {
-	return config_strlist_find(&reg_sources, s);
+	return strlist_find(&reg_sources, s);
 }
 
 int config_registered_as_destination(const char * s)
 {
-	return config_strlist_find(&reg_destinations, s);
+	return strlist_find(&reg_destinations, s);
 }
 
 int config_registered_as_filter(const char * s)
 {
-	return config_strlist_find(&reg_filters, s);
+	return strlist_find(&reg_filters, s);
 }
 
 /**
