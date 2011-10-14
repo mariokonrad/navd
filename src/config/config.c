@@ -1,6 +1,5 @@
 #include <config/config.h>
 #include <common/macros.h>
-#include <common/stringlist.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,33 +9,14 @@ extern void yyset_in(FILE * in_str, void * yyscanner);
 extern int yylex_destroy(void * yyscanner);
 extern int yyparse(void * scanner, struct config_t * config, struct parse_temp_t * tmp);
 
-static struct string_list_t reg_sources = { 0, NULL };
-static struct string_list_t reg_destinations = { 0, NULL };
-static struct string_list_t reg_filters = { 0, NULL };
+static struct {
+	struct string_list_t sources;
+	struct string_list_t destinations;
+	struct string_list_t filters;
+} registered = { { 0, NULL }, { 0, NULL }, { 0, NULL } };
 
-int config_find_tmp_destination(struct parse_temp_t * tmp, char * destination)
-{
-	size_t i;
 
-	for (i = 0; i < tmp->num_dests; ++i) {
-		if (strcmp(destination, tmp->dests[i]) == 0)
-			return 1;
-	}
-	return 0;
-}
-
-int config_find_tmp_propery(struct parse_temp_t * tmp, struct property_t property)
-{
-	size_t i;
-
-	for (i = 0; i < tmp->num_props; ++i) {
-		if (strcmp(property.key, tmp->props[i].key) == 0)
-			return 1;
-	}
-	return 0;
-}
-
-int config_find_source(struct config_t * config, const char * source)
+static int config_find_source(struct config_t * config, const char * source)
 {
 	size_t i;
 
@@ -47,7 +27,7 @@ int config_find_source(struct config_t * config, const char * source)
 	return 0;
 }
 
-int config_find_destination(struct config_t * config, const char * destination)
+static int config_find_destination(struct config_t * config, const char * destination)
 {
 	size_t i;
 
@@ -58,7 +38,7 @@ int config_find_destination(struct config_t * config, const char * destination)
 	return 0;
 }
 
-int config_find_filter(struct config_t * config, const char * filter)
+static int config_find_filter(struct config_t * config, const char * filter)
 {
 	size_t i;
 
@@ -71,43 +51,43 @@ int config_find_filter(struct config_t * config, const char * filter)
 
 void config_clear_tmp_dests(struct parse_temp_t * tmp)
 {
-	tmp->num_dests = 0;
-	tmp->dests = NULL;
+	strlist_free(&tmp->destinations);
 }
 
-void config_add_tmp_destination(struct parse_temp_t * tmp, char * destination)
+void config_add_tmp_destination(struct parse_temp_t * tmp, const char * destination)
 {
-	if (config_find_tmp_destination(tmp, destination)) {
-		/* TODO: error */
-		free(destination);
+	int rc;
+
+	rc = strlist_find(&tmp->destinations, destination);
+	if (rc < 0) {
+		/* TODO: fatal error */
+	} else if (rc > 0) {
+		/* TODO: error: already existing */
 	} else {
-		tmp->num_dests++;
-		tmp->dests = realloc(tmp->dests,
-			tmp->num_dests * sizeof(char *));
-		tmp->dests[tmp->num_dests-1] = strdup(destination);
+		strlist_append(&tmp->destinations, destination);
 	}
 }
 
 void config_clear_tmp_property(struct parse_temp_t * tmp)
 {
-	tmp->num_props = 0;
-	tmp->props = NULL;
+	proplist_init(&tmp->properties);
 }
 
-void config_add_tmp_property(struct parse_temp_t * tmp, struct property_t property)
+void config_add_tmp_property(struct parse_temp_t * tmp, const char * key, const char * value)
 {
-	if (config_find_tmp_propery(tmp, property)) {
-		/* TODO: error */
-		property_data_free(&property);
+	int rc;
+
+	rc = proplist_contains(&tmp->properties, key);
+	if (rc < 0) {
+		/* TODO: fatal error */
+	} else if (rc > 0) {
+		/* TODO: error: already existing key */
 	} else {
-		tmp->num_props++;
-		tmp->props = realloc(tmp->props,
-			tmp->num_props * sizeof(struct property_t));
-		tmp->props[tmp->num_props-1] = property;
+		proplist_append(&tmp->properties, key, value);
 	}
 }
 
-void config_init(struct config_t * config)
+static void config_init(struct config_t * config)
 {
 	config->num_sources = 0;
 	config->num_destinations = 0;
@@ -119,64 +99,44 @@ void config_init(struct config_t * config)
 	config->routes = NULL;
 }
 
-void config_free_tmp(struct parse_temp_t * tmp)
+static void config_free_tmp(struct parse_temp_t * tmp)
 {
-	size_t i;
-
 	if (tmp == NULL) return;
-
-	for (i = 0; i < tmp->num_props; ++i) {
-		property_free(&tmp->props[i]);
-	}
-	for (i = 0; i < tmp->num_dests; ++i) {
-		if (tmp->dests[i] == NULL) continue;
-		free(tmp->dests[i]);
-	}
+	proplist_free(&tmp->properties);
+	strlist_free(&tmp->destinations);
 }
 
-void config_free_source(struct source_t * source)
+static void config_free_source(struct source_t * source)
 {
-	size_t i;
-
 	if (source == NULL) return;
 	if (source->name) free(source->name);
 	if (source->type) free(source->type);
-	for (i = 0; i < source->num_properties; ++i) {
-		property_data_free(&source->properties[i]);
-	}
+	proplist_free(&source->properties);
 }
 
-void config_free_destination(struct destination_t * destination)
+static void config_free_destination(struct destination_t * destination)
 {
-	size_t i;
-
 	if (destination == NULL) return;
 	if (destination->name) free(destination->name);
 	if (destination->type) free(destination->type);
-	for (i = 0; i < destination->num_properties; ++i) {
-		property_data_free(&destination->properties[i]);
-	}
+	proplist_free(&destination->properties);
 }
 
-void config_free_filter(struct filter_t * filter)
+static void config_free_filter(struct filter_t * filter)
 {
-	size_t i;
-
 	if (filter == NULL) return;
 	if (filter->name) free(filter->name);
 	if (filter->type) free(filter->type);
-	for (i = 0; i < filter->num_properties; ++i) {
-		property_data_free(&filter->properties[i]);
-	}
+	proplist_free(&filter->properties);
 }
 
-void config_free_route(struct route_t * route)
+static void config_free_route(struct route_t * route)
 {
 	if (route == NULL) return;
 	if (route->name_source) free(route->name_source);
 	if (route->name_destination) free(route->name_destination);
 	if (route->name_filter) free(route->name_filter);
-	/* source, filter and destination are not to be deleted */
+	/* source, filter and destination are not to be deleted, they are just links */
 }
 
 void config_free(struct config_t * config)
@@ -199,80 +159,145 @@ void config_free(struct config_t * config)
 	}
 }
 
-void config_add_source(struct config_t * config, struct source_t source)
+void config_add_source(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
 {
-	if (config_find_source(config, source.name)) {
+	struct source_t * source;
+
+	if (name == NULL || type == NULL || properties == NULL) {
+		/* TODO: fatal error */
+	} else if (config_find_source(config, name)) {
 		/* TODO: prevent duplicates */
 	} else {
 		config->num_sources++;
 		config->sources = realloc(config->sources,
 			config->num_sources * sizeof(struct source_t));
-		config->sources[config->num_sources-1] = source;
+		source = &config->sources[config->num_sources-1];
+		source->name = strdup(name);
+		source->type = strdup(type);
+		source->properties = *properties;
 	}
 }
 
-void config_add_destination(struct config_t * config, struct destination_t destination)
+void config_add_destination(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
 {
-	if (config_find_destination(config, destination.name)) {
+	struct destination_t * destination;
+
+	if (name == NULL || type == NULL || properties == NULL) {
+		/* TODO: fatal error */
+	} else if (config_find_destination(config, name)) {
 		/* TODO: prevent duplicates */
 	} else {
 		config->num_destinations++;
 		config->destinations = realloc(config->destinations,
 			config->num_destinations * sizeof(struct destination_t));
-		config->destinations[config->num_destinations-1] = destination;
+		destination = &config->destinations[config->num_destinations-1];
+		destination->name = strdup(name);
+		destination->type = strdup(type);
+		destination->properties = *properties;
 	}
 }
 
-void config_add_filter(struct config_t * config, struct filter_t filter)
+void config_add_filter(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
 {
-	if (config_find_filter(config, filter.name)) {
+	struct filter_t * filter;
+
+	if (name == NULL || type == NULL || properties == NULL) {
+		/* TODO: fatal error */
+	} else if (config_find_filter(config, name)) {
 		/* TODO: prevent duplicates */
 	} else {
 		config->num_filters++;
 		config->filters = realloc(config->filters,
 			config->num_filters * sizeof(struct filter_t));
-		config->filters[config->num_filters-1] = filter;
+		filter = &config->filters[config->num_filters-1];
+		filter->name = strdup(name);
+		filter->type = strdup(type);
+		filter->properties = *properties;
 	}
 }
 
-void config_add_route(struct config_t * config, struct route_t route)
+void config_add_route(struct config_t * config, const char * source, const char * filter, const char * destination)
 {
-	/* TODO: prevent duplicates */
+	struct route_t * route;
 
-	config->num_routes++;
-	config->routes = realloc(config->routes,
-		config->num_routes * sizeof(struct route_t));
-	config->routes[config->num_routes-1] = route;
+	if (source == NULL || destination == NULL) {
+		/* TODO: fatal error */
+	} else {
+		/* TODO: prevent duplicates */
+
+		config->num_routes++;
+		config->routes = realloc(config->routes,
+			config->num_routes * sizeof(struct route_t));
+		route = &config->routes[config->num_routes-1];
+		route->name_source = strdup(source);
+		route->name_destination = strdup(destination);
+		if (filter) {
+			route->name_filter = strdup(filter);
+		} else {
+			route->name_filter = NULL;
+		}
+	}
 }
 
 int config_register_source(const char * type)
 {
-	return strlist_append(&reg_sources, type);
+	return strlist_append(&registered.sources, type);
 }
 
 int config_register_destination(const char * type)
 {
-	return strlist_append(&reg_destinations, type);
+	return strlist_append(&registered.destinations, type);
 }
 
 int config_register_filter(const char * type)
 {
-	return strlist_append(&reg_filters, type);
+	return strlist_append(&registered.filters, type);
 }
 
 int config_registered_as_source(const char * s)
 {
-	return strlist_find(&reg_sources, s);
+	return strlist_find(&registered.sources, s);
 }
 
 int config_registered_as_destination(const char * s)
 {
-	return strlist_find(&reg_destinations, s);
+	return strlist_find(&registered.destinations, s);
 }
 
 int config_registered_as_filter(const char * s)
 {
-	return strlist_find(&reg_filters, s);
+	return strlist_find(&registered.filters, s);
+}
+
+static void finish_routes_linking(struct config_t * config)
+{
+	size_t i;
+	size_t j;
+	struct route_t * route;
+
+	for (i = 0; i < config->num_routes; ++i) {
+		route = &config->routes[i];
+		for (j = 0; j < config->num_sources; ++j) {
+			if (strcmp(route->name_source, config->sources[j].name) == 0) {
+				route->source = &config->sources[j];
+				break;
+			}
+		}
+		for (j = 0; j < config->num_destinations; ++j) {
+			if (strcmp(route->name_destination, config->destinations[j].name) == 0) {
+				route->destination = &config->destinations[j];
+				break;
+			}
+		}
+		if (route->name_filter) {
+			for (j = 0; j < config->num_filters; ++j) {
+				if (strcmp(route->name_filter, config->filters[j].name) == 0) {
+					route->filter = &config->filters[j];
+					break;
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -305,7 +330,7 @@ int config_parse_file(const char * filename, struct config_t * config)
 
 	config_init(config);
 	config_clear_tmp_property(&tmp);
-	config_clear_tmp_dests(&tmp);
+	strlist_init(&tmp.destinations);
 
 	yylex_init(&scanner);
 	yyset_in(file, scanner);
@@ -320,8 +345,7 @@ int config_parse_file(const char * filename, struct config_t * config)
 		return -3;
 	}
 
-	/* TODO: finish links in routes to sources, destinations, filters */
-
+	finish_routes_linking(config);
 	return 0;
 }
 

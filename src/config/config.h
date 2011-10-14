@@ -3,29 +3,27 @@
 
 #include <stdio.h>
 #include <common/property.h>
+#include <common/stringlist.h>
 
 struct source_t
 {
 	char * name;
 	char * type;
-	size_t num_properties;
-	struct property_t * properties;
+	struct property_list_t properties;
 };
 
 struct destination_t
 {
 	char * name;
 	char * type;
-	size_t num_properties;
-	struct property_t * properties;
+	struct property_list_t properties;
 };
 
 struct filter_t
 {
 	char * name;
 	char * type;
-	size_t num_properties;
-	struct property_t * properties;
+	struct property_list_t properties;
 };
 
 struct route_t
@@ -51,34 +49,22 @@ struct config_t
 	struct route_t * routes;
 };
 
-struct parse_temp_t {
-	size_t num_props;
-	struct property_t * props;
-	size_t num_dests;
-	char ** dests;
+struct parse_temp_t
+{
+	struct property_list_t properties;
+	struct string_list_t destinations;
 };
 
-int config_find_tmp_destination(struct parse_temp_t * tmp, char * destination);
-int config_find_tmp_propery(struct parse_temp_t * tmp, struct property_t property);
-int config_find_source(struct config_t * config, const char * source);
-int config_find_destination(struct config_t * config, const char * destination);
-int config_find_filter(struct config_t * config, const char * filter);
 void config_clear_tmp_dests(struct parse_temp_t * tmp);
-void config_add_tmp_destination(struct parse_temp_t * tmp, char * destination);
+void config_add_tmp_destination(struct parse_temp_t * tmp, const char * destination);
 void config_clear_tmp_property(struct parse_temp_t * tmp);
-void config_add_tmp_property(struct parse_temp_t * tmp, struct property_t property);
-void config_init(struct config_t * config);
-void config_free_source(struct source_t * source);
-void config_free_destination(struct destination_t * destination);
-void config_free_filter(struct filter_t * filter);
-void config_free_route(struct route_t * route);
-void config_free_tmp(struct parse_temp_t * tmp);
-void config_free(struct config_t * config);
-void config_add_source(struct config_t * config, struct source_t source);
-void config_add_destination(struct config_t * config, struct destination_t destination);
-void config_add_filter(struct config_t * config, struct filter_t filter);
-void config_add_route(struct config_t * config, struct route_t route);
+void config_add_tmp_property(struct parse_temp_t * tmp, const char * key, const char * value);
+void config_add_source(struct config_t * config, const char * name, const char * type, struct property_list_t * properties);
+void config_add_destination(struct config_t * config, const char * name, const char * type, struct property_list_t * properties);
+void config_add_filter(struct config_t * config, const char * name, const char * type, struct property_list_t * properties);
+void config_add_route(struct config_t * config, const char * source, const char * filter, const char * destination);
 
+void config_free(struct config_t * config);
 int config_register_source(const char * type);
 int config_register_destination(const char * type);
 int config_register_filter(const char * type);

@@ -100,8 +100,8 @@ static void dump_config(const struct config_t * config) /* {{{ */
 	for (i = 0; i < config->num_sources; ++i) {
 		struct source_t * p = &config->sources[i];
 		printf("  %s : %s\n", p->name, p->type);
-		for (j = 0; j < p->num_properties; ++j) {
-			struct property_t * prop = &p->properties[j];
+		for (j = 0; j < p->properties.num; ++j) {
+			const struct property_t * prop = &p->properties.data[j];
 			printf("\t%s = %s\n", prop->key, prop->value);
 		}
 	}
@@ -109,8 +109,8 @@ static void dump_config(const struct config_t * config) /* {{{ */
 	for (i = 0; i < config->num_destinations; ++i) {
 		struct destination_t * p = &config->destinations[i];
 		printf("  %s : %s\n", p->name, p->type);
-		for (j = 0; j < p->num_properties; ++j) {
-			struct property_t * prop = &p->properties[j];
+		for (j = 0; j < p->properties.num; ++j) {
+			const struct property_t * prop = &p->properties.data[j];
 			printf("\t%s = %s\n", prop->key, prop->value);
 		}
 	}
@@ -118,8 +118,8 @@ static void dump_config(const struct config_t * config) /* {{{ */
 	for (i = 0; i < config->num_filters; ++i) {
 		struct filter_t * p = &config->filters[i];
 		printf("  %s : %s\n", p->name, p->type);
-		for (j = 0; j < p->num_properties; ++j) {
-			struct property_t * prop = &p->properties[j];
+		for (j = 0; j < p->properties.num; ++j) {
+			const struct property_t * prop = &p->properties.data[j];
 			printf("\t%s = %s\n", prop->key, prop->value);
 		}
 	}
@@ -456,10 +456,10 @@ int main(int argc, char ** argv)
 		int daemonize;
 		int config;
 		int dump_config;
+		char config_filename[PATH_MAX+1];
 	} option;
 
 	int index;
-	char option_config_filename[PATH_MAX+1];
 	struct config_t config;
 
 	/* register known types (sources, destinations, filters) */
@@ -472,7 +472,6 @@ int main(int argc, char ** argv)
 	/* parse command line arguments */
 
 	memset(&option, 0, sizeof(option));
-	memset(option_config_filename, 0, sizeof(option_config_filename));
 	while (optind < argc) {
 		rc = getopt_long(argc, argv, OPTIONS_SHORT, OPTIONS_LONG, &index);
 		if (rc == -1) {
@@ -487,7 +486,7 @@ int main(int argc, char ** argv)
 				break;
 			case 'c':
 				option.config = 1;
-				strncpy(option_config_filename, optarg, sizeof(option_config_filename)-1);
+				strncpy(option.config_filename, optarg, sizeof(option.config_filename)-1);
 				break;
 			case 0:
 				switch (index) {
@@ -513,11 +512,11 @@ int main(int argc, char ** argv)
 		usage(argv[0]);
 		exit(EXIT_FAILURE);
 	}
-	if (strlen(option_config_filename) <= 0) {
+	if (strlen(option.config_filename) <= 0) {
 		printf("error: invalid config file name.'\n");
 		exit(EXIT_FAILURE);
 	}
-	rc = config_parse_file(option_config_filename, &config);
+	rc = config_parse_file(option.config_filename, &config);
 	if (rc < 0) {
 		printf("error: unable to read config file.\n");
 		exit(EXIT_FAILURE);

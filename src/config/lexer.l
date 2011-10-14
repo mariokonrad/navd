@@ -5,9 +5,9 @@
 
 int identifier_type(const char * s)
 {
-	if (config_registered_as_source(s) == 0) return SOURCE_TYPE;
-	if (config_registered_as_destination(s) == 0) return DESTINATION_TYPE;
-	if (config_registered_as_filter(s) == 0) return FILTER_TYPE;
+	if (config_registered_as_source(s) > 0) return SOURCE_TYPE;
+	if (config_registered_as_destination(s) > 0) return DESTINATION_TYPE;
+	if (config_registered_as_filter(s) > 0) return FILTER_TYPE;
 	return IDENTIFIER;
 }
 

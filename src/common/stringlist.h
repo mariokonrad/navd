@@ -9,8 +9,9 @@ struct string_list_t
 	char ** data;
 };
 
-int strlist_append(struct string_list_t * sl, const char * s);
-int strlist_free(struct string_list_t * sl);
-int strlist_find(const struct string_list_t * sl, const char * s);
+int strlist_init(struct string_list_t * list);
+int strlist_append(struct string_list_t * list, const char * s);
+int strlist_free(struct string_list_t * list);
+int strlist_find(const struct string_list_t * list, const char * s);
 
 #endif
