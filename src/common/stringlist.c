@@ -1,5 +1,6 @@
 #include <common/stringlist.h>
 #include <stdlib.h>
+#include <string.h>
 
 int strlist_init(struct string_list_t * list)
 {

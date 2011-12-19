@@ -5,14 +5,7 @@
 #include <common/property.h>
 #include <common/stringlist.h>
 
-struct source_t
-{
-	char * name;
-	char * type;
-	struct property_list_t properties;
-};
-
-struct destination_t
+struct proc_t
 {
 	char * name;
 	char * type;
@@ -32,17 +25,17 @@ struct route_t
 	char * name_filter;
 	char * name_destination;
 
-	struct source_t * source;
+	struct proc_t * source;
 	struct filter_t * filter;
-	struct destination_t * destination;
+	struct proc_t * destination;
 };
 
 struct config_t
 {
 	size_t num_sources;
-	struct source_t * sources;
+	struct proc_t * sources;
 	size_t num_destinations;
-	struct destination_t * destinations;
+	struct proc_t * destinations;
 	size_t num_filters;
 	struct filter_t * filters;
 	size_t num_routes;

@@ -16,12 +16,12 @@ int main(int argc, char ** argv)
 
 	printf("===== SOURCES ========================\n");
 	for (i = 0; i < config.num_sources; ++i) {
-		struct source_t * p = &config.sources[i];
+		struct proc_t * p = &config.sources[i];
 		printf("  %s : %s\n", p->name, p->type);
 	}
 	printf("===== DESTINATIONS ===================\n");
 	for (i = 0; i < config.num_destinations; ++i) {
-		struct destination_t * p = &config.destinations[i];
+		struct proc_t * p = &config.destinations[i];
 		printf("  %s : %s\n", p->name, p->type);
 	}
 	printf("===== FILTERS ========================\n");

@@ -106,20 +106,12 @@ static void config_free_tmp(struct parse_temp_t * tmp)
 	strlist_free(&tmp->destinations);
 }
 
-static void config_free_source(struct source_t * source)
+static void config_free_proc(struct proc_t * proc)
 {
-	if (source == NULL) return;
-	if (source->name) free(source->name);
-	if (source->type) free(source->type);
-	proplist_free(&source->properties);
-}
-
-static void config_free_destination(struct destination_t * destination)
-{
-	if (destination == NULL) return;
-	if (destination->name) free(destination->name);
-	if (destination->type) free(destination->type);
-	proplist_free(&destination->properties);
+	if (proc == NULL) return;
+	if (proc->name) free(proc->name);
+	if (proc->type) free(proc->type);
+	proplist_free(&proc->properties);
 }
 
 static void config_free_filter(struct filter_t * filter)
@@ -146,10 +138,10 @@ void config_free(struct config_t * config)
 	if (config == NULL) return;
 
 	for (i = 0; i < config->num_sources; ++i) {
-		config_free_source(&config->sources[i]);
+		config_free_proc(&config->sources[i]);
 	}
 	for (i = 0; i < config->num_destinations; ++i) {
-		config_free_destination(&config->destinations[i]);
+		config_free_proc(&config->destinations[i]);
 	}
 	for (i = 0; i < config->num_filters; ++i) {
 		config_free_filter(&config->filters[i]);
@@ -161,7 +153,7 @@ void config_free(struct config_t * config)
 
 void config_add_source(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
 {
-	struct source_t * source;
+	struct proc_t * source;
 
 	if (name == NULL || type == NULL || properties == NULL) {
 		/* TODO: fatal error */
@@ -170,7 +162,7 @@ void config_add_source(struct config_t * config, const char * name, const char *
 	} else {
 		config->num_sources++;
 		config->sources = realloc(config->sources,
-			config->num_sources * sizeof(struct source_t));
+			config->num_sources * sizeof(struct proc_t));
 		source = &config->sources[config->num_sources-1];
 		source->name = strdup(name);
 		source->type = strdup(type);
@@ -180,7 +172,7 @@ void config_add_source(struct config_t * config, const char * name, const char *
 
 void config_add_destination(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
 {
-	struct destination_t * destination;
+	struct proc_t * destination;
 
 	if (name == NULL || type == NULL || properties == NULL) {
 		/* TODO: fatal error */
@@ -189,7 +181,7 @@ void config_add_destination(struct config_t * config, const char * name, const c
 	} else {
 		config->num_destinations++;
 		config->destinations = realloc(config->destinations,
-			config->num_destinations * sizeof(struct destination_t));
+			config->num_destinations * sizeof(struct proc_t));
 		destination = &config->destinations[config->num_destinations-1];
 		destination->name = strdup(name);
 		destination->type = strdup(type);
