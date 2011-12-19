@@ -40,8 +40,9 @@ typedef struct proc_config_t {
 	int wfd; /* pipe file descriptor to write */
 } proc_config_t;
 
-static proc_config_t * proc_src_cfg = NULL;
-static proc_config_t * proc_dst_cfg = NULL;
+static proc_config_t * proc_cfg = NULL;
+static size_t proc_cfg_base_src = 0;
+static size_t proc_cfg_base_dst = 0;
 
 static void usage(const char * name) /* {{{ */
 {
@@ -100,30 +101,23 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 static void prepare_proc_configs(size_t num_sources, size_t num_destinations) /* {{{ */
 {
 	size_t i;
+	size_t num = num_sources + num_destinations;
 
-	proc_src_cfg = malloc(sizeof(struct proc_config_t) * num_sources);
-	for (i = 0; i < num_sources; ++i) {
-		proc_src_cfg[i].pid = -1;
-		proc_src_cfg[i].rfd = -1;
-		proc_src_cfg[i].wfd = -1;
+	proc_cfg = malloc(sizeof(struct proc_config_t) * num);
+	for (i = 0; i < num; ++i) {
+		proc_cfg[i].pid = -1;
+		proc_cfg[i].rfd = -1;
+		proc_cfg[i].wfd = -1;
 	}
-	proc_dst_cfg = malloc(sizeof(struct proc_config_t) * num_destinations);
-	for (i = 0; i < num_destinations; ++i) {
-		proc_dst_cfg[i].pid = -1;
-		proc_dst_cfg[i].rfd = -1;
-		proc_dst_cfg[i].wfd = -1;
-	}
+	proc_cfg_base_src = 0;
+	proc_cfg_base_dst = num_sources;
 } /* }}} */
 
 static void destroy_proc_configs(void) /* {{{ */
 {
-	if (proc_src_cfg) {
-		free(proc_src_cfg);
-		proc_src_cfg = NULL;
-	}
-	if (proc_dst_cfg) {
-		free(proc_dst_cfg);
-		proc_dst_cfg = NULL;
+	if (proc_cfg) {
+		free(proc_cfg);
+		proc_cfg = NULL;
 	}
 } /* }}} */
 
@@ -239,7 +233,6 @@ static void dump_config(const struct config_t * config) /* {{{ */
 			p->source, p->filter, p->destination);
 	}
 } /* }}} */
-
 
 static void gps_device_serial_demo(const proc_config_t * config, const struct property_list_t * properties) /* <source> {{{ */
 {
@@ -466,7 +459,6 @@ static void gps_simulator(const proc_config_t * config, const struct property_li
 	}
 } /* }}} */
 
-
 static void message_log(const proc_config_t * config, const struct property_list_t * properties) /* <destination> {{{ */
 {
 	fd_set rfds;
@@ -530,7 +522,6 @@ static void message_log(const proc_config_t * config, const struct property_list
 	}
 } /* }}} */
 
-
 static int filter_dummy(struct message_t * out, const struct message_t * in) /* <filter> {{{ */
 {
 	if (out == NULL) return -1;
@@ -539,7 +530,6 @@ static int filter_dummy(struct message_t * out, const struct message_t * in) /* 
 	memcpy(out, in, sizeof(struct message_t));
 	return 0;
 } /* }}} */
-
 
 static int read_configuration(struct config_t * config) /* {{{ */
 {
@@ -562,7 +552,7 @@ static int read_configuration(struct config_t * config) /* {{{ */
 	return 0;
 } /* }}} */
 
-static int send_terminate(const struct proc_config_t * proc, const char * name) /* {{{ */
+static int send_terminate(const struct proc_config_t * proc) /* {{{ */
 {
 	int rc;
 	struct message_t msg;
@@ -571,7 +561,6 @@ static int send_terminate(const struct proc_config_t * proc, const char * name) 
 	memset(&msg, 0, sizeof(msg));
 	msg.type = MSG_SYSTEM;
 	msg.data.system = SYSTEM_TERMINATE;
-	printf("stop '%s'\n", name);
 	rc = write(proc->wfd, &msg, sizeof(msg));
 	if (rc < 0) {
 		perror("write");
@@ -587,9 +576,10 @@ static int start_destinations(const struct config_t * config) /* {{{ */
 
 	for (i = 0; i < config->num_destinations; ++i) {
 		const struct destination_t * ptr = &config->destinations[i];
+		struct proc_config_t * cfg = &proc_cfg[i + proc_cfg_base_dst];
 		printf("start destination '%s' (type: '%s')\n", ptr->name, ptr->type);
 		if (!strcmp(ptr->type, "message_log")) {
-			rc = start_proc(&proc_dst_cfg[i], message_log, &ptr->properties);
+			rc = start_proc(cfg, message_log, &ptr->properties);
 			if (rc < 0) {
 				return -1;
 			}
@@ -608,14 +598,15 @@ static int start_sources(const struct config_t * config) /* {{{ */
 
 	for (i = 0; i < config->num_sources; ++i) {
 		const struct source_t * ptr = &config->sources[i];
+		struct proc_config_t * cfg = &proc_cfg[i + proc_cfg_base_src];
 		printf("start source '%s' (type: '%s')\n", ptr->name, ptr->type);
 		if (!strcmp(ptr->type, "gps_sim")) {
-			rc = start_proc(&proc_src_cfg[i], gps_simulator, &ptr->properties);
+			rc = start_proc(cfg, gps_simulator, &ptr->properties);
 			if (rc < 0) {
 				exit(EXIT_FAILURE);
 			}
 		} else if (!strcmp(ptr->type, "gps_serial")) {
-			rc = start_proc(&proc_src_cfg[i], gps_device_serial_demo, &ptr->properties);
+			rc = start_proc(cfg, gps_device_serial_demo, &ptr->properties);
 			if (rc < 0) {
 				exit(EXIT_FAILURE);
 			}
@@ -627,8 +618,9 @@ static int start_sources(const struct config_t * config) /* {{{ */
 	return 0;
 } /* }}} */
 
-static int route_msg(const struct config_t * config, const struct message_t * msg)
+static int route_msg(size_t src_index, const struct config_t * config, const struct message_t * msg)
 {
+	UNUSED_ARG(src_index);
 	UNUSED_ARG(config);
 	UNUSED_ARG(msg);
 
@@ -647,7 +639,7 @@ static int route_msg(const struct config_t * config, const struct message_t * ms
 	return 0;
 }
 
-int main(int argc, char ** argv)
+int main(int argc, char ** argv) /* {{{ */
 {
 	size_t i;
 
@@ -709,20 +701,12 @@ int main(int argc, char ** argv)
 	if (start_sources(&config) < 0) return EXIT_FAILURE;
 
 	/* main / hub process */
-	num_msg = 20;
+	num_msg = 5; /* TODO */
 	for (; !request_terminate;) {
 		FD_ZERO(&rfds);
 		fd_max = 0;
-		for (i = 0; i < config.num_sources; ++i) {
-			fd = proc_src_cfg[i].rfd;
-			if (fd <= 0) continue;
-			FD_SET(fd, &rfds);
-			if (fd > fd_max) {
-				fd_max = fd;
-			}
-		}
-		for (i = 0; i < config.num_destinations; ++i) {
-			fd = proc_dst_cfg[i].rfd;
+		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
+			fd = proc_cfg[i].rfd;
 			if (fd <= 0) continue;
 			FD_SET(fd, &rfds);
 			if (fd > fd_max) {
@@ -740,24 +724,29 @@ int main(int argc, char ** argv)
 			continue;
 		}
 
-		for (i = 0; i < config.num_sources; ++i) {
-			fd = proc_src_cfg[i].rfd;
-			if (FD_ISSET(fd, &rfds)) {
-				rc = read(fd, &msg, sizeof(msg));
-				if (rc < 0) {
-					perror("read");
-					continue;
-				}
-				if (rc != (int)sizeof(msg)) {
-					fprintf(stderr, "%s:%d: error: cannot read message\n", __FILE__, __LINE__);
-					continue;
-				}
+		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
+			fd = proc_cfg[i].rfd;
+			if (fd <= 0) continue;
+			if (!FD_ISSET(fd, &rfds)) continue;
 
-				if (route_msg(&config, &msg) < 0) {
+			rc = read(fd, &msg, sizeof(msg));
+			if (rc < 0) {
+				perror("read");
+				continue;
+			}
+			if (rc != (int)sizeof(msg)) {
+				fprintf(stderr, "%s:%d: error: cannot read message\n", __FILE__, __LINE__);
+				continue;
+			}
+
+			if ((i >= proc_cfg_base_src) && (i < proc_cfg_base_dst)) {
+				if (route_msg(i, &config, &msg) < 0) {
 					fprintf(stderr, "%s:%d: error: route: %08x\n", __FILE__, __LINE__, msg.type);
 				} else {
 					printf("%s:%d: route: %08x\n", __FILE__, __LINE__, msg.type);
 				}
+			} else {
+				fprintf(stderr, "%s:%d: error: messages from destinations not supported yet\n", __FILE__, __LINE__);
 			}
 		}
 
@@ -769,21 +758,15 @@ int main(int argc, char ** argv)
 	}
 
 	/* request subprocesses to terminate, gracefully, and wait for their termination */
-	for (i = 0; i < config.num_sources; ++i) {
-		send_terminate(&proc_src_cfg[i], config.sources[i].name);
+	for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
+		send_terminate(&proc_cfg[i]);
 	}
-	for (i = 0; i < config.num_destinations; ++i) {
-		send_terminate(&proc_dst_cfg[i], config.destinations[i].name);
-	}
-	for (i = 0; i < config.num_sources; ++i) {
-		waitpid(proc_src_cfg[i].pid, NULL, 0);
-	}
-	for (i = 0; i < config.num_destinations; ++i) {
-		waitpid(proc_dst_cfg[i].pid, NULL, 0);
+	for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
+		waitpid(proc_cfg[i].pid, NULL, 0);
 	}
 
 	destroy_proc_configs();
 
 	return EXIT_SUCCESS;
-}
+} /* }}} */
 
