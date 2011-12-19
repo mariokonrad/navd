@@ -4,11 +4,13 @@ log1 : message_log { enable };
 log2 : message_log { enable };
 log3 : message_log { enable };
 log4 : message_log { enable };
+log5 : message_log { enable };
 sim : gps_sim {};
 
 # test comment
 sim -> log0;
 sim -> ( log1 ); # another test comment
+sim -> [nmea_only] -> log5;
 
 gps -> [nmea_only] -> log2;
 gps -> [nmea_only] -> (log3 log4);
