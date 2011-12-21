@@ -8,6 +8,7 @@ add_subdirectory(common)
 add_subdirectory(config)
 add_subdirectory(device)
 add_subdirectory(nmea)
+add_subdirectory(navcom)
 add_subdirectory(test)
 
 add_executable(navd
@@ -15,6 +16,7 @@ add_executable(navd
 	)
 
 target_link_libraries(navd
+	navcom
 	devices
 	nmea
 	config

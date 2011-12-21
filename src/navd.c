@@ -10,365 +10,20 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <common/macros.h>
-#include <message.h>
-#include <nmea/nmea_sentence_gprmc.h>
-#include <device/serial.h>
+#include <navcom/message.h>
 #include <config/config.h>
 #include <libgen.h>
+
+#include <navcom/filter_null.h>
+#include <navcom/message_log.h>
+#include <navcom/gps_simulator.h>
+#include <navcom/gps_serial.h>
 
 /* TODO:
 
  - release unused resources within child processes
 
 */
-
-struct proc_config_t {
-	int pid; /* process id */
-	int rfd; /* pipe file descriptor to read */
-	int wfd; /* pipe file descriptor to write */
-
-	const struct proc_t const * cfg; /* configuration */
-};
-
-typedef int (*filter_function)(struct message_t *, const struct message_t *, const struct property_list_t *);
-typedef int (*proc_function)(const struct proc_config_t *, const struct property_list_t *);
-
-struct proc_desc_t {
-	const char * name;
-	proc_function func;
-};
-
-struct filter_desc_t {
-	const char * name;
-	filter_function func;
-};
-
-static volatile int request_terminate = 0;
-static sigset_t signal_mask;
-
-
-static int gps_device_serial_demo(const struct proc_config_t * config, const struct property_list_t * properties) /* <source> {{{ */
-{
-	int rc;
-
-	fd_set rfds;
-	int fd_max;
-	struct message_t msg;
-	struct timespec tm;
-
-	struct device_t device;
-	const struct device_operations_t * ops = NULL;
-
-	struct nmea_t nmea;
-	char buf[NMEA_MAX_SENTENCE + 1];
-	int buf_index;
-	char c;
-
-	struct serial_config_t serial_config = {
-		"/dev/ttyUSB0"
-	};
-
-	UNUSED_ARG(properties);
-
-	ops = &serial_device_operations;
-	device_init(&device);
-	nmea_init(&nmea);
-	memset(buf, 0, sizeof(buf));
-	buf_index = 0;
-
-	rc = ops->open(&device, (const struct device_config_t *)&serial_config);
-	if (rc < 0) {
-		perror("open");
-		return EXIT_FAILURE;
-	}
-
-	while (!request_terminate) {
-		fd_max = -1;
-		FD_ZERO(&rfds);
-		FD_SET(config->rfd, &rfds);
-		if (config->rfd > fd_max) fd_max = config->rfd;
-		FD_SET(device.fd, &rfds);
-		if (device.fd > fd_max) fd_max = device.fd;
-
-		tm.tv_sec = 1;
-		tm.tv_nsec = 0;
-
-		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, &signal_mask);
-		if (rc < 0 && errno != EINTR) {
-			perror("select");
-			return EXIT_FAILURE;
-		} else if (rc < 0 && errno == EINTR) {
-			break;
-		}
-
-		if (FD_ISSET(device.fd, &rfds)) {
-			rc = ops->read(&device, &c, sizeof(c));
-			if (rc < 0) {
-				perror("read");
-				return EXIT_FAILURE;
-			}
-			if (rc != sizeof(c)) {
-				perror("read");
-				return EXIT_FAILURE;
-			}
-			switch (c) {
-				case '\r':
-					break;
-				case '\n':
-					rc = nmea_read(&nmea, buf);
-					if (rc == 0) {
-						printf("OK : [%s]\n", buf);
-						/* TODO: send message */
-					} else if (rc == 1) {
-						printf("[%s] : UNKNOWN SENTENCE\n", buf);
-					} else if (rc == -2) {
-						printf("[%s] : CHECKSUM ERROR\n", buf);
-					} else {
-						fprintf(stderr, "parameter error\n");
-						return EXIT_FAILURE;
-					}
-					buf_index = 0;
-					buf[buf_index] = 0;
-					break;
-				default:
-					if (buf_index < NMEA_MAX_SENTENCE) {
-						buf[buf_index++] = c;
-					} else {
-						fprintf(stderr, "sentence too long, discarding\n");
-						buf_index = 0;
-					}
-					buf[buf_index] = 0;
-					break;
-			}
-		}
-
-		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				perror("read");
-				continue;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
-				return EXIT_FAILURE;
-			}
-			switch (msg.type) {
-				case MSG_SYSTEM:
-					switch (msg.data.system) {
-						case SYSTEM_TERMINATE:
-							rc = ops->close(&device);
-							if (rc < 0) {
-								perror("close");
-								return EXIT_FAILURE;
-							}
-							return EXIT_SUCCESS;
-						default:
-							break;
-					}
-				default:
-					break;
-			}
-			continue;
-		}
-	}
-	return EXIT_SUCCESS;
-} /* }}} */
-
-const struct proc_desc_t desc_gps_device_serial_demo = {
-	"gps_serial_demo",
-	gps_device_serial_demo
-};
-
-static int gps_simulator(const struct proc_config_t * config, const struct property_list_t * properties) /* <source> {{{ */
-{
-	fd_set rfds;
-	struct message_t msg;
-	struct message_t sim_message;
-	int rc;
-	struct timespec tm;
-
-	struct nmea_rmc_t * rmc;
-	char buf[NMEA_MAX_SENTENCE];
-
-	UNUSED_ARG(properties);
-
-	sim_message.type = MSG_NMEA;
-	sim_message.data.nmea.type = NMEA_RMC;
-	rmc = &sim_message.data.nmea.sentence.rmc;
-	rmc->time.h = 20;
-	rmc->time.m = 15;
-	rmc->time.s = 30;
-	rmc->time.ms = 0;
-	rmc->status = NMEA_STATUS_OK;
-	rmc->lat.d = 47;
-	rmc->lat.m = 8;
-	rmc->lat.s.i = 0;
-	rmc->lat.s.d = 0;
-	rmc->lat_dir = NMEA_NORTH;
-	rmc->lon.d = 3;
-	rmc->lon.m = 20;
-	rmc->lon.s.i = 0;
-	rmc->lon.s.d = 0;
-	rmc->lon_dir = NMEA_EAST;
-	rmc->sog.i = 0;
-	rmc->sog.d = 0;
-	rmc->head.i = 0;
-	rmc->head.d = 0;
-	rmc->date.y = 0;
-	rmc->date.m = 1;
-	rmc->date.d = 1;
-	rmc->m.i = 0;
-	rmc->m.d = 0;
-	rmc->m_dir = NMEA_WEST;
-	rmc->sig_integrity = NMEA_SIG_INT_SIMULATED;
-
-	rc = nmea_write(buf, sizeof(buf), &sim_message.data.nmea);
-	if (rc < 0) {
-		syslog(LOG_WARNING, "invalid RMC data, rc=%d", rc);
-		return EXIT_FAILURE;
-	}
-
-	while (!request_terminate) {
-		FD_ZERO(&rfds);
-		FD_SET(config->rfd, &rfds);
-
-		tm.tv_sec = 1;
-		tm.tv_nsec = 0;
-
-		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, &tm, &signal_mask);
-		if (rc < 0 && errno != EINTR) {
-			perror("select");
-			return EXIT_FAILURE;
-		} else if (rc < 0 && errno == EINTR) {
-			break;
-		}
-
-		if (rc == 0) { /* timeout */
-			rc = write(config->wfd, &sim_message, sizeof(sim_message));
-			if (rc < 0) {
-				perror("write");
-				syslog(LOG_DEBUG, "wfd=%d", config->wfd);
-			}
-			continue;
-		}
-
-		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				perror("read");
-				continue;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
-				return EXIT_FAILURE;
-			}
-			switch (msg.type) {
-				case MSG_SYSTEM:
-					switch (msg.data.system) {
-						case SYSTEM_TERMINATE:
-							return EXIT_SUCCESS;
-						default:
-							break;
-					}
-				default:
-					break;
-			}
-			continue;
-		}
-	}
-	return EXIT_SUCCESS;
-} /* }}} */
-
-const struct proc_desc_t desc_gps_sim = {
-	"gps_sim",
-	gps_simulator
-};
-
-static int message_log(const struct proc_config_t * config, const struct property_list_t * properties) /* <destination> {{{ */
-{
-	fd_set rfds;
-	struct message_t msg;
-	int rc;
-	char buf[NMEA_MAX_SENTENCE];
-
-	/* TODO: properties */
-	UNUSED_ARG(properties);
-
-	while (!request_terminate) {
-		FD_ZERO(&rfds);
-		FD_SET(config->rfd, &rfds);
-
-		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, NULL, &signal_mask);
-		if (rc < 0 && errno != EINTR) {
-			perror("select");
-			return EXIT_FAILURE;
-		} else if (rc < 0 && errno == EINTR) {
-			break;
-		} else if (rc == 0) {
-			continue;
-		}
-
-		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				perror("read");
-				return EXIT_FAILURE;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
-				return EXIT_FAILURE;
-			}
-			switch (msg.type) {
-				case MSG_SYSTEM:
-					switch (msg.data.system) {
-						case SYSTEM_TERMINATE:
-							return EXIT_SUCCESS;
-						default:
-							break;
-					}
-					break;
-
-				case MSG_NMEA:
-					memset(buf, 0, sizeof(buf));
-					rc = nmea_write(buf, sizeof(buf), &msg.data.nmea);
-					if (rc < 0) {
-						syslog(LOG_ERR, "unable to write NMEA data to buffer");
-						continue;
-					}
-					printf("%s:%d: received message: [%s]\n", __FILE__, __LINE__, buf);
-					break;
-
-				default:
-					printf("%s:%d: log  : %08x\n", __FILE__, __LINE__, msg.type);
-					break;
-			}
-			continue;
-		}
-	}
-	return EXIT_SUCCESS;
-} /* }}} */
-
-const struct proc_desc_t desc_message_log = {
-	"message_log",
-	message_log
-};
-
-static int filter_dummy(struct message_t * out, const struct message_t * in, const struct property_list_t * properties) /* <filter> {{{ */
-{
-	UNUSED_ARG(properties);
-
-	if (out == NULL) return EXIT_FAILURE;
-	if (in == NULL) return EXIT_FAILURE;
-
-	memcpy(out, in, sizeof(struct message_t));
-	return EXIT_SUCCESS;
-} /* }}} */
-
-const struct filter_desc_t desc_filter_dummy ={
-	"filter_dummy",
-	filter_dummy
-};
-
 
 
 static const char * OPTIONS_SHORT = "hdc:";
@@ -392,7 +47,7 @@ static struct {
 struct msg_route_t {
 	struct proc_config_t * source;
 	struct proc_config_t * destination;
-	filter_function filter;
+	const struct filter_desc_t const * filter;
 	const struct property_list_t const * filter_cfg;
 };
 
@@ -798,8 +453,8 @@ static int setup_routes(const struct config_t * config) /* {{{ */
 
 		/* link filter */
 		if (config->routes[i].filter) {
-			if (!strcmp(config->routes[i].filter->type, "filter_dummy")) {
-				route->filter = &filter_dummy;
+			if (!strcmp(config->routes[i].filter->type, "filter_null")) {
+				route->filter = &filter_null;
 				route->filter_cfg = &config->routes[i].filter->properties;
 			} else {
 				syslog(LOG_ERR, "unknown filter: '%s'", config->routes[i].name_filter);
@@ -824,7 +479,7 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 
 		if (route->filter) {
 			memset(&out, 0, sizeof(out));
-			rc = route->filter(&out, msg, route->filter_cfg);
+			rc = route->filter->func(&out, msg, route->filter_cfg);
 			if (rc < 0) {
 				syslog(LOG_ERR, "filter error");
 				return -1;
@@ -883,11 +538,11 @@ int main(int argc, char ** argv) /* {{{ */
 
 	/* register known types (sources, destinations, filters) */
 	pdlist_init(&desc_sources);
-	pdlist_append(&desc_sources, &desc_gps_device_serial_demo);
-	pdlist_append(&desc_sources, &desc_gps_sim);
+	pdlist_append(&desc_sources, &gps_serial);
+	pdlist_append(&desc_sources, &gps_simulator);
 
 	pdlist_init(&desc_destinations);
-	pdlist_append(&desc_destinations, &desc_message_log);
+	pdlist_append(&desc_destinations, &message_log);
 
 	for (i = 0; i < desc_sources.num; ++i) {
 		config_register_source(desc_sources.data[i].name);
@@ -897,7 +552,7 @@ int main(int argc, char ** argv) /* {{{ */
 	}
 
 	config_register_filter("message_filter");
-	config_register_filter("filter_dummy");
+	config_register_filter("filter_null");
 
 	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
 	if (config_read(&config) < 0) return EXIT_FAILURE;

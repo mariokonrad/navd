@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <message.h>
+#include <navcom/message.h>
 #include <device/device.h>
 #include <device/serial.h>
 #include <nmea/nmea.h>
