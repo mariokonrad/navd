@@ -22,26 +22,6 @@
 
 */
 
-static const char * OPTIONS_SHORT = "hdc:";
-
-static const struct option OPTIONS_LONG[] =
-{
-	{ "help",        no_argument,       0, 'h' },
-	{ "daemon",      no_argument,       0, 'd' },
-	{ "config",      required_argument, 0, 'c' },
-	{ "dump-config", no_argument,       0, 0   },
-};
-
-static struct {
-	int daemonize;
-	int config;
-	int dump_config;
-	char config_filename[PATH_MAX+1];
-} option;
-
-static volatile int request_terminate = 0;
-static sigset_t signal_mask;
-
 struct proc_config_t {
 	int pid; /* process id */
 	int rfd; /* pipe file descriptor to read */
@@ -63,23 +43,8 @@ struct filter_desc_t {
 	filter_function func;
 };
 
-struct msg_route_t {
-	struct proc_config_t * source;
-	struct proc_config_t * destination;
-	filter_function filter;
-	const struct property_list_t const * filter_cfg;
-};
-
-static struct proc_config_t * proc_cfg = NULL;
-static size_t proc_cfg_base_src = 0;
-static size_t proc_cfg_base_dst = 0;
-
-static struct msg_route_t * msg_routes = NULL;
-
-struct proc_desc_list_t {
-	size_t num;
-	struct proc_desc_t * data;
-};
+static volatile int request_terminate = 0;
+static sigset_t signal_mask;
 
 
 static int gps_device_serial_demo(const struct proc_config_t * config, const struct property_list_t * properties) /* <source> {{{ */
@@ -404,6 +369,43 @@ const struct filter_desc_t desc_filter_dummy ={
 	filter_dummy
 };
 
+
+
+static const char * OPTIONS_SHORT = "hdc:";
+
+static const struct option OPTIONS_LONG[] =
+{
+	{ "help",        no_argument,       0, 'h' },
+	{ "daemon",      no_argument,       0, 'd' },
+	{ "config",      required_argument, 0, 'c' },
+	{ "dump-config", no_argument,       0, 0   },
+};
+
+static struct {
+	int daemonize;
+	int config;
+	int dump_config;
+	char config_filename[PATH_MAX+1];
+} option;
+
+
+struct msg_route_t {
+	struct proc_config_t * source;
+	struct proc_config_t * destination;
+	filter_function filter;
+	const struct property_list_t const * filter_cfg;
+};
+
+static struct proc_config_t * proc_cfg = NULL;
+static size_t proc_cfg_base_src = 0;
+static size_t proc_cfg_base_dst = 0;
+
+static struct msg_route_t * msg_routes = NULL;
+
+struct proc_desc_list_t {
+	size_t num;
+	struct proc_desc_t * data;
+};
 
 static int pdlist_init(struct proc_desc_list_t * list) /* {{{ */
 {
