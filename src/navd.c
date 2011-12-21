@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h>
+#include <syslog.h>
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -13,6 +14,7 @@
 #include <nmea/nmea_sentence_gprmc.h>
 #include <device/serial.h>
 #include <config/config.h>
+#include <libgen.h>
 
 /* TODO:
 
@@ -182,7 +184,7 @@ static int gps_device_serial_demo(const struct proc_config_t * config, const str
 				continue;
 			}
 			if (rc != (int)sizeof(msg) || rc == 0) {
-				fprintf(stderr, "%s:%d: error: cannot read message, rc=%d\n", __FILE__, __LINE__, rc);
+				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
 				return EXIT_FAILURE;
 			}
 			switch (msg.type) {
@@ -257,7 +259,7 @@ static int gps_simulator(const struct proc_config_t * config, const struct prope
 
 	rc = nmea_write(buf, sizeof(buf), &sim_message.data.nmea);
 	if (rc < 0) {
-		fprintf(stderr, "%s:%d: invalid RMC data, rc=%d\n", __FILE__, __LINE__, rc);
+		syslog(LOG_WARNING, "invalid RMC data, rc=%d", rc);
 		return EXIT_FAILURE;
 	}
 
@@ -280,7 +282,7 @@ static int gps_simulator(const struct proc_config_t * config, const struct prope
 			rc = write(config->wfd, &sim_message, sizeof(sim_message));
 			if (rc < 0) {
 				perror("write");
-				fprintf(stderr, "%s:%d: wfd=%d\n", __FILE__, __LINE__, config->wfd);
+				syslog(LOG_DEBUG, "wfd=%d", config->wfd);
 			}
 			continue;
 		}
@@ -292,7 +294,7 @@ static int gps_simulator(const struct proc_config_t * config, const struct prope
 				continue;
 			}
 			if (rc != (int)sizeof(msg) || rc == 0) {
-				fprintf(stderr, "%s:%d: error: cannot read message, rc=%d\n", __FILE__, __LINE__, rc);
+				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
 				return EXIT_FAILURE;
 			}
 			switch (msg.type) {
@@ -348,7 +350,7 @@ static int message_log(const struct proc_config_t * config, const struct propert
 				return EXIT_FAILURE;
 			}
 			if (rc != (int)sizeof(msg) || rc == 0) {
-				fprintf(stderr, "%s:%d: error: cannot read message, rc=%d\n", __FILE__, __LINE__, rc);
+				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
 				return EXIT_FAILURE;
 			}
 			switch (msg.type) {
@@ -365,7 +367,7 @@ static int message_log(const struct proc_config_t * config, const struct propert
 					memset(buf, 0, sizeof(buf));
 					rc = nmea_write(buf, sizeof(buf), &msg.data.nmea);
 					if (rc < 0) {
-						fprintf(stderr, "%s:%d: error while writing NMEA data to buffer\n", __FILE__, __LINE__);
+						syslog(LOG_ERR, "unable to write NMEA data to buffer");
 						continue;
 					}
 					printf("%s:%d: received message: [%s]\n", __FILE__, __LINE__, buf);
@@ -451,17 +453,17 @@ static const struct proc_desc_t const * pdlist_find(const struct proc_desc_list_
 static struct proc_desc_list_t desc_sources;
 static struct proc_desc_list_t desc_destinations;
 
-static void usage(const char * name) /* {{{ */
+static void usage(FILE * file, const char * name) /* {{{ */
 {
-	printf("\n");
-	printf("usage: %s [options]\n", name);
-	printf("\n");
-	printf("Options:\n");
-	printf("  -h      | --help        : help information\n");
-	printf("  -d      | --daemon      : daemonize process\n");
-	printf("  -c file | --config file : configuration file\n");
-	printf("  --dump-config           : dumps the configuration and exit\n");
-	printf("\n");
+	fprintf(file, "\n");
+	fprintf(file, "usage: %s [options]\n", name);
+	fprintf(file, "\n");
+	fprintf(file, "Options:\n");
+	fprintf(file, "  -h      | --help        : help information\n");
+	fprintf(file, "  -d      | --daemon      : daemonize process\n");
+	fprintf(file, "  -c file | --config file : configuration file\n");
+	fprintf(file, "  --dump-config           : dumps the configuration and exit\n");
+	fprintf(file, "\n");
 } /* }}} */
 
 static int parse_options(int argc, char ** argv) /* {{{ */
@@ -477,7 +479,7 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 		}
 		switch (rc) {
 			case 'h':
-				usage(argv[0]);
+				usage(stdout, argv[0]);
 				return -1;
 			case 'd':
 				option.daemonize = 1;
@@ -498,8 +500,8 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 		}
 	}
 	if (optind < argc) {
-		printf("error: unknown parameters\n");
-		usage(argv[0]);
+		syslog(LOG_ERR, "unknown parameters");
+		usage(stdout, argv[0]);
 		return -1;
 	}
 	return 0;
@@ -567,7 +569,7 @@ static void prepare_msg_routes(const struct config_t * config) /* {{{ */
 
 static void handle_signal(int sig) /* {{{ */
 {
-	printf("%s:%d: pid:%d sig:%d\n", __FILE__, __LINE__, getpid(), sig);
+	syslog(LOG_NOTICE, "pid:%d sig:%d\n", getpid(), sig);
 	request_terminate = 1;
 } /* }}} */
 
@@ -657,63 +659,67 @@ static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc
 	return rc;
 } /* }}} */
 
-static void dump_config(const struct config_t * config) /* {{{ */
+static void config_dump_properties(FILE * file, const struct property_list_t const * properties) /* {{{ */
 {
 	size_t i;
-	size_t j;
+
+	fprintf(file, "{");
+	for (i = 0; i < properties->num; ++i) {
+		const struct property_t const * prop = &properties->data[i];
+		fprintf(file, " %s = %s", prop->key, prop->value);
+	}
+	fprintf(file, " }");
+} /* }}} */
+
+static void config_dump(FILE * file, const struct config_t const * config) /* {{{ */
+{
+	size_t i;
 
 	if (config == NULL) return;
 
-	printf("===== SOURCES ========================\n");
+	fprintf(file, "SOURCES\n");
 	for (i = 0; i < config->num_sources; ++i) {
 		struct proc_t * p = &config->sources[i];
-		printf("  %s : %s\n", p->name, p->type);
-		for (j = 0; j < p->properties.num; ++j) {
-			const struct property_t * prop = &p->properties.data[j];
-			printf("\t%s = %s\n", prop->key, prop->value);
-		}
+		fprintf(file, " %s : %s ", p->name, p->type);
+		config_dump_properties(file, &p->properties);
+		fprintf(file, "\n");
 	}
-	printf("===== DESTINATIONS ===================\n");
+	fprintf(file, "DESTINATIONS\n");
 	for (i = 0; i < config->num_destinations; ++i) {
 		struct proc_t * p = &config->destinations[i];
-		printf("  %s : %s\n", p->name, p->type);
-		for (j = 0; j < p->properties.num; ++j) {
-			const struct property_t * prop = &p->properties.data[j];
-			printf("\t%s = %s\n", prop->key, prop->value);
-		}
+		fprintf(file, " %s : %s ", p->name, p->type);
+		config_dump_properties(file, &p->properties);
+		fprintf(file, "\n");
 	}
-	printf("===== FILTERS ========================\n");
+	fprintf(file, "FILTERS\n");
 	for (i = 0; i < config->num_filters; ++i) {
 		struct filter_t * p = &config->filters[i];
-		printf("  %s : %s\n", p->name, p->type);
-		for (j = 0; j < p->properties.num; ++j) {
-			const struct property_t * prop = &p->properties.data[j];
-			printf("\t%s = %s\n", prop->key, prop->value);
-		}
+		fprintf(file, " %s : %s ", p->name, p->type);
+		config_dump_properties(file, &p->properties);
+		fprintf(file, "\n");
 	}
-	printf("===== ROUTES =========================\n");
+	fprintf(file, "ROUTES\n");
 	for (i = 0; i < config->num_routes; ++i) {
 		struct route_t * p = &config->routes[i];
-		printf("  %s --[%s]--> %s    (%p, %p, %p)\n", p->name_source, p->name_filter, p->name_destination,
-			p->source, p->filter, p->destination);
+		fprintf(file, " %s --[%s]--> %s\n", p->name_source, p->name_filter, p->name_destination);
 	}
 } /* }}} */
 
-static int read_configuration(struct config_t * config) /* {{{ */
+static int config_read(struct config_t * config) /* {{{ */
 {
 	int rc;
 
 	if (option.config != 1) {
-		printf("error: configuration file name not defined.\n");
+		syslog(LOG_CRIT, "configuration file name not defined.");
 		return -1;
 	}
 	if (strlen(option.config_filename) <= 0) {
-		printf("error: invalid config file name.'\n");
+		syslog(LOG_CRIT, "invalid config file name: '%s'", option.config_filename);
 		return -1;
 	}
 	rc = config_parse_file(option.config_filename, config);
 	if (rc < 0) {
-		printf("error: unable to read config file.\n");
+		syslog(LOG_CRIT, "unable to read config file '%s'", option.config_filename);
 		return -1;
 	}
 
@@ -737,7 +743,7 @@ static int send_terminate(const struct proc_config_t * proc) /* {{{ */
 	return 0;
 } /* }}} */
 
-static int setup_procs(size_t num, size_t base, const struct proc_dest_list_t const * list) /* {{{ */
+static int setup_procs(size_t num, size_t base, const struct proc_desc_list_t const * list) /* {{{ */
 {
 	size_t i;
 	int rc;
@@ -745,10 +751,10 @@ static int setup_procs(size_t num, size_t base, const struct proc_dest_list_t co
 
 	for (i = 0; i < num; ++i) {
 		struct proc_config_t * ptr = &proc_cfg[i + base];
-		printf("start proc '%s' (type: '%s')\n", ptr->cfg->name, ptr->cfg->type);
+		syslog(LOG_DEBUG, "start proc '%s' (type: '%s')", ptr->cfg->name, ptr->cfg->type);
 		desc = pdlist_find(list, ptr->cfg->type);
 		if (desc == NULL) {
-			fprintf(stderr, "%s:%d: error: unknown proc type: '%s'\n", __FILE__, __LINE__, ptr->cfg->type);
+			syslog(LOG_ERR, "unknown proc type: '%s'", ptr->cfg->type);
 			return -1;
 		}
 		rc = proc_start(ptr, desc->func, &ptr->cfg->properties);
@@ -794,7 +800,7 @@ static int setup_routes(const struct config_t * config) /* {{{ */
 				route->filter = &filter_dummy;
 				route->filter_cfg = &config->routes[i].filter->properties;
 			} else {
-				fprintf(stderr, "%s:%d: error: unknown filter: '%s'\n", __FILE__, __LINE__, config->routes[i].name_filter);
+				syslog(LOG_ERR, "unknown filter: '%s'", config->routes[i].name_filter);
 				return -1;
 			}
 		}
@@ -818,7 +824,7 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 			memset(&out, 0, sizeof(out));
 			rc = route->filter(&out, msg, route->filter_cfg);
 			if (rc < 0) {
-				fprintf(stderr, "%s:%d: error: filter error\n", __FILE__, __LINE__);
+				syslog(LOG_ERR, "filter error");
 				return -1;
 			}
 		} else {
@@ -833,6 +839,25 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 		}
 	}
 	return 0;
+} /* }}} */
+
+static void terminate_graceful(const struct config_t const * config) /* {{{ */
+{
+	size_t i;
+
+	/* request subprocesses to terminate, gracefully, and wait for their termination */
+	for (i = 0; i < config->num_sources + config->num_destinations; ++i) {
+		send_terminate(&proc_cfg[i]);
+	}
+	for (i = 0; i < config->num_sources + config->num_destinations; ++i) {
+		proc_close_wait(&proc_cfg[i]);
+	}
+
+	/* free resources */
+	destroy_msg_routes();
+	destroy_proc_configs();
+	pdlist_free(&desc_sources);
+	pdlist_free(&desc_destinations);
 } /* }}} */
 
 int main(int argc, char ** argv) /* {{{ */
@@ -851,6 +876,8 @@ int main(int argc, char ** argv) /* {{{ */
 	struct sigaction act;
 
 	struct config_t config;
+
+	openlog(basename(argv[0]), LOG_PID | LOG_CONS | LOG_PERROR, LOG_DAEMON);
 
 	/* register known types (sources, destinations, filters) */
 	pdlist_init(&desc_sources);
@@ -871,13 +898,13 @@ int main(int argc, char ** argv) /* {{{ */
 	config_register_filter("filter_dummy");
 
 	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
-	if (read_configuration(&config) < 0) return EXIT_FAILURE;
+	if (config_read(&config) < 0) return EXIT_FAILURE;
 
 	/* TODO: check config (no duplicates, etc.) */
 
 	/* dump information */
 	if (option.dump_config) {
-		dump_config(&config);
+		config_dump(stdout, &config);
 		config_free(&config);
 		return EXIT_SUCCESS;
 	}
@@ -904,16 +931,16 @@ int main(int argc, char ** argv) /* {{{ */
 	/* setup subprocesses */
 	prepare_proc_configs(&config);
 	if (setup_procs(config.num_destinations, proc_cfg_base_dst, &desc_destinations) < 0) {
-		/* TODO: graceful termination? */
+		terminate_graceful(&config);
 		return EXIT_FAILURE;
 	}
 	if (setup_procs(config.num_sources, proc_cfg_base_src, &desc_sources) < 0) {
-		/* TODO: graceful termination? */
+		terminate_graceful(&config);
 		return EXIT_FAILURE;
 	}
 	prepare_msg_routes(&config);
 	if (setup_routes(&config) < 0) {
-		/* TODO: graceful termination? */
+		terminate_graceful(&config);
 		return EXIT_FAILURE;
 	}
 
@@ -953,22 +980,22 @@ int main(int argc, char ** argv) /* {{{ */
 			}
 			if (rc == 0) {
 				/* TODO: stop and restart instead of complete shutdown? */
-				fprintf(stderr, "%s:%d: error: process '%s' has given up.\n", __FILE__, __LINE__, proc_cfg[i].cfg->name);
+				syslog(LOG_WARNING, "process '%s' has given up.", proc_cfg[i].cfg->name);
 				proc_close_wait(&proc_cfg[i]);
 				graceful_termination = 1;
 				break;
 			}
 			if (rc != (int)sizeof(msg)) {
-				fprintf(stderr, "%s:%d: error: cannot read message, rc=%d\n", __FILE__, __LINE__, rc);
+				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
 				return EXIT_FAILURE;
 			}
 
 			if ((i >= proc_cfg_base_src) && (i < proc_cfg_base_dst)) {
 				if (route_msg(&config, &proc_cfg[i], &msg) < 0) {
-					fprintf(stderr, "%s:%d: error: route: %08x\n", __FILE__, __LINE__, msg.type);
+					syslog(LOG_DEBUG, "route: %08x", msg.type);
 				}
 			} else {
-				fprintf(stderr, "%s:%d: error: messages from destinations not supported yet\n", __FILE__, __LINE__);
+				syslog(LOG_DEBUG, "messages from destinations not supported yet.");
 			}
 		}
 
@@ -979,18 +1006,7 @@ int main(int argc, char ** argv) /* {{{ */
 		}
 	}
 
-	/* request subprocesses to terminate, gracefully, and wait for their termination */
-	for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
-		send_terminate(&proc_cfg[i]);
-	}
-	for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
-		proc_close_wait(&proc_cfg[i]);
-	}
-
-	destroy_msg_routes();
-	destroy_proc_configs();
-	pdlist_free(&desc_sources);
-	pdlist_free(&desc_destinations);
+	terminate_graceful(&config);
 
 	return EXIT_SUCCESS;
 } /* }}} */
