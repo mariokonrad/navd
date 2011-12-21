@@ -272,6 +272,7 @@ static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc
 	int wfd[2]; /* proc -> hub */
 
 	if (proc == NULL) return -1;
+	if (proc->cfg == NULL) return -1;
 	if (func == NULL) return -1;
 
 	rc = pipe(rfd);
@@ -294,17 +295,20 @@ static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc
 		close(wfd[0]);
 		close(wfd[1]);
 		perror("fork");
+		syslog(LOG_CRIT, "cannot start proc '%s' (type: '%s')", proc->cfg->name, proc->cfg->type);
 		return -1;
 	}
 
 	if (rc == 0) {
 		/* child code */
+		syslog(LOG_DEBUG, "start proc '%s' (type: '%s')", proc->cfg->name, proc->cfg->type);
 		proc->pid = getpid();
 		proc->rfd = rfd[0];
 		proc->wfd = wfd[1];
 		close(rfd[1]);
 		close(wfd[0]);
 		rc = func(proc, prop);
+		syslog(LOG_DEBUG, "stop proc '%s'", proc->cfg->name);
 		exit(rc);
 	} else {
 		proc->pid = rc;
@@ -408,7 +412,6 @@ static int setup_procs(size_t num, size_t base, const struct proc_desc_list_t co
 
 	for (i = 0; i < num; ++i) {
 		struct proc_config_t * ptr = &proc_cfg[i + base];
-		syslog(LOG_DEBUG, "start proc '%s' (type: '%s')", ptr->cfg->name, ptr->cfg->type);
 		desc = pdlist_find(list, ptr->cfg->type);
 		if (desc == NULL) {
 			syslog(LOG_ERR, "unknown proc type: '%s'", ptr->cfg->type);
