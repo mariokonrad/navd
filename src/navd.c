@@ -308,7 +308,7 @@ static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc
 		close(rfd[1]);
 		close(wfd[0]);
 		rc = func(proc, prop);
-		syslog(LOG_DEBUG, "stop proc '%s'", proc->cfg->name);
+		syslog(LOG_DEBUG, "stop proc '%s', rc=%d", proc->cfg->name, rc);
 		exit(rc);
 	} else {
 		proc->pid = rc;
