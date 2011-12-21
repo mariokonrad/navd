@@ -14,6 +14,12 @@
 #include <device/serial.h>
 #include <config/config.h>
 
+/* TODO:
+
+ - release unused resources within child processes
+
+*/
+
 static const char * OPTIONS_SHORT = "hdc:";
 
 static const struct option OPTIONS_LONG[] =
@@ -68,60 +74,10 @@ static size_t proc_cfg_base_dst = 0;
 
 static struct msg_route_t * msg_routes = NULL;
 
-
 struct proc_desc_list_t {
 	size_t num;
 	struct proc_desc_t * data;
 };
-
-static int pdlist_init(struct proc_desc_list_t * list) /* {{{ */
-{
-	if (list == NULL) return -1;
-	list->num = 0;
-	list->data = NULL;
-	return 0;
-} /* }}} */
-
-static int pdlist_free(struct proc_desc_list_t * list) /* {{{ */
-{
-	if (list == NULL) return -1;
-	if (list->data) {
-		free(list->data);
-		list->data = NULL;
-	}
-	list->num = 0;
-	return 0;
-} /* }}} */
-
-static int pdlist_append(struct proc_desc_list_t * list, const struct proc_desc_t const * desc) /* {{{ */
-{
-	if (list == NULL) return -1;
-	if (desc == NULL) return -1;
-
-	list->num++;
-	list->data = realloc(list->data, list->num * sizeof(struct proc_desc_t));
-	list->data[list->num-1] = *desc;
-	return 0;
-} /* }}} */
-
-static const struct proc_desc_t const * pdlist_find(const struct proc_desc_list_t const * list, const char * name) /* {{{ */
-{
-	size_t i;
-
-	if (list == NULL) return NULL;
-	if (name == NULL) return NULL;
-
-	for (i = 0; i < list->num; ++i) {
-		if (!strcmp(name, list->data[i].name)) {
-			return &list->data[i];
-		}
-	}
-	return NULL;
-} /* }}} */
-
-
-static struct proc_desc_list_t desc_sources;
-static struct proc_desc_list_t desc_destinations;
 
 
 static int gps_device_serial_demo(const struct proc_config_t * config, const struct property_list_t * properties) /* <source> {{{ */
@@ -447,6 +403,54 @@ const struct filter_desc_t desc_filter_dummy ={
 };
 
 
+static int pdlist_init(struct proc_desc_list_t * list) /* {{{ */
+{
+	if (list == NULL) return -1;
+	list->num = 0;
+	list->data = NULL;
+	return 0;
+} /* }}} */
+
+static int pdlist_free(struct proc_desc_list_t * list) /* {{{ */
+{
+	if (list == NULL) return -1;
+	if (list->data) {
+		free(list->data);
+		list->data = NULL;
+	}
+	list->num = 0;
+	return 0;
+} /* }}} */
+
+static int pdlist_append(struct proc_desc_list_t * list, const struct proc_desc_t const * desc) /* {{{ */
+{
+	if (list == NULL) return -1;
+	if (desc == NULL) return -1;
+
+	list->num++;
+	list->data = realloc(list->data, list->num * sizeof(struct proc_desc_t));
+	list->data[list->num-1] = *desc;
+	return 0;
+} /* }}} */
+
+static const struct proc_desc_t const * pdlist_find(const struct proc_desc_list_t const * list, const char * name) /* {{{ */
+{
+	size_t i;
+
+	if (list == NULL) return NULL;
+	if (name == NULL) return NULL;
+
+	for (i = 0; i < list->num; ++i) {
+		if (!strcmp(name, list->data[i].name)) {
+			return &list->data[i];
+		}
+	}
+	return NULL;
+} /* }}} */
+
+static struct proc_desc_list_t desc_sources;
+static struct proc_desc_list_t desc_destinations;
+
 static void usage(const char * name) /* {{{ */
 {
 	printf("\n");
@@ -733,38 +737,16 @@ static int send_terminate(const struct proc_config_t * proc) /* {{{ */
 	return 0;
 } /* }}} */
 
-static int setup_destinations(const struct config_t * config) /* {{{ */
+static int setup_procs(size_t num, size_t base, const struct proc_dest_list_t const * list) /* {{{ */
 {
 	size_t i;
 	int rc;
 	const struct proc_desc_t const * desc = NULL;
 
-	for (i = 0; i < config->num_destinations; ++i) {
-		struct proc_config_t * ptr = &proc_cfg[i + proc_cfg_base_dst];
+	for (i = 0; i < num; ++i) {
+		struct proc_config_t * ptr = &proc_cfg[i + base];
 		printf("start proc '%s' (type: '%s')\n", ptr->cfg->name, ptr->cfg->type);
-		desc = pdlist_find(&desc_destinations, ptr->cfg->type);
-		if (desc == NULL) {
-			fprintf(stderr, "%s:%d: error: unknown proc type: '%s'\n", __FILE__, __LINE__, ptr->cfg->type);
-			return -1;
-		}
-		rc = proc_start(ptr, desc->func, &ptr->cfg->properties);
-		if (rc < 0) {
-			return -1;
-		}
-	}
-	return 0;
-} /* }}} */
-
-static int setup_sources(const struct config_t * config) /* {{{ */
-{
-	size_t i;
-	int rc;
-	const struct proc_desc_t const * desc = NULL;
-
-	for (i = 0; i < config->num_sources; ++i) {
-		struct proc_config_t * ptr = &proc_cfg[i + proc_cfg_base_src];
-		printf("start proc '%s' (type: '%s')\n", ptr->cfg->name, ptr->cfg->type);
-		desc = pdlist_find(&desc_sources, ptr->cfg->type);
+		desc = pdlist_find(list, ptr->cfg->type);
 		if (desc == NULL) {
 			fprintf(stderr, "%s:%d: error: unknown proc type: '%s'\n", __FILE__, __LINE__, ptr->cfg->type);
 			return -1;
@@ -921,10 +903,19 @@ int main(int argc, char ** argv) /* {{{ */
 
 	/* setup subprocesses */
 	prepare_proc_configs(&config);
-	if (setup_destinations(&config) < 0) return EXIT_FAILURE;
-	if (setup_sources(&config) < 0) return EXIT_FAILURE;
+	if (setup_procs(config.num_destinations, proc_cfg_base_dst, &desc_destinations) < 0) {
+		/* TODO: graceful termination? */
+		return EXIT_FAILURE;
+	}
+	if (setup_procs(config.num_sources, proc_cfg_base_src, &desc_sources) < 0) {
+		/* TODO: graceful termination? */
+		return EXIT_FAILURE;
+	}
 	prepare_msg_routes(&config);
-	if (setup_routes(&config) < 0) return EXIT_FAILURE; /* TODO: graceful termination? */
+	if (setup_routes(&config) < 0) {
+		/* TODO: graceful termination? */
+		return EXIT_FAILURE;
+	}
 
 	/* main / hub process */
 	num_msg = 5; /* TODO */
