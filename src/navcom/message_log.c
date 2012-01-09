@@ -4,18 +4,60 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <syslog.h>
+
+enum { MAX_ERRORS = 10 };
+
+static unsigned int cnt_error = 0;
+static int prop_enable = 0;
+static const char * prop_dst = NULL;
+
+static void read_properties(const struct property_list_t * properties)
+{
+	prop_enable = proplist_contains(properties, "enable");
+	prop_dst = proplist_value(properties, "dst");
+
+	syslog(LOG_DEBUG, "enable:%d dst:'%s'", prop_enable, prop_dst);
+}
+
+static int log_message(const struct message_t * msg)
+{
+	int rc;
+	char buf[NMEA_MAX_SENTENCE];
+	FILE * file;
+
+	memset(buf, 0, sizeof(buf));
+	rc = nmea_write(buf, sizeof(buf), &msg->data.nmea);
+	if (rc < 0) {
+		syslog(LOG_ERR, "unable to write NMEA data to buffer");
+		return -1;
+	}
+
+	if (prop_dst == NULL) {
+		syslog(LOG_DEBUG, "%s", buf);
+		return 0;
+	}
+
+	file = fopen(prop_dst, "at");
+	if (file == NULL) {
+		perror("fopen");
+		return -1;
+	}
+	fprintf(file, "%s\n", buf);
+	fclose(file);
+
+	return 0;
+}
 
 static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
 {
 	fd_set rfds;
 	struct message_t msg;
 	int rc;
-	char buf[NMEA_MAX_SENTENCE];
 
-	/* TODO: properties */
-	UNUSED_ARG(properties);
+	read_properties(properties);
 
 	while (!request_terminate) {
 		FD_ZERO(&rfds);
@@ -52,13 +94,16 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 					break;
 
 				case MSG_NMEA:
-					memset(buf, 0, sizeof(buf));
-					rc = nmea_write(buf, sizeof(buf), &msg.data.nmea);
-					if (rc < 0) {
-						syslog(LOG_ERR, "unable to write NMEA data to buffer");
-						continue;
+					if (prop_enable) {
+						rc = log_message(&msg);
+						if (rc < 0) {
+							++cnt_error;
+							if (cnt_error >= MAX_ERRORS) {
+								syslog(LOG_ERR, "MAX_ERRORS (%u) reached, disable logging", MAX_ERRORS);
+								prop_enable = 0;
+							}
+						}
 					}
-					syslog(LOG_DEBUG, "received message: [%s]\n", buf);
 					break;
 
 				default:

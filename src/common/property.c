@@ -71,3 +71,16 @@ int proplist_contains(const struct property_list_t * list, const char * key)
 	return 0;
 }
 
+const char * proplist_value(const struct property_list_t * list, const char * key)
+{
+	size_t i;
+
+	if (list == NULL) return NULL;
+	if (key == NULL) return NULL;
+	for (i = 0; i < list->num; ++i) {
+		if (strcmp(key, list->data[i].key) == 0)
+			return list->data[i].value;
+	}
+	return NULL;
+}
+

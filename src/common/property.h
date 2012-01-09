@@ -22,5 +22,6 @@ int proplist_init(struct property_list_t * list);
 int proplist_append(struct property_list_t * list, const char * key, const char * value);
 int proplist_free(struct property_list_t * list);
 int proplist_contains(const struct property_list_t * list, const char * key);
+const char * proplist_value(const struct property_list_t * list, const char * key);
 
 #endif

@@ -18,8 +18,8 @@ A		[a-zA-Z_]
 H		[0-9a-fA-F]
 S		[ ]
 WS		[ \t\n]
-SPECIAL	[\-.:,;/\+\\\?&@]
-SPECIAL1 [\-\+.:/?&@]
+SPECIAL	[\-\.:,;/\+\\\?&@]
+SPECIAL1 [\-\+\.:/?&@]
 
 %option yylineno
 %option reentrant
@@ -42,7 +42,8 @@ SPECIAL1 [\-\+.:/?&@]
 
 "->"                          { return FORWARD; }
 {D}+                          { yylval->str = strdup(yytext); return NUMBER; }
-\"({A}|{D}|{S}|{SPECIAL})*\"  { yylval->str = strdup(yytext); return STRING; }
+\"({A}|{D}|{S}|{SPECIAL})*\"  { yylval->str = strndup(yytext+1, strlen(yytext)-2); return STRING; }
+\'({A}|{D}|{S}|{SPECIAL})*\'  { yylval->str = strndup(yytext+1, strlen(yytext)-2); return STRING; }
 {A}({A}|{D})*                 { yylval->str = strdup(yytext); return identifier_type(yytext); }
 "{"                           { return '{'; }
 "}"                           { return '}'; }
