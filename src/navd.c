@@ -15,6 +15,7 @@
 #include <libgen.h>
 
 #include <navcom/filter_null.h>
+#include <navcom/filter_nmea.h>
 #include <navcom/message_log.h>
 #include <navcom/gps_simulator.h>
 #include <navcom/gps_serial.h>
@@ -30,6 +31,7 @@
 /* TODO:
 
  - release unused resources within child processes
+ - filter list similar to proc list
 
 */
 
@@ -482,6 +484,9 @@ static int setup_routes(const struct config_t * config) /* {{{ */
 			if (!strcmp(config->routes[i].filter->type, "filter_null")) {
 				route->filter = &filter_null;
 				route->filter_cfg = &config->routes[i].filter->properties;
+			} else if (!strcmp(config->routes[i].filter->type, "filter_nmea")) {
+				route->filter = &filter_nmea;
+				route->filter_cfg = &config->routes[i].filter->properties;
 			} else {
 				syslog(LOG_ERR, "unknown filter: '%s'", config->routes[i].name_filter);
 				return -1;
@@ -506,9 +511,15 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 		if (route->filter) {
 			memset(&out, 0, sizeof(out));
 			rc = route->filter->func(&out, msg, route->filter_cfg);
-			if (rc < 0) {
-				syslog(LOG_ERR, "filter error");
-				return -1;
+			switch (rc) {
+				case FILTER_SUCCESS:
+					break;
+				case FILTER_DISCARD:
+					return 0;
+				default:
+				case FILTER_FAILURE:
+					syslog(LOG_ERR, "filter error");
+					return -1;
 			}
 		} else {
 			memcpy(&out, msg, sizeof(out));
@@ -576,8 +587,8 @@ int main(int argc, char ** argv) /* {{{ */
 		config_register_destination(desc_destinations.data[i].name);
 	}
 
-	config_register_filter("message_filter");
 	config_register_filter("filter_null");
+	config_register_filter("filter_nmea");
 
 	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
 	rc = setlogmask(LOG_UPTO(option.log_mask));

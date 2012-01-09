@@ -93,3 +93,23 @@ int nmea_ntoh(struct nmea_t * nmea)
 	return nmea_ntoh_tab(nmea, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
+/**
+ * Returns the NMEA sentence for the specified sentence type.
+ * If an unknown sentence type is defined, NULL will return.
+ *
+ * @param[in] type The NMEA sentence type.
+ * @retval NULL Unknown sentence type.
+ * @retval other The NMEA sentence.
+ */
+const struct nmea_sentence_t * nmea_sentence(uint32_t type)
+{
+	size_t i;
+
+	for (i = 0; i < sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *); ++i) {
+		if (type == SENTENCES[i]->type) {
+			return SENTENCES[i];
+		}
+	}
+	return NULL;
+}
+

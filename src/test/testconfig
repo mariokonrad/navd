@@ -1,4 +1,4 @@
-gps : gps_serial { device="/dev/ttyUSB0" baud=115200 parity=none data=8 stop=1 };
+gps : gps_serial { device='/dev/ttyUSB0' baud=115200 parity='none' data=8 stop=1 };
 log0 : message_log { enable };
 log1 : message_log { enable };
 log2 : message_log { enable };
@@ -15,4 +15,4 @@ sim -> [nmea_only] -> log5;
 gps -> [nmea_only] -> log2;
 gps -> [nmea_only] -> (log3 log4);
 
-nmea_only : message_filter {};
+nmea_only : filter_nmea { GPRMC };

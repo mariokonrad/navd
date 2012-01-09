@@ -3,4 +3,5 @@ log : message_log { enable }; # output to syslog
 sim : gps_sim {};
 dummy : filter_null {};
 sim -> [dummy] -> log;
-sim -> log;
+sim -> [rmc_only] -> log;
+rmc_only : filter_nmea { GPRMC };

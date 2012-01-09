@@ -5,5 +5,6 @@ add_library(navcom
 	gps_simulator.c
 	gps_serial.c
 	filter_null.c
+	filter_nmea.c
 	)
 

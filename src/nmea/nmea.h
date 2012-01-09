@@ -8,4 +8,6 @@ int nmea_write(char *, uint32_t, const struct nmea_t *);
 int nmea_hton(struct nmea_t *);
 int nmea_ntoh(struct nmea_t *);
 
+const struct nmea_sentence_t * nmea_sentence(uint32_t);
+
 #endif
