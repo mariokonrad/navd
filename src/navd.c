@@ -19,6 +19,14 @@
 #include <navcom/gps_simulator.h>
 #include <navcom/gps_serial.h>
 
+#if !defined(max)
+	#define max(a, b)  ((a) > (b) ? (a) : (b))
+#endif
+
+#if !defined(min)
+	#define min(a, b)  ((a) < (b) ? (a) : (b))
+#endif
+
 /* TODO:
 
  - release unused resources within child processes
@@ -34,12 +42,16 @@ static const struct option OPTIONS_LONG[] =
 	{ "daemon",      no_argument,       0, 'd' },
 	{ "config",      required_argument, 0, 'c' },
 	{ "dump-config", no_argument,       0, 0   },
+	{ "max-msg",     required_argument, 0, 0   },
+	{ "log",         required_argument, 0, 0   },
 };
 
 static struct {
 	int daemonize;
 	int config;
 	int dump_config;
+	unsigned int max_msg;
+	int log_mask;
 	char config_filename[PATH_MAX+1];
 } option;
 
@@ -149,6 +161,14 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 				switch (index) {
 					case 3:
 						option.dump_config = 1;
+						break;
+					case 4:
+						option.max_msg = strtoul(optarg, NULL, 0);
+						break;
+					case 5:
+						option.log_mask = strtoul(optarg, NULL, 0);
+						option.log_mask = max(LOG_EMERG, option.log_mask);
+						option.log_mask = min(LOG_DEBUG, option.log_mask);
 						break;
 				}
 				break;
@@ -301,14 +321,14 @@ static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc
 
 	if (rc == 0) {
 		/* child code */
-		syslog(LOG_DEBUG, "start proc '%s' (type: '%s')", proc->cfg->name, proc->cfg->type);
+		syslog(LOG_INFO, "start proc '%s' (type: '%s')", proc->cfg->name, proc->cfg->type);
 		proc->pid = getpid();
 		proc->rfd = rfd[0];
 		proc->wfd = wfd[1];
 		close(rfd[1]);
 		close(wfd[0]);
 		rc = func(proc, prop);
-		syslog(LOG_DEBUG, "stop proc '%s', rc=%d", proc->cfg->name, rc);
+		syslog(LOG_INFO, "stop proc '%s', rc=%d", proc->cfg->name, rc);
 		exit(rc);
 	} else {
 		proc->pid = rc;
@@ -491,7 +511,7 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 			memcpy(&out, msg, sizeof(out));
 		}
 
-		printf("%s:%d: route: %08x\n", __FILE__, __LINE__, msg->type);
+		syslog(LOG_DEBUG, "route: %08x\n", msg->type);
 		rc = write(route->destination->wfd, &out, sizeof(out));
 		if (rc < 0) {
 			perror("write");
@@ -529,7 +549,6 @@ int main(int argc, char ** argv) /* {{{ */
 	int rc;
 	fd_set rfds;
 	int fd_max;
-	int num_msg;
 	int fd;
 
 	sigset_t mask;
@@ -558,6 +577,11 @@ int main(int argc, char ** argv) /* {{{ */
 	config_register_filter("filter_null");
 
 	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
+	rc = setlogmask(LOG_UPTO(option.log_mask));
+	if (rc < 0) {
+		perror("setlogmask");
+		return EXIT_FAILURE;
+	}
 	if (config_read(&config) < 0) return EXIT_FAILURE;
 
 	/* TODO: check config (no duplicates, etc.) */
@@ -578,6 +602,10 @@ int main(int argc, char ** argv) /* {{{ */
 	memset(&act, 0, sizeof(act));
 	act.sa_handler = handle_signal;
 	if (sigaction(SIGTERM, &act, NULL) < 0) {
+		perror("sigaction");
+		return EXIT_FAILURE;
+	}
+	if (sigaction(SIGINT, &act, NULL) < 0) {
 		perror("sigaction");
 		return EXIT_FAILURE;
 	}
@@ -605,7 +633,6 @@ int main(int argc, char ** argv) /* {{{ */
 	}
 
 	/* main / hub process */
-	num_msg = 5; /* TODO */
 	for (; !request_terminate && !graceful_termination;) {
 		FD_ZERO(&rfds);
 		fd_max = 0;
@@ -659,10 +686,12 @@ int main(int argc, char ** argv) /* {{{ */
 			}
 		}
 
-		/* TODO:TEMP: terminate after num_msg */
-		--num_msg;
-		if (num_msg <= 0) {
-			break;
+		/* terminate after max_msg */
+		if (option.max_msg > 0) {
+			--option.max_msg;
+			if (option.max_msg == 0) {
+				break;
+			}
 		}
 	}
 

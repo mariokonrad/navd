@@ -18,6 +18,7 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	struct nmea_rmc_t * rmc;
 	char buf[NMEA_MAX_SENTENCE];
 
+	/* TODO: properties */
 	UNUSED_ARG(properties);
 
 	sim_message.type = MSG_NMEA;

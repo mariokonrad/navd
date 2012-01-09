@@ -58,11 +58,11 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 						syslog(LOG_ERR, "unable to write NMEA data to buffer");
 						continue;
 					}
-					printf("%s:%d: received message: [%s]\n", __FILE__, __LINE__, buf);
+					syslog(LOG_DEBUG, "received message: [%s]\n", buf);
 					break;
 
 				default:
-					printf("%s:%d: log  : %08x\n", __FILE__, __LINE__, msg.type);
+					syslog(LOG_WARNING, "unknown msg type: %08x\n", msg.type);
 					break;
 			}
 			continue;
