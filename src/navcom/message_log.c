@@ -10,23 +10,33 @@
 
 enum { MAX_ERRORS = 10 };
 
-static unsigned int cnt_error = 0;
-static int prop_enable = 0;
-static const char * prop_dst = NULL;
+struct msg_log_property_t {
+	int enable;
+	const char * dst;
+};
 
-static void read_properties(const struct property_list_t * properties)
+static void read_properties(const struct property_list_t * properties, struct msg_log_property_t * prop)
 {
-	prop_enable = proplist_contains(properties, "enable");
-	prop_dst = proplist_value(properties, "dst");
+	memset(prop, 0, sizeof(struct msg_log_property_t));
 
-	syslog(LOG_DEBUG, "enable:%d dst:'%s'", prop_enable, prop_dst);
+	prop->enable = proplist_contains(properties, "enable");
+	prop->dst = proplist_value(properties, "dst");
+
+	syslog(LOG_DEBUG, "enable:%d dst:'%s'", prop->enable, prop->dst);
 }
 
-static int log_message(const struct message_t * msg)
+static int log_message(const struct message_t * msg, const struct msg_log_property_t * prop)
 {
 	int rc;
 	char buf[NMEA_MAX_SENTENCE];
 	FILE * file;
+
+	if (msg == NULL) {
+		return -1;
+	}
+	if (prop == NULL) {
+		return -1;
+	}
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_write(buf, sizeof(buf), &msg->data.nmea);
@@ -35,12 +45,12 @@ static int log_message(const struct message_t * msg)
 		return -1;
 	}
 
-	if (prop_dst == NULL) {
+	if (prop->dst == NULL) {
 		syslog(LOG_DEBUG, "%s", buf);
 		return 0;
 	}
 
-	file = fopen(prop_dst, "at");
+	file = fopen(prop->dst, "at");
 	if (file == NULL) {
 		perror("fopen");
 		return -1;
@@ -53,11 +63,13 @@ static int log_message(const struct message_t * msg)
 
 static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
 {
+	int rc;
 	fd_set rfds;
 	struct message_t msg;
-	int rc;
+	unsigned int cnt_error = 0;
+	struct msg_log_property_t prop;
 
-	read_properties(properties);
+	read_properties(properties, &prop);
 
 	while (!request_terminate) {
 		FD_ZERO(&rfds);
@@ -94,13 +106,13 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 					break;
 
 				case MSG_NMEA:
-					if (prop_enable) {
-						rc = log_message(&msg);
+					if (prop.enable) {
+						rc = log_message(&msg, &prop);
 						if (rc < 0) {
 							++cnt_error;
 							if (cnt_error >= MAX_ERRORS) {
 								syslog(LOG_ERR, "MAX_ERRORS (%u) reached, disable logging", MAX_ERRORS);
-								prop_enable = 0;
+								prop.enable = 0;
 							}
 						}
 					}
