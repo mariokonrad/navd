@@ -38,7 +38,7 @@ function exec_build()
 	ctags --recurse -f tags src/*
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
-		cmake ..
+		CMAKE_BUILD_TYPE=Debug cmake ..
 	fi
 	make
 }
@@ -51,11 +51,27 @@ function exec_doc()
 
 function exec_test()
 {
-	if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
-		${BASE}/build/src/test/nmea_test
-	else
-		echo "error: test not present"
-	fi
+	case $1 in
+		nmea)
+			if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
+				${BASE}/build/src/test/nmea_test
+			else
+				echo "error: nmea test not present"
+			fi
+			;;
+
+		config)
+			if [ -r "${BASE}/build/src/test/config_test" ] ; then
+				${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small
+			else
+				echo "error: config test not present"
+			fi
+			;;
+
+		*)
+			echo "no test specified"
+			;;
+	esac
 }
 
 function exec_valgrind()
@@ -63,7 +79,13 @@ function exec_valgrind()
 	if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
 		valgrind ${BASE}/build/src/test/nmea_test
 	else
-		echo "error: test not present"
+		echo "error: nmea test not present"
+	fi
+
+	if [ -r "${BASE}/build/src/test/config_test" ] ; then
+		valgrind ${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small
+	else
+		echo "error: config test not present"
 	fi
 }
 
@@ -84,7 +106,7 @@ case $1 in
 		exec_doc
 		;;
 	test)
-		exec_test
+		exec_test $2
 		;;
 	valgrind)
 		exec_valgrind

@@ -11,6 +11,13 @@ int main(int argc, char ** argv)
 
 	UNUSED_ARG(argc);
 
+	config_register_source("gps_sim");
+
+	config_register_destination("message_log");
+
+	config_register_filter("filter_null");
+	config_register_filter("filter_nmea");
+
 	rc = config_parse_file(argv[1], &config);
 	if (rc < 0) return EXIT_FAILURE;
 

@@ -5,9 +5,18 @@
 
 int identifier_type(const char * s)
 {
-	if (config_registered_as_source(s) > 0) return SOURCE_TYPE;
-	if (config_registered_as_destination(s) > 0) return DESTINATION_TYPE;
-	if (config_registered_as_filter(s) > 0) return FILTER_TYPE;
+	if (config_registered_as_source(s) > 0) {
+		return SOURCE_TYPE;
+	}
+
+	if (config_registered_as_destination(s) > 0) {
+		return DESTINATION_TYPE;
+	}
+
+	if (config_registered_as_filter(s) > 0) {
+		return FILTER_TYPE;
+	}
+
 	return IDENTIFIER;
 }
 
@@ -41,10 +50,10 @@ SPECIAL1 [\-\+\.:/?&@]
 <COMMENT>.             {}
 
 "->"                          { return FORWARD; }
-{D}+                          { yylval->str = strdup(yytext); return NUMBER; }
-\"({A}|{D}|{S}|{SPECIAL})*\"  { yylval->str = strndup(yytext+1, strlen(yytext)-2); return STRING; }
-\'({A}|{D}|{S}|{SPECIAL})*\'  { yylval->str = strndup(yytext+1, strlen(yytext)-2); return STRING; }
-{A}({A}|{D})*                 { yylval->str = strdup(yytext); return identifier_type(yytext); }
+{D}+                          { yylval->str = config_strdup(yytext); return NUMBER; }
+\"({A}|{D}|{S}|{SPECIAL})*\"  { yylval->str = config_strdup_s(yytext); return STRING; }
+\'({A}|{D}|{S}|{SPECIAL})*\'  { yylval->str = config_strdup_s(yytext); return STRING; }
+{A}({A}|{D})*                 { yylval->str = config_strdup(yytext); return identifier_type(yytext); }
 "{"                           { return '{'; }
 "}"                           { return '}'; }
 "["                           { return '['; }

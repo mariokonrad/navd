@@ -45,7 +45,6 @@ uint8_t nmea_checksum(const char * s, const char * e)
  */
 int nmea_checksum_check(const char * s, char start_token)
 {
-	/* TODO: use function nmea_checksum() */
 	uint8_t chk = 0;
 	if (!s || !(*s) || *s != start_token) return -1;
 	++s; /* skip start token */

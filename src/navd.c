@@ -134,6 +134,8 @@ static void usage(FILE * file, const char * name) /* {{{ */
 	fprintf(file, "  -d      | --daemon      : daemonize process\n");
 	fprintf(file, "  -c file | --config file : configuration file\n");
 	fprintf(file, "  --dump-config           : dumps the configuration and exit\n");
+	fprintf(file, "  --max-msg n             : routes n number of messages before terminating\n");
+	fprintf(file, "  --log n                 : defines log level on syslog (0..7)\n");
 	fprintf(file, "\n");
 } /* }}} */
 

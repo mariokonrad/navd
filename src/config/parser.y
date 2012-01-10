@@ -85,7 +85,10 @@ routing
 source
 	: IDENTIFIER ':' SOURCE_TYPE config ';'
 		{
-			config_add_source(config, $1, $3, &tmp->properties);
+			if (config_add_source(config, $1, $3, &tmp->properties) < 0) {
+				yyerror(scanner, config, tmp, "source already defined");
+				YYABORT;
+			}
 			config_clear_tmp_property(tmp);
 		}
 	;
@@ -93,7 +96,10 @@ source
 destination
 	: IDENTIFIER ':' DESTINATION_TYPE config ';'
 		{
-			config_add_destination(config, $1, $3, &tmp->properties);
+			if (config_add_destination(config, $1, $3, &tmp->properties) < 0) {
+				yyerror(scanner, config, tmp, "destination already defined");
+				YYABORT;
+			}
 			config_clear_tmp_property(tmp);
 		}
 	;
@@ -101,8 +107,12 @@ destination
 filter
 	: IDENTIFIER ':' FILTER_TYPE config ';'
 		{
-			config_add_filter(config, $1, $3, &tmp->properties);
-			config_clear_tmp_property(tmp);
+			if (config_add_filter(config, $1, $3, &tmp->properties) < 0) {
+				yyerror(scanner, config, tmp, "filter is already defined");
+				YYABORT;
+			} else {
+				config_clear_tmp_property(tmp);
+			}
 		}
 	;
 
@@ -113,11 +123,17 @@ multiple_destinations
 destination_list
 	: destination_list IDENTIFIER
 		{
-			config_add_tmp_destination(tmp, $2);
+			if (config_add_tmp_destination(tmp, $2) < 0) {
+				yyerror(scanner, config, tmp, "duplicate destination in list");
+				YYABORT;
+			}
 		}
 	| IDENTIFIER
 		{
-			config_add_tmp_destination(tmp, $1);
+			if (config_add_tmp_destination(tmp, $1) < 0) {
+				yyerror(scanner, config, tmp, "duplicate destination in list");
+				YYABORT;
+			}
 		}
 	;
 
@@ -134,11 +150,17 @@ property_list
 property
 	: IDENTIFIER '=' value
 		{
-			config_add_tmp_property(tmp, $1, $3);
+			if (config_add_tmp_property(tmp, $1, $3) < 0) {
+				yyerror(scanner, config, tmp, "property already defined");
+				YYABORT;
+			}
 		}
 	| IDENTIFIER
 		{
-			config_add_tmp_property(tmp, $1, NULL);
+			if (config_add_tmp_property(tmp, $1, NULL) < 0) {
+				yyerror(scanner, config, tmp, "property already defined");
+				YYABORT;
+			}
 		}
 	;
 
