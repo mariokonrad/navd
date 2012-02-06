@@ -208,11 +208,7 @@ static void prepare_proc_configs(const struct config_t * config) /* {{{ */
 	destroy_proc_configs();
 	proc_cfg = malloc(sizeof(struct proc_config_t) * num);
 	for (i = 0; i < num; ++i) {
-		proc = &proc_cfg[i];
-		proc->pid = -1;
-		proc->rfd = -1;
-		proc->wfd = -1;
-		proc->cfg = NULL;
+		proc_config_init(&proc_cfg[i]);
 	}
 	proc_cfg_base_src = 0;
 	proc_cfg_base_dst = config->num_sources;
@@ -292,7 +288,7 @@ static int proc_close_wait(struct proc_config_t * proc) /* {{{ */
 	return 0;
 } /* }}} */
 
-static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc_config_t *, const struct property_list_t *), const struct property_list_t * prop) /* {{{ */
+static int proc_start(struct proc_config_t * proc, const struct proc_desc_t const * desc) /* {{{ */
 {
 	int rc;
 	int rfd[2]; /* hub -> proc */
@@ -300,7 +296,8 @@ static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc
 
 	if (proc == NULL) return -1;
 	if (proc->cfg == NULL) return -1;
-	if (func == NULL) return -1;
+	if (desc == NULL) return -1;
+	if (desc->func == NULL) return -1;
 
 	rc = pipe(rfd);
 	if (rc < 0) {
@@ -334,10 +331,22 @@ static int proc_start(struct proc_config_t * proc, int (*func)(const struct proc
 		proc->wfd = wfd[1];
 		close(rfd[1]);
 		close(wfd[0]);
-		rc = func(proc, prop);
+
+		/* parse properties */
+		if (desc->prop) {
+			rc = desc->prop(proc, &proc->cfg->properties);
+			if (rc < 0) {
+				syslog(LOG_ERR, "invalid properties for proc type: '%s', stop proc '%s', rc=%d", proc->cfg->type, proc->cfg->name, rc);
+				exit(rc);
+			}
+		}
+
+		/* execute actual procedure */
+		rc = desc->func(proc, &proc->cfg->properties);
 		syslog(LOG_INFO, "stop proc '%s', rc=%d", proc->cfg->name, rc);
 		exit(rc);
 	} else {
+		/* parent code */
 		proc->pid = rc;
 		proc->rfd = wfd[0];
 		proc->wfd = rfd[1];
@@ -444,7 +453,7 @@ static int setup_procs(size_t num, size_t base, const struct proc_desc_list_t co
 			syslog(LOG_ERR, "unknown proc type: '%s'", ptr->cfg->type);
 			return -1;
 		}
-		rc = proc_start(ptr, desc->func, &ptr->cfg->properties);
+		rc = proc_start(ptr, desc);
 		if (rc < 0) {
 			return -1;
 		}

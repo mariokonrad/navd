@@ -6,6 +6,7 @@
 #include <sys/select.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
 {
@@ -110,6 +111,7 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 
 const struct proc_desc_t gps_simulator = {
 	"gps_sim",
+	NULL,
 	proc
 };
 

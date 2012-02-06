@@ -130,6 +130,7 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 
 const struct proc_desc_t message_log = {
 	"message_log",
+	NULL,
 	proc
 };
 

@@ -4,7 +4,9 @@
 #include <common/macros.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <syslog.h>
+#include <unistd.h>
 
 static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
 {
@@ -24,7 +26,11 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	char c;
 
 	struct serial_config_t serial_config = {
-		"/dev/ttyUSB0"
+		"/dev/ttyUSB0",
+		BAUD_4800,
+		DATA_BIT_8,
+		STOP_BIT_1,
+		PARITY_NONE
 	};
 
 	UNUSED_ARG(properties);
@@ -135,6 +141,7 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 
 const struct proc_desc_t gps_serial = {
 	"gps_serial_demo",
+	NULL,
 	proc
 };
 

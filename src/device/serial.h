@@ -3,12 +3,49 @@
 
 #include <device/device.h>
 
+typedef enum
+{
+	BAUD_300,
+	BAUD_600,
+	BAUD_1200,
+	BAUD_2400,
+	BAUD_4800,
+	BAUD_9600,
+	BAUD_19200,
+	BAUD_38400,
+	BAUD_57600,
+	BAUD_115200
+} Baud;
+
+typedef enum
+{
+	DATA_BIT_7,
+	DATA_BIT_8
+} DataBits;
+
+typedef enum
+{
+	STOP_BIT_1,
+	STOP_BIT_2
+} StopBits;
+
+typedef enum
+{
+	PARITY_NONE,
+	PARITY_EVEN,
+	PARITY_ODD
+} Parity;
+
 /**
  * @todo Documenation
  */
 struct serial_config_t
 {
 	char name[128];
+	Baud baud_rate;
+	DataBits data_bits;
+	StopBits stop_bits;
+	Parity parity;
 };
 
 extern const struct device_operations_t serial_device_operations;
