@@ -91,6 +91,7 @@ char * config_strdup(const char *);
 char * config_strdup_s(const char *);
 
 void config_free(struct config_t * config);
+void config_register_free(void);
 int config_register_source(const char * type);
 int config_register_destination(const char * type);
 int config_register_filter(const char * type);

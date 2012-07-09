@@ -22,6 +22,19 @@ static struct {
 } registered = { { 0, NULL }, { 0, NULL }, { 0, NULL } };
 
 
+void config_register_free(void)
+{
+	if (registered.sources.num > 0) {
+		strlist_free(&registered.sources);
+	}
+	if (registered.destinations.num > 0) {
+		strlist_free(&registered.destinations);
+	}
+	if (registered.filters.num > 0) {
+		strlist_free(&registered.filters);
+	}
+}
+
 static int config_find_source(struct config_t * config, const char * source)
 {
 	size_t i;

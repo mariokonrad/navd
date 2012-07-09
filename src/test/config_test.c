@@ -43,6 +43,7 @@ int main(int argc, char ** argv)
 	}
 
 	config_free(&config);
+	config_register_free();
 	return EXIT_SUCCESS;
 }
 

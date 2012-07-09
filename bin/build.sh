@@ -68,6 +68,14 @@ function exec_test()
 			fi
 			;;
 
+		strlist)
+			if [ -r "${BASE}/build/src/test/strlist_test" ] ; then
+				${BASE}/build/src/test/strlist_test
+			else
+				echo "error: string list test not present"
+			fi
+			;;
+
 		*)
 			echo "no test specified"
 			;;
@@ -76,16 +84,50 @@ function exec_test()
 
 function exec_valgrind()
 {
+	if [ -r "${BASE}/build/src/test/strlist_test" ] ; then
+		valgrind ${BASE}/build/src/test/strlist_test
+	else
+		echo "error: string list test not present"
+	fi
+
+	echo ""
+	echo "----------------------------------------"
+	echo ""
+
 	if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
-		valgrind ${BASE}/build/src/test/nmea_test
+		valgrind --track-origins=yes ${BASE}/build/src/test/nmea_test
 	else
 		echo "error: nmea test not present"
 	fi
 
+	echo ""
+	echo "----------------------------------------"
+	echo ""
+
 	if [ -r "${BASE}/build/src/test/config_test" ] ; then
-		valgrind ${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small
+		valgrind --leak-check=full ${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small
 	else
 		echo "error: config test not present"
+	fi
+
+	echo ""
+	echo "----------------------------------------"
+	echo ""
+
+	if [ -r "${BASE}/build/src/test/config_test" ] ; then
+		valgrind --leak-check=full ${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small-1
+	else
+		echo "error: config test not present"
+	fi
+
+	echo ""
+	echo "----------------------------------------"
+	echo ""
+
+	if [ -r "${BASE}/build/src/test/config_test_1" ] ; then
+		valgrind --leak-check=full --show-reachable=yes ${BASE}/build/src/test/config_test_1
+	else
+		echo "error: config test 1 not present"
 	fi
 }
 

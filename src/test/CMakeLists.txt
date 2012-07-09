@@ -37,3 +37,20 @@ target_link_libraries(config_test
 	common
 	)
 
+add_executable(config_test_1
+	config_test_1.c
+	)
+
+target_link_libraries(config_test_1
+	config
+	common
+	)
+
+add_executable(strlist_test
+	strlist_test.c
+	)
+
+target_link_libraries(strlist_test
+	common
+	)
+
