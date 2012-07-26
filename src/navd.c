@@ -148,10 +148,10 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 	memset(&option, 0, sizeof(option));
 	option.log_mask = LOG_DEBUG;
 
-	while (optind < argc) {
+	while (1) {
 		rc = getopt_long(argc, argv, OPTIONS_SHORT, OPTIONS_LONG, &index);
 		if (rc == -1) {
-			return -1;
+			break;
 		}
 		switch (rc) {
 			case 'h':
