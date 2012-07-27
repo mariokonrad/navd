@@ -9,10 +9,13 @@
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <common/macros.h>
-#include <navcom/message.h>
-#include <config/config.h>
 #include <libgen.h>
+
+#include <common/macros.h>
+#include <config/config.h>
+#include <navcom/message.h>
+#include <navcom/proc_list.h>
+#include <navcom/filter_list.h>
 
 #include <navcom/filter_null.h>
 #include <navcom/filter_nmea.h>
@@ -31,10 +34,8 @@
 /* TODO:
 
  - release unused resources within child processes
- - filter list similar to proc list
 
 */
-
 
 static const char * OPTIONS_SHORT = "hdc:";
 
@@ -71,58 +72,9 @@ static size_t proc_cfg_base_dst = 0;
 
 static struct msg_route_t * msg_routes = NULL;
 
-struct proc_desc_list_t {
-	size_t num;
-	struct proc_desc_t * data;
-};
-
-static int pdlist_init(struct proc_desc_list_t * list) /* {{{ */
-{
-	if (list == NULL) return -1;
-	list->num = 0;
-	list->data = NULL;
-	return 0;
-} /* }}} */
-
-static int pdlist_free(struct proc_desc_list_t * list) /* {{{ */
-{
-	if (list == NULL) return -1;
-	if (list->data) {
-		free(list->data);
-		list->data = NULL;
-	}
-	list->num = 0;
-	return 0;
-} /* }}} */
-
-static int pdlist_append(struct proc_desc_list_t * list, const struct proc_desc_t const * desc) /* {{{ */
-{
-	if (list == NULL) return -1;
-	if (desc == NULL) return -1;
-
-	list->num++;
-	list->data = realloc(list->data, list->num * sizeof(struct proc_desc_t));
-	list->data[list->num-1] = *desc;
-	return 0;
-} /* }}} */
-
-static const struct proc_desc_t const * pdlist_find(const struct proc_desc_list_t const * list, const char * name) /* {{{ */
-{
-	size_t i;
-
-	if (list == NULL) return NULL;
-	if (name == NULL) return NULL;
-
-	for (i = 0; i < list->num; ++i) {
-		if (!strcmp(name, list->data[i].name)) {
-			return &list->data[i];
-		}
-	}
-	return NULL;
-} /* }}} */
-
 static struct proc_desc_list_t desc_sources;
 static struct proc_desc_list_t desc_destinations;
+static struct filter_desc_list_t desc_filters;
 
 static void usage(FILE * file, const char * name) /* {{{ */
 {
@@ -492,11 +444,8 @@ static int setup_routes(const struct config_t * config) /* {{{ */
 
 		/* link filter */
 		if (config->routes[i].filter) {
-			if (!strcmp(config->routes[i].filter->type, "filter_null")) {
-				route->filter = &filter_null;
-				route->filter_cfg = &config->routes[i].filter->properties;
-			} else if (!strcmp(config->routes[i].filter->type, "filter_nmea")) {
-				route->filter = &filter_nmea;
+			route->filter = filterlist_find(&desc_filters, config->routes[i].filter->type);
+			if (route->filter) {
 				route->filter_cfg = &config->routes[i].filter->properties;
 			} else {
 				syslog(LOG_ERR, "unknown filter: '%s'", config->routes[i].name_filter);
@@ -563,6 +512,48 @@ static void terminate_graceful(const struct config_t const * config) /* {{{ */
 	destroy_proc_configs();
 	pdlist_free(&desc_sources);
 	pdlist_free(&desc_destinations);
+	filterlist_free(&desc_filters);
+} /* }}} */
+
+static void register_sources(void) /* {{{ */
+{
+	size_t i;
+
+	pdlist_init(&desc_sources);
+
+	pdlist_append(&desc_sources, &gps_serial);
+	pdlist_append(&desc_sources, &gps_simulator);
+
+	for (i = 0; i < desc_sources.num; ++i) {
+		config_register_source(desc_sources.data[i].name);
+	}
+} /* }}} */
+
+static void register_destinations(void) /* {{{ */
+{
+	size_t i;
+
+	pdlist_init(&desc_destinations);
+
+	pdlist_append(&desc_destinations, &message_log);
+
+	for (i = 0; i < desc_destinations.num; ++i) {
+		config_register_destination(desc_destinations.data[i].name);
+	}
+} /* }}} */
+
+static void register_filters(void) /* {{{ */
+{
+	size_t i;
+
+	filterlist_init(&desc_filters);
+
+	filterlist_append(&desc_filters, &filter_null);
+	filterlist_append(&desc_filters, &filter_nmea);
+
+	for (i = 0; i < desc_filters.num; ++i) {
+		config_register_filter(desc_filters.data[i].name);
+	}
 } /* }}} */
 
 int main(int argc, char ** argv) /* {{{ */
@@ -584,22 +575,9 @@ int main(int argc, char ** argv) /* {{{ */
 	openlog(basename(argv[0]), LOG_PID | LOG_CONS | LOG_PERROR, LOG_DAEMON);
 
 	/* register known types (sources, destinations, filters) */
-	pdlist_init(&desc_sources);
-	pdlist_append(&desc_sources, &gps_serial);
-	pdlist_append(&desc_sources, &gps_simulator);
-
-	pdlist_init(&desc_destinations);
-	pdlist_append(&desc_destinations, &message_log);
-
-	for (i = 0; i < desc_sources.num; ++i) {
-		config_register_source(desc_sources.data[i].name);
-	}
-	for (i = 0; i < desc_destinations.num; ++i) {
-		config_register_destination(desc_destinations.data[i].name);
-	}
-
-	config_register_filter("filter_null");
-	config_register_filter("filter_nmea");
+	register_sources();
+	register_destinations();
+	register_filters();
 
 	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
 	rc = setlogmask(LOG_UPTO(option.log_mask));
