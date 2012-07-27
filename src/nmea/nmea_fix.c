@@ -70,8 +70,8 @@ const char * nmea_fix_parse(const char * s, const char * e, struct nmea_fix_t * 
  *    If the integer part uses more digits than stated, more bytes will be written.
  *    More digits than NMEA_FIX_DECIMAL_DIGITS is not possible.
  * @param[in] nd Minimum number of decimal digits to write number. Maximum will be NMEA_FIX_DECIMAL_DIGITS.
+ * @return The number of characters written into the buffer.
  */
-/* TODO:TEST */
 int nmea_fix_write(char * buf, uint32_t size, const struct nmea_fix_t * v, uint32_t ni, uint32_t nd)
 {
 	char fmt[16];

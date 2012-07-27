@@ -454,6 +454,21 @@ static void test_basic_string_writing(void)
 	if (rc != strlen("hello")) { ++errors; printf("ERROR: %d\n", __LINE__); }
 }
 
+static void test_nmea_fix_write(const struct nmea_fix_t * t, uint32_t ni, uint32_t nd, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+	int result;
+
+	memset(buf, 0, sizeof(buf));
+	rc = nmea_fix_write(buf, SIZE, t, ni, nd);
+	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
+	if (!result) ++errors;
+	printf("%25s : %d : '%06u %06u' / '%s' ==> '%s'\n", __FUNCTION__,
+		result, t->i, t->d, outcome, buf);
+}
+
 static void test_nmea_time_write(const struct nmea_time_t * t, const char * outcome)
 {
 	enum { SIZE = 128 };
@@ -463,7 +478,7 @@ static void test_nmea_time_write(const struct nmea_time_t * t, const char * outc
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_time_write(buf, SIZE, t);
-	result = !strncmp(buf, outcome, SIZE);
+	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
 	if (!result) ++errors;
 	printf("%25s : %d : '%02d %02d %02d %04d' / '%s' ==> '%s'\n", __FUNCTION__,
 		result, t->h, t->m, t->s, t->ms, outcome, buf);
@@ -478,7 +493,7 @@ static void test_nmea_date_write(const struct nmea_date_t * t, const char * outc
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_date_write(buf, SIZE, t);
-	result = !strncmp(buf, outcome, SIZE);
+	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
 	if (!result) ++errors;
 	printf("%25s : %d : '%02d %02d %02d' / '%s' ==> '%s'\n", __FUNCTION__,
 		result, t->d, t->m, t->d, outcome, buf);
@@ -493,7 +508,7 @@ static void test_write_lat(const struct nmea_angle_t * t, const char * outcome)
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_write_latitude(buf, SIZE, t);
-	result = !strncmp(buf, outcome, SIZE);
+	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
 	if (!result) ++errors;
 	printf("%25s : %d : '%02d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,
 		result, t->d, t->m, t->s.i, t->s.d, outcome, buf);
@@ -508,10 +523,28 @@ static void test_write_lon(const struct nmea_angle_t * t, const char * outcome)
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_write_lonitude(buf, SIZE, t);
-	result = !strncmp(buf, outcome, SIZE);
+	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
 	if (!result) ++errors;
 	printf("%25s : %d : '%03d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,
 		result, t->d, t->m, t->s.i, t->s.d, outcome, buf);
+}
+
+static void test_basic_fix_writing(void)
+{
+	struct nmea_fix_t t;
+
+	t.i =     0; t.d =      0; test_nmea_fix_write(&t, 1, 6, "0.000000");
+	t.i =     0; t.d =      1; test_nmea_fix_write(&t, 1, 6, "0.000001");
+	t.i =     0; t.d =     10; test_nmea_fix_write(&t, 1, 6, "0.000010");
+	t.i =     0; t.d =    100; test_nmea_fix_write(&t, 1, 6, "0.000100");
+	t.i =     0; t.d =   1000; test_nmea_fix_write(&t, 1, 6, "0.001000");
+	t.i =     0; t.d =  10000; test_nmea_fix_write(&t, 1, 6, "0.010000");
+	t.i =     0; t.d = 100000; test_nmea_fix_write(&t, 1, 6, "0.100000");
+	t.i =     1; t.d =      0; test_nmea_fix_write(&t, 5, 6, "    1.000000");
+	t.i =    10; t.d =      0; test_nmea_fix_write(&t, 5, 6, "   10.000000");
+	t.i =   100; t.d =      0; test_nmea_fix_write(&t, 5, 6, "  100.000000");
+	t.i =  1000; t.d =      0; test_nmea_fix_write(&t, 5, 6, " 1000.000000");
+	t.i = 10000; t.d =      0; test_nmea_fix_write(&t, 5, 6, "10000.000000");
 }
 
 static void test_basic_time_writing(void)
@@ -602,6 +635,7 @@ static void test_basic_longitude_writing(void)
 static void test_basic_writing(void)
 {
 	test_basic_string_writing();
+	test_basic_fix_writing();
 	test_basic_time_writing();
 	test_basic_date_writing();
 	test_basic_latitude_writing();

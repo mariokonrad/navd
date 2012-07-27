@@ -25,6 +25,8 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	int buf_index;
 	char c;
 
+	/* TODO:configuration */
+
 	struct serial_config_t serial_config = {
 		"/dev/ttyUSB0",
 		BAUD_4800,
