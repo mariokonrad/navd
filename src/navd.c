@@ -288,7 +288,7 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		/* parse properties */
 		if (desc->prop) {
 			rc = desc->prop(proc, &proc->cfg->properties);
-			if (rc < 0) {
+			if (rc != EXIT_SUCCESS) {
 				syslog(LOG_ERR, "invalid properties for proc type: '%s', stop proc '%s', rc=%d", proc->cfg->type, proc->cfg->name, rc);
 				exit(rc);
 			}
