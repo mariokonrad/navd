@@ -22,6 +22,7 @@
 #include <navcom/message_log.h>
 #include <navcom/gps_simulator.h>
 #include <navcom/gps_serial.h>
+#include <navcom/timer.h>
 
 #if !defined(max)
 	#define max(a, b)  ((a) > (b) ? (a) : (b))
@@ -523,6 +524,7 @@ static void register_sources(void) /* {{{ */
 
 	pdlist_append(&desc_sources, &gps_serial);
 	pdlist_append(&desc_sources, &gps_simulator);
+	pdlist_append(&desc_sources, &timer);
 
 	for (i = 0; i < desc_sources.num; ++i) {
 		config_register_source(desc_sources.data[i].name);

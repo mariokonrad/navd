@@ -8,6 +8,7 @@
  */
 enum MessageType {
 	 MSG_SYSTEM = 0x00000000
+	,MSG_TIMER  = 0x00000001
 	,MSG_NMEA   = 0x00010000
 };
 
@@ -26,6 +27,7 @@ struct message_t
 	uint32_t type;
 	union {
 		uint32_t system;
+		uint32_t timer_id;
 		struct nmea_t nmea;
 		int8_t buf[sizeof(struct nmea_t)]; /* TODO: max size of all members */
 	} data;
