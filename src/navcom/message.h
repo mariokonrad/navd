@@ -31,6 +31,6 @@ struct message_t
 		struct nmea_t nmea;
 		int8_t buf[sizeof(struct nmea_t)]; /* TODO: max size of all members */
 	} data;
-};
+} __attribute__((packed));
 
 #endif

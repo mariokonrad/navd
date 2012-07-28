@@ -8,6 +8,144 @@
 #include <syslog.h>
 #include <unistd.h>
 
+static int initialized = 0;
+static struct serial_config_t serial_config = {
+	"/dev/ttyUSB0",
+	BAUD_4800,
+	DATA_BIT_8,
+	STOP_BIT_1,
+	PARITY_NONE
+};
+
+static int prop_device(const struct property_list_t * properties)
+{
+	if (proplist_contains(properties, "device")) {
+		strncpy(serial_config.name, proplist_value(properties, "device"), sizeof(serial_config.name));
+		syslog(LOG_DEBUG, "device configured, using '%s'", serial_config.name);
+	} else {
+		syslog(LOG_DEBUG, "no device configured, using default '%s'", serial_config.name);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int prop_baud_rate(const struct property_list_t * properties)
+{
+	Baud baud;
+
+	if (proplist_contains(properties, "baud")) {
+		baud = (Baud)strtoul(proplist_value(properties, "baud"), NULL, 0);
+		switch (baud) {
+			case BAUD_300:
+			case BAUD_600:
+			case BAUD_1200:
+			case BAUD_2400:
+			case BAUD_4800:
+			case BAUD_9600:
+			case BAUD_19200:
+			case BAUD_38400:
+			case BAUD_57600:
+			case BAUD_115200:
+				serial_config.baud_rate = baud;
+				syslog(LOG_DEBUG, "baud rate configured, using '%u'", serial_config.baud_rate);
+				break;
+			default:
+				syslog(LOG_ERR, "invalid baud rate configured: %u", baud);
+				return EXIT_FAILURE;
+		}
+	} else {
+		syslog(LOG_DEBUG, "no baud rate configured, using default '%u'", serial_config.baud_rate);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int prop_parity(const struct property_list_t * properties)
+{
+	const char * parity = NULL;
+
+	if (proplist_contains(properties, "parity")) {
+		parity = proplist_value(properties, "parity");
+		if (strcmp(parity, "none") == 0) {
+			serial_config.parity = PARITY_NONE;
+		} else if (strcmp(parity, "even") == 0) {
+			serial_config.parity = PARITY_EVEN;
+		} else if (strcmp(parity, "odd") == 0) {
+			serial_config.parity = PARITY_ODD;
+		} else {
+			syslog(LOG_ERR, "invalid parity configured: %s", parity);
+			return EXIT_FAILURE;
+		}
+	} else {
+		syslog(LOG_DEBUG, "no parity configured, using default '%d'", serial_config.parity);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int prop_data_bits(const struct property_list_t * properties)
+{
+	DataBits bits;
+
+	if (proplist_contains(properties, "data")) {
+		bits = (DataBits)strtoul(proplist_value(properties, "data"), NULL, 0);
+		switch (bits) {
+			case DATA_BIT_7:
+			case DATA_BIT_8:
+				serial_config.data_bits = bits;
+				syslog(LOG_DEBUG, "data bits configured, using '%u'", serial_config.data_bits);
+			default:
+				syslog(LOG_ERR, "invalid data bits configured: %u", bits);
+				return EXIT_FAILURE;
+		}
+	} else {
+		syslog(LOG_DEBUG, "no data bits configured, using default '%d'", serial_config.data_bits);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int prop_stop_bits(const struct property_list_t * properties)
+{
+	StopBits bits;
+
+	if (proplist_contains(properties, "stop")) {
+		bits = (DataBits)strtoul(proplist_value(properties, "stop"), NULL, 0);
+		switch (bits) {
+			case STOP_BIT_1:
+			case STOP_BIT_2:
+				serial_config.stop_bits = bits;
+				syslog(LOG_DEBUG, "stop configured, using '%u'", serial_config.stop_bits);
+			default:
+				syslog(LOG_ERR, "invalid stop bits configured: %u", bits);
+				return EXIT_FAILURE;
+		}
+	} else {
+		syslog(LOG_DEBUG, "no stop bits configured, using default '%d'", serial_config.stop_bits);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int prop(struct proc_config_t * config, const struct property_list_t * properties)
+{
+	UNUSED_ARG(config);
+
+	if (prop_device(properties) != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+	if (prop_baud_rate(properties) != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+	if (prop_parity(properties) != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+	if (prop_data_bits(properties) != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+	if (prop_stop_bits(properties) != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+
+	initialized = 1;
+	return EXIT_SUCCESS;
+}
+
 static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
 {
 	int rc;
@@ -20,28 +158,27 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	struct device_t device;
 	const struct device_operations_t * ops = NULL;
 
-	struct nmea_t nmea;
+	struct message_t msg_nmea;
+	struct nmea_t * nmea = &msg_nmea.data.nmea;
 	char buf[NMEA_MAX_SENTENCE + 1];
 	int buf_index;
 	char c;
 
-	/* TODO:configuration */
-
-	struct serial_config_t serial_config = {
-		"/dev/ttyUSB0",
-		BAUD_4800,
-		DATA_BIT_8,
-		STOP_BIT_1,
-		PARITY_NONE
-	};
+	/* TODO: what if strtoul does fail? */
 
 	UNUSED_ARG(properties);
 
+	if (!initialized) {
+		syslog(LOG_ERR, "uninitialized");
+		return EXIT_FAILURE;
+	}
+
 	ops = &serial_device_operations;
 	device_init(&device);
-	nmea_init(&nmea);
 	memset(buf, 0, sizeof(buf));
 	buf_index = 0;
+
+	msg_nmea.type = MSG_NMEA;
 
 	rc = ops->open(&device, (const struct device_config_t *)&serial_config);
 	if (rc < 0) {
@@ -78,20 +215,24 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 				perror("read");
 				return EXIT_FAILURE;
 			}
+			nmea_init(nmea);
 			switch (c) {
 				case '\r':
 					break;
 				case '\n':
-					rc = nmea_read(&nmea, buf);
+					rc = nmea_read(nmea, buf);
 					if (rc == 0) {
-						printf("OK : [%s]\n", buf);
-						/* TODO: send message */
+						rc = write(config->wfd, &msg_nmea, sizeof(msg_nmea));
+						if (rc < 0) {
+							perror("write");
+							syslog(LOG_DEBUG, "wfd=%d", config->wfd);
+						}
 					} else if (rc == 1) {
-						printf("[%s] : UNKNOWN SENTENCE\n", buf);
+						syslog(LOG_ERR, "unknown sentence: '%s'", buf);
 					} else if (rc == -2) {
-						printf("[%s] : CHECKSUM ERROR\n", buf);
+						syslog(LOG_ERR, "checksum error: '%s'", buf);
 					} else {
-						fprintf(stderr, "parameter error\n");
+						syslog(LOG_ERR, "parameter error");
 						return EXIT_FAILURE;
 					}
 					buf_index = 0;
@@ -101,7 +242,7 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 					if (buf_index < NMEA_MAX_SENTENCE) {
 						buf[buf_index++] = c;
 					} else {
-						fprintf(stderr, "sentence too long, discarding\n");
+						syslog(LOG_ERR, "sentence too long, discarding");
 						buf_index = 0;
 					}
 					buf[buf_index] = 0;
@@ -142,10 +283,8 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 }
 
 const struct proc_desc_t gps_serial = {
-	"gps_serial_demo",
-	NULL,
+	"gps_serial",
+	prop,
 	proc
 };
-
-
 
