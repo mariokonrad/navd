@@ -39,7 +39,7 @@ static int prop(struct proc_config_t * config, const struct property_list_t * pr
 	return EXIT_SUCCESS;
 }
 
-static void send_message(void)
+static void send_message(const struct proc_config_t * config)
 {
 	int rc;
 
@@ -82,7 +82,7 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 		}
 
 		if (rc == 0) { /* timerout */
-			send_message();
+			send_message(config);
 			continue;
 		}
 
