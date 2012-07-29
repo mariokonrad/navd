@@ -154,7 +154,7 @@ static int prop_stop_bits(const struct property_list_t * properties)
 	return EXIT_SUCCESS;
 }
 
-static int prop(struct proc_config_t * config, const struct property_list_t * properties)
+static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	UNUSED_ARG(config);
 
@@ -168,7 +168,7 @@ static int prop(struct proc_config_t * config, const struct property_list_t * pr
 	return EXIT_SUCCESS;
 }
 
-static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
+static int proc(const struct proc_config_t * config)
 {
 	int rc;
 
@@ -185,8 +185,6 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	char buf[NMEA_MAX_SENTENCE + 1];
 	int buf_index;
 	char c;
-
-	UNUSED_ARG(properties);
 
 	if (!initialized) {
 		syslog(LOG_ERR, "uninitialized");
@@ -303,8 +301,8 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 }
 
 const struct proc_desc_t gps_serial = {
-	"gps_serial",
-	prop,
-	proc
+	.name = "gps_serial",
+	.configure = configure,
+	.func = proc
 };
 

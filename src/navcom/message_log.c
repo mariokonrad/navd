@@ -15,15 +15,7 @@ struct msg_log_property_t {
 	const char * dst;
 };
 
-static void read_properties(const struct property_list_t * properties, struct msg_log_property_t * prop)
-{
-	memset(prop, 0, sizeof(struct msg_log_property_t));
-
-	prop->enable = proplist_contains(properties, "enable");
-	prop->dst = proplist_value(properties, "dst");
-
-	syslog(LOG_DEBUG, "enable:%d dst:'%s'", prop->enable, prop->dst);
-}
+static struct msg_log_property_t prop;
 
 static int log_message(const struct message_t * msg, const struct msg_log_property_t * prop)
 {
@@ -61,17 +53,27 @@ static int log_message(const struct message_t * msg, const struct msg_log_proper
 	return 0;
 }
 
-static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
+static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+{
+	UNUSED_ARG(config);
+
+	/* TODO: read properties with the property reading mechanism not here */
+
+	memset(&prop, 0, sizeof(struct msg_log_property_t));
+
+	prop.enable = proplist_contains(properties, "enable");
+	prop.dst = proplist_value(properties, "dst");
+
+	syslog(LOG_DEBUG, "enable:%d dst:'%s'", prop.enable, prop.dst);
+	return 0;
+}
+
+static int proc(const struct proc_config_t * config)
 {
 	int rc;
 	fd_set rfds;
 	struct message_t msg;
 	unsigned int cnt_error = 0;
-	struct msg_log_property_t prop;
-
-	/* TODO: read properties with the property reading mechanism not here */
-
-	read_properties(properties, &prop);
 
 	while (!request_terminate) {
 		FD_ZERO(&rfds);
@@ -131,8 +133,8 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 }
 
 const struct proc_desc_t message_log = {
-	"message_log",
-	NULL,
-	proc
+	.name = "message_log",
+	.configure = configure,
+	.func = proc
 };
 

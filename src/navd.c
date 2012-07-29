@@ -294,9 +294,9 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		close(rfd[1]);
 		close(wfd[0]);
 
-		/* parse properties */
-		if (desc->prop) {
-			rc = desc->prop(proc, &proc->cfg->properties);
+		/* configure procedure */
+		if (desc->configure) {
+			rc = desc->configure(proc, &proc->cfg->properties);
 			if (rc != EXIT_SUCCESS) {
 				syslog(LOG_ERR, "invalid properties for proc type: '%s', stop proc '%s', rc=%d", proc->cfg->type, proc->cfg->name, rc);
 				exit(rc);
@@ -304,7 +304,7 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		}
 
 		/* execute actual procedure */
-		rc = desc->func(proc, &proc->cfg->properties);
+		rc = desc->func(proc);
 		syslog(LOG_INFO, "stop proc '%s', rc=%d", proc->cfg->name, rc);
 		exit(rc);
 	} else {

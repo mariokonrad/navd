@@ -45,7 +45,7 @@ static void init_message(void)
 	rmc->sig_integrity = NMEA_SIG_INT_SIMULATED;
 }
 
-static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
+static int proc(const struct proc_config_t * config)
 {
 	fd_set rfds;
 	struct message_t msg;
@@ -55,8 +55,6 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	char buf[NMEA_MAX_SENTENCE];
 
 	/* TODO: properties: position, send period */
-
-	UNUSED_ARG(properties);
 
 	init_message();
 
@@ -119,8 +117,8 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 }
 
 const struct proc_desc_t gps_simulator = {
-	"gps_sim",
-	NULL,
-	proc
+	.name = "gps_sim",
+	.configure = NULL,
+	.func = proc
 };
 

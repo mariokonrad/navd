@@ -10,7 +10,7 @@ static int initialized = 0;
 static struct timespec tm_cfg;
 static struct message_t timer_message;
 
-static int prop(struct proc_config_t * config, const struct property_list_t * properties)
+static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	uint32_t t;
 	const struct property_t * prop_id = NULL;
@@ -64,15 +64,13 @@ static void send_message(const struct proc_config_t * config)
 	}
 }
 
-static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
+static int proc(const struct proc_config_t * config)
 {
 	int rc;
 	fd_set rfds;
 	int fd_max;
 	struct message_t msg;
 	struct timespec tm;
-
-	UNUSED_ARG(properties);
 
 	if (!initialized) {
 		syslog(LOG_ERR, "uninitialized");
@@ -132,8 +130,8 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 }
 
 const struct proc_desc_t timer = {
-	"timer",
-	prop,
-	proc
+	.name = "timer",
+	.configure = configure,
+	.func = proc
 };
 
