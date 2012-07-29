@@ -55,17 +55,24 @@ static int log_message(const struct message_t * msg, const struct msg_log_proper
 
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
-	UNUSED_ARG(config);
+	const struct property_t * prop_dst = NULL;
 
-	/* TODO: read properties with the property reading mechanism not here */
+	UNUSED_ARG(config);
 
 	memset(&prop, 0, sizeof(struct msg_log_property_t));
 
 	prop.enable = proplist_contains(properties, "enable");
-	prop.dst = proplist_value(properties, "dst");
+
+	prop_dst = proplist_find(properties, "dst");
+	if (prop_dst) {
+		/* TODO: test if destination is writable */
+		prop.dst = prop_dst->value;
+	} else {
+		syslog(LOG_ERR, "no destination specified, logging to syslog only");
+	}
 
 	syslog(LOG_DEBUG, "enable:%d dst:'%s'", prop.enable, prop.dst);
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static int proc(const struct proc_config_t * config)

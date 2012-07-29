@@ -22,7 +22,11 @@ int main(int argc, char ** argv)
 	const struct device_config_t * config = NULL;
 
 	struct serial_config_t serial_config = {
-		"/dev/ttyUSB0"
+		"/dev/ttyUSB0",
+		BAUD_4800,
+		DATA_BIT_8,
+		STOP_BIT_1,
+		PARITY_NONE
 	};
 
 	UNUSED_ARG(argc);
