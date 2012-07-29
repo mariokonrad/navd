@@ -69,6 +69,8 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	unsigned int cnt_error = 0;
 	struct msg_log_property_t prop;
 
+	/* TODO: read properties with the property reading mechanism not here */
+
 	read_properties(properties, &prop);
 
 	while (!request_terminate) {

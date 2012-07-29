@@ -4,12 +4,15 @@
 #include <nmea/nmea.h>
 
 /**
- * @todo Documentation
+ * Message types, defines what type of message it is.
+ *
+ * @note Values within 0x00ffffff are reserved for system messages,
+ *   while values within 0xyyffffff (with y=0x01..0xff) are for application purposes.
  */
 enum MessageType {
 	 MSG_SYSTEM = 0x00000000
-	,MSG_TIMER  = 0x00000001
-	,MSG_NMEA   = 0x00010000
+	,MSG_TIMER  = 0x01000000
+	,MSG_NMEA   = 0x01000001
 };
 
 /**

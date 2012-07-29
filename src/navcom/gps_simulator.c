@@ -8,19 +8,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
+static struct message_t sim_message;
+
+static void init_message(void)
 {
-	fd_set rfds;
-	struct message_t msg;
-	struct message_t sim_message;
-	int rc;
-	struct timespec tm;
-
 	struct nmea_rmc_t * rmc;
-	char buf[NMEA_MAX_SENTENCE];
-
-	/* TODO: properties */
-	UNUSED_ARG(properties);
 
 	sim_message.type = MSG_NMEA;
 	sim_message.data.nmea.type = NMEA_RMC;
@@ -51,7 +43,24 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	rmc->m.d = 0;
 	rmc->m_dir = NMEA_WEST;
 	rmc->sig_integrity = NMEA_SIG_INT_SIMULATED;
+}
 
+static int proc(const struct proc_config_t * config, const struct property_list_t * properties)
+{
+	fd_set rfds;
+	struct message_t msg;
+	int rc;
+	struct timespec tm;
+
+	char buf[NMEA_MAX_SENTENCE];
+
+	/* TODO: properties: position, send period */
+
+	UNUSED_ARG(properties);
+
+	init_message();
+
+	/* prepare send buffer */
 	rc = nmea_write(buf, sizeof(buf), &sim_message.data.nmea);
 	if (rc < 0) {
 		syslog(LOG_WARNING, "invalid RMC data, rc=%d", rc);
