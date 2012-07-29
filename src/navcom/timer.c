@@ -13,22 +13,36 @@ static struct message_t timer_message;
 static int prop(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	uint32_t t;
+	const struct property_t * prop_id = NULL;
+	const struct property_t * prop_period = NULL;
+	char * endptr = NULL;
 
 	UNUSED_ARG(config);
 
-	if (!proplist_contains(properties, "id")) {
+	prop_id = proplist_find(properties, "id");
+	prop_period = proplist_find(properties, "period");
+
+	if (!prop_id) {
 		syslog(LOG_ERR, "no timer ID defined");
 		return EXIT_FAILURE;
 	}
 
-	if (!proplist_contains(properties, "period")) {
+	if (!prop_period) {
 		syslog(LOG_ERR, "no timer period defined");
 		return EXIT_FAILURE;
 	}
 
-	timer_message.data.timer_id = strtoul(proplist_value(properties, "id"), NULL, 0);
+	timer_message.data.timer_id = strtoul(prop_id->value, &endptr, 0);
+	if (*endptr != '\0') {
+		syslog(LOG_ERR, "invalid value in id: '%s'", prop_id->value);
+		return EXIT_FAILURE;
+	}
 
-	t = strtoul(proplist_value(properties, "period"), NULL, 0);
+	t = strtoul(prop_period->value, &endptr, 0);
+	if (*endptr != '\0') {
+		syslog(LOG_ERR, "invalid value in period: '%s'", prop_period->value);
+		return EXIT_FAILURE;
+	}
 	tm_cfg.tv_sec = t / 1000;
 	tm_cfg.tv_nsec = (t % 1000);
 	tm_cfg.tv_nsec *= 1000000;

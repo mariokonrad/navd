@@ -96,6 +96,7 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 {
 	int rc;
 	int index;
+	char * endptr = NULL;
 
 	/* default values */
 	memset(&option, 0, sizeof(option));
@@ -123,10 +124,18 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 						option.dump_config = 1;
 						break;
 					case 4:
-						option.max_msg = strtoul(optarg, NULL, 0);
+						option.max_msg = strtoul(optarg, &endptr, 0);
+						if (*endptr != '\0') {
+							syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
+							return -1;
+						}
 						break;
 					case 5:
-						option.log_mask = strtoul(optarg, NULL, 0);
+						option.log_mask = strtoul(optarg, &endptr, 0);
+						if (*endptr != '\0') {
+							syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
+							return -1;
+						}
 						option.log_mask = max(LOG_EMERG, option.log_mask);
 						option.log_mask = min(LOG_DEBUG, option.log_mask);
 						break;

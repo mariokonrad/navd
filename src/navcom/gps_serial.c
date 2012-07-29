@@ -19,63 +19,77 @@ static struct serial_config_t serial_config = {
 
 static int prop_device(const struct property_list_t * properties)
 {
-	if (proplist_contains(properties, "device")) {
-		strncpy(serial_config.name, proplist_value(properties, "device"), sizeof(serial_config.name));
-		syslog(LOG_DEBUG, "device configured, using '%s'", serial_config.name);
-	} else {
+	const struct property_t * prop = NULL;
+
+	prop = proplist_find(properties, "device");
+	if (!prop) {
 		syslog(LOG_DEBUG, "no device configured, using default '%s'", serial_config.name);
+		return EXIT_SUCCESS;
 	}
+
+	strncpy(serial_config.name, prop->value, sizeof(serial_config.name));
+	syslog(LOG_DEBUG, "device configured, using '%s'", serial_config.name);
 	return EXIT_SUCCESS;
 }
 
 static int prop_baud_rate(const struct property_list_t * properties)
 {
 	Baud baud;
+	const struct property_t * prop = NULL;
+	char * endptr = NULL;
 
-	if (proplist_contains(properties, "baud")) {
-		baud = (Baud)strtoul(proplist_value(properties, "baud"), NULL, 0);
-		switch (baud) {
-			case BAUD_300:
-			case BAUD_600:
-			case BAUD_1200:
-			case BAUD_2400:
-			case BAUD_4800:
-			case BAUD_9600:
-			case BAUD_19200:
-			case BAUD_38400:
-			case BAUD_57600:
-			case BAUD_115200:
-				serial_config.baud_rate = baud;
-				syslog(LOG_DEBUG, "baud rate configured, using '%u'", serial_config.baud_rate);
-				break;
-			default:
-				syslog(LOG_ERR, "invalid baud rate configured: %u", baud);
-				return EXIT_FAILURE;
-		}
-	} else {
+	prop = proplist_find(properties, "baud");
+	if (!prop) {
 		syslog(LOG_DEBUG, "no baud rate configured, using default '%u'", serial_config.baud_rate);
+		return EXIT_SUCCESS;
+	}
+
+	baud = (Baud)strtoul(prop->value, &endptr, 0);
+	if (*endptr != '\0') {
+		syslog(LOG_ERR, "invalid value for property '%s': '%s'", prop->key, prop->value);
+		return EXIT_FAILURE;
+	}
+
+	switch (baud) {
+		case BAUD_300:
+		case BAUD_600:
+		case BAUD_1200:
+		case BAUD_2400:
+		case BAUD_4800:
+		case BAUD_9600:
+		case BAUD_19200:
+		case BAUD_38400:
+		case BAUD_57600:
+		case BAUD_115200:
+			serial_config.baud_rate = baud;
+			syslog(LOG_DEBUG, "baud rate configured, using '%u'", serial_config.baud_rate);
+			break;
+		default:
+			syslog(LOG_ERR, "invalid baud rate configured: %u", baud);
+			return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
 
 static int prop_parity(const struct property_list_t * properties)
 {
-	const char * parity = NULL;
+	const struct property_t * prop = NULL;
 
-	if (proplist_contains(properties, "parity")) {
-		parity = proplist_value(properties, "parity");
-		if (strcmp(parity, "none") == 0) {
-			serial_config.parity = PARITY_NONE;
-		} else if (strcmp(parity, "even") == 0) {
-			serial_config.parity = PARITY_EVEN;
-		} else if (strcmp(parity, "odd") == 0) {
-			serial_config.parity = PARITY_ODD;
-		} else {
-			syslog(LOG_ERR, "invalid parity configured: %s", parity);
-			return EXIT_FAILURE;
-		}
-	} else {
+	prop = proplist_find(properties, "parity");
+	if (!prop) {
 		syslog(LOG_DEBUG, "no parity configured, using default '%d'", serial_config.parity);
+		return EXIT_SUCCESS;
+	}
+
+	if (strcmp(prop->value, "none") == 0) {
+		serial_config.parity = PARITY_NONE;
+	} else if (strcmp(prop->value, "even") == 0) {
+		serial_config.parity = PARITY_EVEN;
+	} else if (strcmp(prop->value, "odd") == 0) {
+		serial_config.parity = PARITY_ODD;
+	} else {
+		syslog(LOG_ERR, "invalid parity configured: %s", prop->value);
+		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
@@ -83,20 +97,29 @@ static int prop_parity(const struct property_list_t * properties)
 static int prop_data_bits(const struct property_list_t * properties)
 {
 	DataBits bits;
+	const struct property_t * prop = NULL;
+	char * endptr = NULL;
 
-	if (proplist_contains(properties, "data")) {
-		bits = (DataBits)strtoul(proplist_value(properties, "data"), NULL, 0);
-		switch (bits) {
-			case DATA_BIT_7:
-			case DATA_BIT_8:
-				serial_config.data_bits = bits;
-				syslog(LOG_DEBUG, "data bits configured, using '%u'", serial_config.data_bits);
-			default:
-				syslog(LOG_ERR, "invalid data bits configured: %u", bits);
-				return EXIT_FAILURE;
-		}
-	} else {
+	prop = proplist_find(properties, "data");
+	if (!prop) {
 		syslog(LOG_DEBUG, "no data bits configured, using default '%d'", serial_config.data_bits);
+		return EXIT_SUCCESS;
+	}
+
+	bits = (DataBits)strtoul(prop->value, &endptr, 0);
+	if (*endptr != '\0') {
+		syslog(LOG_ERR, "invalid value for property '%s': '%s'", prop->key, prop->value);
+		return EXIT_FAILURE;
+	}
+
+	switch (bits) {
+		case DATA_BIT_7:
+		case DATA_BIT_8:
+			serial_config.data_bits = bits;
+			syslog(LOG_DEBUG, "data bits configured, using '%u'", serial_config.data_bits);
+		default:
+			syslog(LOG_ERR, "invalid data bits configured: %u", bits);
+			return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
@@ -104,20 +127,29 @@ static int prop_data_bits(const struct property_list_t * properties)
 static int prop_stop_bits(const struct property_list_t * properties)
 {
 	StopBits bits;
+	const struct property_t * prop = NULL;
+	char * endptr = NULL;
 
-	if (proplist_contains(properties, "stop")) {
-		bits = (DataBits)strtoul(proplist_value(properties, "stop"), NULL, 0);
-		switch (bits) {
-			case STOP_BIT_1:
-			case STOP_BIT_2:
-				serial_config.stop_bits = bits;
-				syslog(LOG_DEBUG, "stop configured, using '%u'", serial_config.stop_bits);
-			default:
-				syslog(LOG_ERR, "invalid stop bits configured: %u", bits);
-				return EXIT_FAILURE;
-		}
-	} else {
+	prop = proplist_find(properties, "stop");
+	if (!prop) {
 		syslog(LOG_DEBUG, "no stop bits configured, using default '%d'", serial_config.stop_bits);
+		return EXIT_SUCCESS;
+	}
+
+	bits = (DataBits)strtoul(prop->value, &endptr, 0);
+	if (*endptr != '\0') {
+		syslog(LOG_ERR, "invalid value for property '%s': '%s'", prop->key, prop->value);
+		return EXIT_FAILURE;
+	}
+
+	switch (bits) {
+		case STOP_BIT_1:
+		case STOP_BIT_2:
+			serial_config.stop_bits = bits;
+			syslog(LOG_DEBUG, "stop configured, using '%u'", serial_config.stop_bits);
+		default:
+			syslog(LOG_ERR, "invalid stop bits configured: %u", bits);
+			return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
@@ -126,21 +158,11 @@ static int prop(struct proc_config_t * config, const struct property_list_t * pr
 {
 	UNUSED_ARG(config);
 
-	if (prop_device(properties) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
-	}
-	if (prop_baud_rate(properties) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
-	}
-	if (prop_parity(properties) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
-	}
-	if (prop_data_bits(properties) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
-	}
-	if (prop_stop_bits(properties) != EXIT_SUCCESS) {
-		return EXIT_FAILURE;
-	}
+	if (prop_device(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (prop_baud_rate(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (prop_parity(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (prop_data_bits(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (prop_stop_bits(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 
 	initialized = 1;
 	return EXIT_SUCCESS;
@@ -163,8 +185,6 @@ static int proc(const struct proc_config_t * config, const struct property_list_
 	char buf[NMEA_MAX_SENTENCE + 1];
 	int buf_index;
 	char c;
-
-	/* TODO: what if strtoul does fail? */
 
 	UNUSED_ARG(properties);
 

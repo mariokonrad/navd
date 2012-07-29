@@ -60,18 +60,27 @@ int proplist_free(struct property_list_t * list)
 
 int proplist_contains(const struct property_list_t * list, const char * key)
 {
-	size_t i;
+	const struct property_t * p = NULL;
 
-	if (list == NULL) return -1;
-	if (key == NULL) return -1;
-	for (i = 0; i < list->num; ++i) {
-		if (strcmp(key, list->data[i].key) == 0)
-			return 1;
-	}
-	return 0;
+	p = proplist_find(list, key);
+	return p
+		? 1
+		: 0
+		;
 }
 
 const char * proplist_value(const struct property_list_t * list, const char * key)
+{
+	const struct property_t * p = NULL;
+
+	p = proplist_find(list, key);
+	return p
+		? p->value
+		: NULL
+		;
+}
+
+const struct property_t * proplist_find(const struct property_list_t * list, const char * key)
 {
 	size_t i;
 
@@ -79,7 +88,7 @@ const char * proplist_value(const struct property_list_t * list, const char * ke
 	if (key == NULL) return NULL;
 	for (i = 0; i < list->num; ++i) {
 		if (strcmp(key, list->data[i].key) == 0)
-			return list->data[i].value;
+			return &(list->data[i]);
 	}
 	return NULL;
 }
