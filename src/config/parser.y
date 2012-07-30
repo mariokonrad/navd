@@ -6,6 +6,7 @@
 #include <common/macros.h>
 
 extern int yyget_lineno(void * yyscanner);
+extern int yylex(); /* prevents compiler warning */
 
 void yyerror(void * scanner, struct config_t * config, struct parse_temp_t * tmp, const char * s)
 {
@@ -45,38 +46,50 @@ void yyerror(void * scanner, struct config_t * config, struct parse_temp_t * tmp
 configuration
 	: source configuration
 	| destination configuration
-	| routing configuration
+	| route configuration
 	| filter configuration
 	| source
 	| destination
-	| routing
+	| route
 	| filter
 	;
 
-routing
+route
 	: IDENTIFIER FORWARD IDENTIFIER ';'
 		{
-			config_add_route(config, $1, NULL, $3);
+			if (config_add_route(config, $1, NULL, $3)) {
+				yyerror(scanner, config, tmp, "unable to define route");
+				YYABORT;
+			}
 		}
 	| IDENTIFIER FORWARD multiple_destinations ';'
 		{
 			size_t i;
 
 			for (i = 0; i < tmp->destinations.num; ++i) {
-				config_add_route(config, $1, NULL, tmp->destinations.data[i]);
+				if (config_add_route(config, $1, NULL, tmp->destinations.data[i])) {
+					yyerror(scanner, config, tmp, "unable to define route");
+					YYABORT;
+				}
 			}
 			config_clear_tmp_dests(tmp);
 		}
 	| IDENTIFIER FORWARD '[' IDENTIFIER ']' FORWARD IDENTIFIER ';'
 		{
-			config_add_route(config, $1, $4, $7);
+			if (config_add_route(config, $1, $4, $7)) {
+				yyerror(scanner, config, tmp, "unable to define route");
+				YYABORT;
+			}
 		}
 	| IDENTIFIER FORWARD '[' IDENTIFIER ']' FORWARD multiple_destinations ';'
 		{
 			size_t i;
 
 			for (i = 0; i < tmp->destinations.num; ++i) {
-				config_add_route(config, $1, $4, tmp->destinations.data[i]);
+				if (config_add_route(config, $1, $4, tmp->destinations.data[i])) {
+					yyerror(scanner, config, tmp, "unable to define route");
+					YYABORT;
+				}
 			}
 			config_clear_tmp_dests(tmp);
 		}

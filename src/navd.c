@@ -359,9 +359,22 @@ static void config_dump(FILE * file, const struct config_t const * config) /* {{
 	}
 } /* }}} */
 
-static int config_read(struct config_t * config) /* {{{ */
+/**
+ * Reads the configuration and stores the valid information in the specified
+ * structure.
+ *
+ * @param[out] config Structure containing the configuration of the file.
+ * @retval  0 Success
+ * @retval -1 Error in reading the configuration.
+ * @retval -2 Error caused by invalid parameters.
+ */
+static int config_read(struct config_t * config)
 {
 	int rc;
+
+	if (!config) {
+		return -2;
+	}
 
 	if (option.config != 1) {
 		syslog(LOG_CRIT, "configuration file name not defined.");
@@ -378,7 +391,7 @@ static int config_read(struct config_t * config) /* {{{ */
 	}
 
 	return 0;
-} /* }}} */
+}
 
 static int send_terminate(const struct proc_config_t * proc) /* {{{ */
 {
@@ -592,8 +605,6 @@ int main(int argc, char ** argv) /* {{{ */
 		return EXIT_FAILURE;
 	}
 	if (config_read(&config) < 0) return EXIT_FAILURE;
-
-	/* TODO: check config (no duplicates, etc.) */
 
 	/* dump information */
 	if (option.dump_config) {

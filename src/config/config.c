@@ -71,6 +71,33 @@ static int config_find_filter(struct config_t * config, const char * filter)
 	return 0;
 }
 
+static int config_find_route(
+		struct config_t * config,
+		const char * source,
+		const char * filter,
+		const char * destination)
+{
+	size_t i;
+	struct route_t * route;
+
+	for (i = 0; i < config->num_routes; ++i) {
+		route = &config->routes[i];
+		if (1
+			&& (strcmp(route->name_source, source) == 0)
+			&& (strcmp(route->name_destination, destination) == 0)
+			) {
+			if (filter) {
+				if (strcmp(route->name_filter, filter) == 0) {
+					return 1;
+				}
+			} else {
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
 void config_clear_tmp_dests(struct parse_temp_t * tmp)
 {
 	strlist_free(&tmp->destinations);
@@ -230,7 +257,11 @@ void config_free(struct config_t * config)
 	}
 }
 
-int config_add_source(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
+int config_add_source(
+		struct config_t * config,
+		const char * name,
+		const char * type,
+		struct property_list_t * properties)
 {
 	struct proc_t * source;
 
@@ -251,7 +282,11 @@ int config_add_source(struct config_t * config, const char * name, const char * 
 	return 0;
 }
 
-int config_add_destination(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
+int config_add_destination(
+		struct config_t * config,
+		const char * name,
+		const char * type,
+		struct property_list_t * properties)
 {
 	struct proc_t * destination;
 
@@ -272,7 +307,11 @@ int config_add_destination(struct config_t * config, const char * name, const ch
 	return 0;
 }
 
-int config_add_filter(struct config_t * config, const char * name, const char * type, struct property_list_t * properties)
+int config_add_filter(
+		struct config_t * config,
+		const char * name,
+		const char * type,
+		struct property_list_t * properties)
 {
 	struct filter_t * filter;
 
@@ -293,14 +332,37 @@ int config_add_filter(struct config_t * config, const char * name, const char * 
 	return 0;
 }
 
-void config_add_route(struct config_t * config, const char * source, const char * filter, const char * destination)
+/**
+ * Adds a route to the configuration. The route is specified
+ * by the names of source, filter and destination.
+ *
+ * @param[out] config The configuration which will the new route added to.
+ * @param[in] source The sources name.
+ * @param[in] filter The filters name.
+ * @param[in] destination The destinations name.
+ * @retval  0 Success
+ * @retval -1 Error, invalid parameters
+ * @retval -2 Error, route already exists
+ */
+int config_add_route(
+		struct config_t * config,
+		const char * source,
+		const char * filter,
+		const char * destination)
 {
 	struct route_t * route;
 
 	if (source == NULL || destination == NULL) {
 		config_assert();
+		return -1;
 	}
 
+	/* check for duplicate routes */
+	if (config_find_route(config, source, filter, destination)) {
+		return -2;
+	}
+
+	/* add route to configuration */
 	config->num_routes++;
 	config->routes = realloc(config->routes,
 		config->num_routes * sizeof(struct route_t));
@@ -312,6 +374,7 @@ void config_add_route(struct config_t * config, const char * source, const char 
 	} else {
 		route->name_filter = NULL;
 	}
+	return 0;
 }
 
 int config_register_source(const char * type)
@@ -378,14 +441,14 @@ static void finish_routes_linking(struct config_t * config)
 /**
  * Parses the configuration file.
  *
- * \param[in] filename The name of the configuration file. This must be the
+ * @param[in] filename The name of the configuration file. This must be the
  *   entire path, absoute or relative.
- * \param[out] config The data structure to be filled with all the parsed
+ * @param[out] config The data structure to be filled with all the parsed
  *   information.
- * \retval  0 Parsing of the configuration file was successful.
- * \retval -1 Error, invalid parameters.
- * \retval -2 Error, not possible to open the file.
- * \retval -3 Error, syntax error.
+ * @retval  0 Parsing of the configuration file was successful.
+ * @retval -1 Error, invalid parameters.
+ * @retval -2 Error, not possible to open the file.
+ * @retval -3 Error, syntax error.
  */
 int config_parse_file(const char * filename, struct config_t * config)
 {

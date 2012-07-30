@@ -81,7 +81,7 @@ int config_add_filter(
 		const char * type,
 		struct property_list_t * properties);
 
-void config_add_route(
+int config_add_route(
 		struct config_t * config,
 		const char * source,
 		const char * filter,
