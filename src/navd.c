@@ -32,12 +32,6 @@
 	#define min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
-/* TODO:
-
- - release unused resources within child processes
-
-*/
-
 static const char * OPTIONS_SHORT = "hdc:";
 
 static const struct option OPTIONS_LONG[] =
@@ -298,7 +292,8 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		if (desc->configure) {
 			rc = desc->configure(proc, &proc->cfg->properties);
 			if (rc != EXIT_SUCCESS) {
-				syslog(LOG_ERR, "invalid properties for proc type: '%s', stop proc '%s', rc=%d", proc->cfg->type, proc->cfg->name, rc);
+				syslog(LOG_ERR, "invalid properties for proc type: '%s', stop proc '%s', rc=%d",
+					proc->cfg->type, proc->cfg->name, rc);
 				exit(rc);
 			}
 		}
@@ -307,14 +302,14 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		rc = desc->func(proc);
 		syslog(LOG_INFO, "stop proc '%s', rc=%d", proc->cfg->name, rc);
 		exit(rc);
-	} else {
-		/* parent code */
-		proc->pid = rc;
-		proc->rfd = wfd[0];
-		proc->wfd = rfd[1];
-		close(rfd[0]);
-		close(wfd[1]);
 	}
+
+	/* parent code */
+	proc->pid = rc;
+	proc->rfd = wfd[0];
+	proc->wfd = rfd[1];
+	close(rfd[0]);
+	close(wfd[1]);
 	return rc;
 } /* }}} */
 
