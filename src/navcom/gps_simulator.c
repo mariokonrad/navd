@@ -10,6 +10,18 @@
 
 static struct message_t sim_message;
 
+static struct {
+	uint32_t period; /* seconds */
+	uint32_t sog; /* tenth of degrees */
+	uint32_t heading; /* tenth of degrees */
+	uint32_t mag; /* tenth of degrees */
+} option = {
+	.period = 1,
+	.sog = 0,
+	.heading = 0,
+	.mag = 0,
+};
+
 static void init_message(void)
 {
 	struct nmea_rmc_t * rmc;
@@ -32,17 +44,47 @@ static void init_message(void)
 	rmc->lon.s.i = 0;
 	rmc->lon.s.d = 0;
 	rmc->lon_dir = NMEA_EAST;
-	rmc->sog.i = 0;
-	rmc->sog.d = 0;
-	rmc->head.i = 0;
-	rmc->head.d = 0;
+	rmc->sog.i = option.sog / 10;
+	rmc->sog.d = option.sog % 10;
+	rmc->head.i = option.heading / 10;
+	rmc->head.d = option.heading % 10;
 	rmc->date.y = 0;
 	rmc->date.m = 1;
 	rmc->date.d = 1;
-	rmc->m.i = 0;
-	rmc->m.d = 0;
+	rmc->m.i = option.mag / 10;
+	rmc->m.d = option.mag % 10;
 	rmc->m_dir = NMEA_WEST;
 	rmc->sig_integrity = NMEA_SIG_INT_SIMULATED;
+}
+
+static int read_prop_uint32(const struct property_list_t * properties, const char * key, uint32_t * value)
+{
+	const struct property_t * prop = NULL;
+	char * endptr = NULL;
+
+	prop = proplist_find(properties, key);
+	if (prop) {
+		*value = strtoul(prop->value, &endptr, 0);
+		if (*endptr != '\0') {
+			syslog(LOG_ERR, "invalid value in '%s': '%s'", prop->key, prop->value);
+			return EXIT_FAILURE;
+		}
+	} else {
+		syslog(LOG_DEBUG, "property '%s' not defined, using default of %u s", key, *value);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+{
+	UNUSED_ARG(config);
+
+	if (read_prop_uint32(properties, "period",  &option.period)  != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (read_prop_uint32(properties, "sog",     &option.sog)     != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (read_prop_uint32(properties, "heading", &option.heading) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (read_prop_uint32(properties, "mag",     &option.mag)     != EXIT_SUCCESS) return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
 }
 
 static int proc(const struct proc_config_t * config)
@@ -54,7 +96,10 @@ static int proc(const struct proc_config_t * config)
 
 	char buf[NMEA_MAX_SENTENCE];
 
-	/* TODO: properties: position, send period */
+	/* TODO: properties: position latitude */
+	/* TODO: properties: position longitude */
+	/* TODO: properties: time */
+	/* TODO: properties: date */
 
 	init_message();
 
@@ -69,7 +114,7 @@ static int proc(const struct proc_config_t * config)
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
 
-		tm.tv_sec = 1;
+		tm.tv_sec = option.period;
 		tm.tv_nsec = 0;
 
 		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, &tm, &signal_mask);
@@ -118,7 +163,7 @@ static int proc(const struct proc_config_t * config)
 
 const struct proc_desc_t gps_simulator = {
 	.name = "gps_sim",
-	.configure = NULL,
+	.configure = configure,
 	.func = proc
 };
 

@@ -466,7 +466,7 @@ static int setup_routes(const struct config_t * config) /* {{{ */
 			if (route->filter) {
 				route->filter_cfg = &config->routes[i].filter->properties;
 			} else {
-				syslog(LOG_ERR, "unknown filter: '%s'", config->routes[i].name_filter);
+				syslog(LOG_ERR, "%s:unknown filter: '%s'", __FUNCTION__, config->routes[i].name_filter);
 				return -1;
 			}
 		}

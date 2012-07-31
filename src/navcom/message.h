@@ -23,16 +23,19 @@ enum System {
 };
 
 /**
- * @todo Documentation
+ * Structure to represent the date to be sent as message.
+ * This structure can hold any possible data to be sent as message,
+ * therefore every message in this system has the same size. This
+ * is a tradeoff between resource management and easy to maintain.
  */
 struct message_t
 {
-	uint32_t type;
+	uint32_t type; /* see enum MessageType */
 	union {
-		uint32_t system;
+		uint32_t system; /* see enum System */
 		uint32_t timer_id;
 		struct nmea_t nmea;
-		int8_t buf[sizeof(struct nmea_t)]; /* TODO: max size of all members */
+		int8_t buf[sizeof(struct nmea_t)]; /* max size of all members */
 	} data;
 } __attribute__((packed));
 

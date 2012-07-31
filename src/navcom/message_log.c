@@ -68,10 +68,10 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 		/* TODO: test if destination is writable */
 		prop.dst = prop_dst->value;
 	} else {
-		syslog(LOG_ERR, "no destination specified, logging to syslog only");
+		syslog(LOG_ERR, "%s:no destination specified, logging to syslog only", config->cfg->name);
 	}
 
-	syslog(LOG_DEBUG, "enable:%d dst:'%s'", prop.enable, prop.dst);
+	syslog(LOG_DEBUG, "%s:enable:%d dst:'%s'", config->cfg->name, prop.enable, prop.dst);
 	return EXIT_SUCCESS;
 }
 
