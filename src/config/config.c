@@ -374,6 +374,9 @@ int config_add_route(
 	} else {
 		route->name_filter = NULL;
 	}
+	route->source = NULL;
+	route->destination = NULL;
+	route->filter = NULL;
 	return 0;
 }
 
