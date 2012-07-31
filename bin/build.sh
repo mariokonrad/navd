@@ -11,6 +11,7 @@ function usage()
 	echo "Commands:"
 	echo "    clean    : cleans up the build"
 	echo "    build    : builds the software"
+	echo "    tags     : builds the tags file"
 	echo "    doc      : creates the documentation"
 	echo "    test     : executes the tests"
 	echo "    valgrind : calls valgrind on tests to check for memory problems"
@@ -31,11 +32,17 @@ function exec_clean()
 	rm -f ${BASE}/tags
 }
 
-function exec_build()
+function exec_tags()
 {
 	exec_prepare
 	cd ${BASE}
 	ctags --recurse -f tags src/*
+}
+
+function exec_build()
+{
+	exec_prepare
+	exec_tags
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
 		CMAKE_BUILD_TYPE=Debug cmake ..
@@ -46,6 +53,7 @@ function exec_build()
 function exec_doc()
 {
 	exec_prepare
+	exec_tags
 	doxygen ${BASE}/etc/doxygen.conf
 }
 
@@ -143,6 +151,9 @@ case $1 in
 		;;
 	build)
 		exec_build
+		;;
+	tags)
+		exec_tags
 		;;
 	doc)
 		exec_doc
