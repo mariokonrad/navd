@@ -51,6 +51,7 @@ SPECIAL1 [\-\+\.:/?&@]
 
 "->"                          { return FORWARD; }
 {D}+                          { yylval->str = config_strdup(yytext); return NUMBER; }
+{D}+\.{D}+                    { yylval->str = config_strdup(yytext); return NUMBER; }
 \"({A}|{D}|{S}|{SPECIAL})*\"  { yylval->str = config_strdup_s(yytext); return STRING; }
 \'({A}|{D}|{S}|{SPECIAL})*\'  { yylval->str = config_strdup_s(yytext); return STRING; }
 {A}({A}|{D})*                 { yylval->str = config_strdup(yytext); return identifier_type(yytext); }
