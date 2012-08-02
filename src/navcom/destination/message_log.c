@@ -44,7 +44,7 @@ static int log_message(const struct message_t * msg, const struct msg_log_proper
 
 	file = fopen(prop->dst, "at");
 	if (file == NULL) {
-		perror("fopen");
+		syslog(LOG_ERR, "unable to open destination '%s': %s", prop->dst, strerror(errno));
 		return -1;
 	}
 	fprintf(file, "%s\n", buf);
@@ -88,7 +88,7 @@ static int proc(const struct proc_config_t * config)
 
 		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, NULL, &signal_mask);
 		if (rc < 0 && errno != EINTR) {
-			perror("select");
+			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
 		} else if (rc < 0 && errno == EINTR) {
 			break;
@@ -99,7 +99,7 @@ static int proc(const struct proc_config_t * config)
 		if (FD_ISSET(config->rfd, &rfds)) {
 			rc = read(config->rfd, &msg, sizeof(msg));
 			if (rc < 0) {
-				perror("read");
+				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
 				return EXIT_FAILURE;
 			}
 			if (rc != (int)sizeof(msg) || rc == 0) {

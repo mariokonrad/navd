@@ -64,7 +64,7 @@ static int proc(const struct proc_config_t * config)
 
 	rc = ops->open(&device, (const struct device_config_t *)&serial_config);
 	if (rc < 0) {
-		perror("open");
+		syslog(LOG_ERR, "unable to open device '%s'", serial_config.name);
 		return EXIT_FAILURE;
 	}
 
@@ -81,7 +81,7 @@ static int proc(const struct proc_config_t * config)
 
 		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, &signal_mask);
 		if (rc < 0 && errno != EINTR) {
-			perror("select");
+			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
 		} else if (rc < 0 && errno == EINTR) {
 			break;
@@ -90,11 +90,11 @@ static int proc(const struct proc_config_t * config)
 		if (FD_ISSET(device.fd, &rfds)) {
 			rc = ops->read(&device, &c, sizeof(c));
 			if (rc < 0) {
-				perror("read");
+				syslog(LOG_ERR, "unable to read from device '%s': %s", serial_config.name, strerror(errno));
 				return EXIT_FAILURE;
 			}
 			if (rc != sizeof(c)) {
-				perror("read");
+				syslog(LOG_ERR, "invalid size read from device '%s': %s", serial_config.name, strerror(errno));
 				return EXIT_FAILURE;
 			}
 			nmea_init(nmea);
@@ -106,8 +106,7 @@ static int proc(const struct proc_config_t * config)
 					if (rc == 0) {
 						rc = write(config->wfd, &msg_nmea, sizeof(msg_nmea));
 						if (rc < 0) {
-							perror("write");
-							syslog(LOG_DEBUG, "wfd=%d", config->wfd);
+							syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
 						}
 					} else if (rc == 1) {
 						syslog(LOG_ERR, "unknown sentence: '%s'", buf);
@@ -135,7 +134,7 @@ static int proc(const struct proc_config_t * config)
 		if (FD_ISSET(config->rfd, &rfds)) {
 			rc = read(config->rfd, &msg, sizeof(msg));
 			if (rc < 0) {
-				perror("read");
+				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
 				continue;
 			}
 			if (rc != (int)sizeof(msg) || rc == 0) {
@@ -148,7 +147,7 @@ static int proc(const struct proc_config_t * config)
 						case SYSTEM_TERMINATE:
 							rc = ops->close(&device);
 							if (rc < 0) {
-								perror("close");
+								syslog(LOG_ERR, "unable to close device '%s': %s", serial_config.name, strerror(errno));
 								return EXIT_FAILURE;
 							}
 							return EXIT_SUCCESS;

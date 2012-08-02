@@ -33,6 +33,8 @@
 	#define min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
+/* TODO: replace perror with syslog(LOG_ERR, ...) */
+
 static const char * OPTIONS_SHORT = "hdc:";
 
 static const struct option OPTIONS_LONG[] =

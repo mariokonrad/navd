@@ -6,6 +6,7 @@
 #include <sys/select.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static struct message_t sim_message;
@@ -119,7 +120,7 @@ static int proc(const struct proc_config_t * config)
 
 		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, &tm, &signal_mask);
 		if (rc < 0 && errno != EINTR) {
-			perror("select");
+			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
 		} else if (rc < 0 && errno == EINTR) {
 			break;
@@ -128,8 +129,7 @@ static int proc(const struct proc_config_t * config)
 		if (rc == 0) { /* timeout */
 			rc = write(config->wfd, &sim_message, sizeof(sim_message));
 			if (rc < 0) {
-				perror("write");
-				syslog(LOG_DEBUG, "wfd=%d", config->wfd);
+				syslog(LOG_DEBUG, "unable to write to pipe: %s", strerror(errno));
 			}
 			continue;
 		}
@@ -137,7 +137,7 @@ static int proc(const struct proc_config_t * config)
 		if (FD_ISSET(config->rfd, &rfds)) {
 			rc = read(config->rfd, &msg, sizeof(msg));
 			if (rc < 0) {
-				perror("read");
+				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
 				continue;
 			}
 			if (rc != (int)sizeof(msg) || rc == 0) {

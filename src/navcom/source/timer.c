@@ -59,8 +59,7 @@ static void send_message(const struct proc_config_t * config)
 
 	rc = write(config->wfd, &timer_message, sizeof(timer_message));
 	if (rc < 0) {
-		perror("write");
-		syslog(LOG_DEBUG, "wfd=%d", config->wfd);
+		syslog(LOG_DEBUG, "unable to write to pipe: %s", strerror(errno));
 	}
 }
 
@@ -87,7 +86,7 @@ static int proc(const struct proc_config_t * config)
 
 		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, &signal_mask);
 		if (rc < 0 && errno != EINTR) {
-			perror("select");
+			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
 		} else if (rc < 0 && errno == EINTR) {
 			break;
@@ -101,7 +100,7 @@ static int proc(const struct proc_config_t * config)
 		if (FD_ISSET(config->rfd, &rfds)) {
 			rc = read(config->rfd, &msg, sizeof(msg));
 			if (rc < 0) {
-				perror("read");
+				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
 				continue;
 			}
 			if (rc != (int)sizeof(msg) || rc == 0) {
@@ -112,10 +111,6 @@ static int proc(const struct proc_config_t * config)
 				case MSG_SYSTEM:
 					switch (msg.data.system) {
 						case SYSTEM_TERMINATE:
-							if (rc < 0) {
-								perror("close");
-								return EXIT_FAILURE;
-							}
 							return EXIT_SUCCESS;
 						default:
 							break;
