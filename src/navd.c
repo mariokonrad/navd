@@ -20,6 +20,7 @@
 #include <navcom/filter/filter_null.h>
 #include <navcom/filter/filter_nmea.h>
 #include <navcom/destination/message_log.h>
+#include <navcom/destination/nmea_serial.h>
 #include <navcom/source/gps_simulator.h>
 #include <navcom/source/gps_serial.h>
 #include <navcom/source/timer.h>
@@ -39,6 +40,7 @@ static const struct option OPTIONS_LONG[] =
 	{ "help",        no_argument,       0, 'h' },
 	{ "daemon",      no_argument,       0, 'd' },
 	{ "config",      required_argument, 0, 'c' },
+	{ "list",        no_argument,       0, 0   },
 	{ "dump-config", no_argument,       0, 0   },
 	{ "max-msg",     required_argument, 0, 0   },
 	{ "log",         required_argument, 0, 0   },
@@ -48,6 +50,7 @@ static struct {
 	int daemonize;
 	int config;
 	int dump_config;
+	int list;
 	unsigned int max_msg;
 	int log_mask;
 	char config_filename[PATH_MAX+1];
@@ -80,6 +83,7 @@ static void usage(FILE * file, const char * name) /* {{{ */
 	fprintf(file, "  -h      | --help        : help information\n");
 	fprintf(file, "  -d      | --daemon      : daemonize process\n");
 	fprintf(file, "  -c file | --config file : configuration file\n");
+	fprintf(file, "  --list                  : lists all sources, destinations and filters\n");
 	fprintf(file, "  --dump-config           : dumps the configuration and exit\n");
 	fprintf(file, "  --max-msg n             : routes n number of messages before terminating\n");
 	fprintf(file, "  --log n                 : defines log level on syslog (0..7)\n");
@@ -115,16 +119,19 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 			case 0:
 				switch (index) {
 					case 3:
-						option.dump_config = 1;
+						option.list = 1;
 						break;
 					case 4:
+						option.dump_config = 1;
+						break;
+					case 5:
 						option.max_msg = strtoul(optarg, &endptr, 0);
 						if (*endptr != '\0') {
 							syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
 							return -1;
 						}
 						break;
-					case 5:
+					case 6:
 						option.log_mask = strtoul(optarg, &endptr, 0);
 						if (*endptr != '\0') {
 							syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
@@ -312,6 +319,30 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 	close(wfd[1]);
 	return rc;
 } /* }}} */
+
+/**
+ * Dumps the registered objects (sources, destinations, filters) to the
+ * specified stream.
+ *
+ * @param[in] out The stream to write the lists to.
+ */
+static void dump_registered(FILE * out)
+{
+	size_t i;
+
+	fprintf(out, "Sources:\n");
+	for (i = 0; i < desc_sources.num; ++i) {
+		fprintf(out, " - %s\n", desc_sources.data[i].name);
+	}
+	fprintf(out, "Destinations:\n");
+	for (i = 0; i < desc_destinations.num; ++i) {
+		fprintf(out, " - %s\n", desc_destinations.data[i].name);
+	}
+	fprintf(out, "Filters:\n");
+	for (i = 0; i < desc_filters.num; ++i) {
+		fprintf(out, " - %s\n", desc_filters.data[i].name);
+	}
+}
 
 static void config_dump_properties(FILE * file, const struct property_list_t const * properties) /* {{{ */
 {
@@ -555,6 +586,7 @@ static void register_destinations(void) /* {{{ */
 	pdlist_init(&desc_destinations);
 
 	pdlist_append(&desc_destinations, &message_log);
+	pdlist_append(&desc_destinations, &nmea_serial);
 
 	for (i = 0; i < desc_destinations.num; ++i) {
 		config_register_destination(desc_destinations.data[i].name);
@@ -598,13 +630,24 @@ int main(int argc, char ** argv) /* {{{ */
 	register_destinations();
 	register_filters();
 
+	/* command line arguments handling */
 	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
 	rc = setlogmask(LOG_UPTO(option.log_mask));
 	if (rc < 0) {
 		perror("setlogmask");
 		return EXIT_FAILURE;
 	}
-	if (config_read(&config) < 0) return EXIT_FAILURE;
+
+	/* list registered objects */
+	if (option.list) {
+		dump_registered(stdout);
+		return EXIT_SUCCESS;
+	}
+
+	/* read configuration */
+	if (config_read(&config) < 0) {
+		return EXIT_FAILURE;
+	}
 
 	/* dump information */
 	if (option.dump_config) {
