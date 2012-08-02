@@ -1,4 +1,4 @@
-#include <navcom/gps_serial.h>
+#include <navcom/source/gps_serial.h>
 #include <navcom/message.h>
 #include <device/serial.h>
 #include <common/macros.h>

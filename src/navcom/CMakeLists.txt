@@ -3,11 +3,11 @@ add_library(navcom
 	proc.c
 	proc_list.c
 	filter_list.c
-	message_log.c
-	gps_simulator.c
-	gps_serial.c
-	timer.c
-	filter_null.c
-	filter_nmea.c
+	destination/message_log.c
+	source/gps_simulator.c
+	source/gps_serial.c
+	source/timer.c
+	filter/filter_null.c
+	filter/filter_nmea.c
 	)
 

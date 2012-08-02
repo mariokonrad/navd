@@ -17,12 +17,12 @@
 #include <navcom/proc_list.h>
 #include <navcom/filter_list.h>
 
-#include <navcom/filter_null.h>
-#include <navcom/filter_nmea.h>
-#include <navcom/message_log.h>
-#include <navcom/gps_simulator.h>
-#include <navcom/gps_serial.h>
-#include <navcom/timer.h>
+#include <navcom/filter/filter_null.h>
+#include <navcom/filter/filter_nmea.h>
+#include <navcom/destination/message_log.h>
+#include <navcom/source/gps_simulator.h>
+#include <navcom/source/gps_serial.h>
+#include <navcom/source/timer.h>
 
 #if !defined(max)
 	#define max(a, b)  ((a) > (b) ? (a) : (b))

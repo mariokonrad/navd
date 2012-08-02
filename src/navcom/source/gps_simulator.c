@@ -1,4 +1,4 @@
-#include <navcom/gps_simulator.h>
+#include <navcom/source/gps_simulator.h>
 #include <navcom/message.h>
 #include <common/macros.h>
 #include <nmea/nmea_sentence_gprmc.h>

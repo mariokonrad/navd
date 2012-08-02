@@ -1,9 +1,12 @@
-#include <navcom/filter_nmea.h>
+#include <navcom/filter/filter_nmea.h>
 #include <common/macros.h>
 #include <string.h>
 #include <syslog.h>
 
-static int filter(struct message_t * out, const struct message_t * in, const struct property_list_t * properties)
+static int filter(
+		struct message_t * out,
+		const struct message_t * in,
+		const struct property_list_t * properties)
 {
 	const struct nmea_sentence_t * nmea = NULL;
 

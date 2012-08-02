@@ -1,4 +1,4 @@
-#include <navcom/message_log.h>
+#include <navcom/destination/message_log.h>
 #include <navcom/message.h>
 #include <common/macros.h>
 #include <sys/select.h>
