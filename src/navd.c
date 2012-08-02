@@ -33,8 +33,6 @@
 	#define min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
-/* TODO: replace perror with syslog(LOG_ERR, ...) */
-
 static const char * OPTIONS_SHORT = "hdc:";
 
 static const struct option OPTIONS_LONG[] =
@@ -224,7 +222,7 @@ static void daemonize(void) /* {{{ */
 
 	rc = fork();
 	if (rc < 0) {
-		perror("fork");
+		syslog(LOG_CRIT, "unable to fork");
 		exit(EXIT_FAILURE);
 	}
 	if (rc > 0) {
@@ -266,14 +264,14 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 
 	rc = pipe(rfd);
 	if (rc < 0) {
-		perror("pipe");
+		syslog(LOG_CRIT, "unable to create pipe for reading");
 		return -1;
 	}
 	rc = pipe(wfd);
 	if (rc < 0) {
 		close(rfd[0]);
 		close(rfd[1]);
-		perror("pipe");
+		syslog(LOG_CRIT, "unable to create pipe for writing");
 		return -1;
 	}
 
@@ -283,7 +281,6 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		close(rfd[1]);
 		close(wfd[0]);
 		close(wfd[1]);
-		perror("fork");
 		syslog(LOG_CRIT, "cannot start proc '%s' (type: '%s')", proc->cfg->name, proc->cfg->type);
 		return -1;
 	}
@@ -437,7 +434,7 @@ static int send_terminate(const struct proc_config_t * proc) /* {{{ */
 	msg.data.system = SYSTEM_TERMINATE;
 	rc = write(proc->wfd, &msg, sizeof(msg));
 	if (rc < 0) {
-		perror("write");
+		syslog(LOG_CRIT, "unable to send termination message");
 		return -1;
 	}
 	return 0;
@@ -539,7 +536,7 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 		syslog(LOG_DEBUG, "route: %08x\n", msg->type);
 		rc = write(route->destination->wfd, &out, sizeof(out));
 		if (rc < 0) {
-			perror("write");
+			syslog(LOG_CRIT, "unable to route message");
 			return -1;
 		}
 	}
@@ -636,7 +633,7 @@ int main(int argc, char ** argv) /* {{{ */
 	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
 	rc = setlogmask(LOG_UPTO(option.log_mask));
 	if (rc < 0) {
-		perror("setlogmask");
+		syslog(LOG_CRIT, "unable to set log mask");
 		return EXIT_FAILURE;
 	}
 
@@ -667,17 +664,17 @@ int main(int argc, char ** argv) /* {{{ */
 	memset(&act, 0, sizeof(act));
 	act.sa_handler = handle_signal;
 	if (sigaction(SIGTERM, &act, NULL) < 0) {
-		perror("sigaction");
+		syslog(LOG_CRIT, "unable to signal action for SIGTERM");
 		return EXIT_FAILURE;
 	}
 	if (sigaction(SIGINT, &act, NULL) < 0) {
-		perror("sigaction");
+		syslog(LOG_CRIT, "unable to signal action for SIGINT");
 		return EXIT_FAILURE;
 	}
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGTERM);
 	if (sigprocmask(SIG_BLOCK, &mask, &signal_mask) < 0) {
-		perror("sigprocmask");
+		syslog(LOG_CRIT, "unable to signal action for SIGTERM");
 		return EXIT_FAILURE;
 	}
 
@@ -712,7 +709,7 @@ int main(int argc, char ** argv) /* {{{ */
 
 		rc = pselect(fd_max + 1, &rfds, NULL, NULL, NULL, &signal_mask);
 		if (rc < 0 && errno != EINTR) {
-			perror("select");
+			syslog(LOG_CRIT, "error in pselect: %s", strerror(errno));
 			return EXIT_FAILURE;
 		} else if (request_terminate) {
 			break;
@@ -727,7 +724,7 @@ int main(int argc, char ** argv) /* {{{ */
 
 			rc = read(fd, &msg, sizeof(msg));
 			if (rc < 0) {
-				perror("read");
+				syslog(LOG_CRIT, "error in read: %s", strerror(errno));
 				continue;
 			}
 			if (rc == 0) {

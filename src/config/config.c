@@ -2,6 +2,7 @@
 #include <common/macros.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 
 #define config_assert() \
 	do { \
@@ -470,7 +471,7 @@ int config_parse_file(const char * filename, struct config_t * config)
 
 	file = fopen(filename, "r");
 	if (file == NULL) {
-		perror("fopen");
+		syslog(LOG_CRIT, "cannot open file: '%s'", filename);
 		return -2;
 	}
 
