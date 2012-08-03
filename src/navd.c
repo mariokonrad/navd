@@ -21,6 +21,7 @@
 #include <navcom/filter/filter_nmea.h>
 #include <navcom/destination/message_log.h>
 #include <navcom/destination/nmea_serial.h>
+#include <navcom/destination/logbook.h>
 #include <navcom/source/gps_simulator.h>
 #include <navcom/source/gps_serial.h>
 #include <navcom/source/timer.h>
@@ -653,6 +654,7 @@ static int route_msg(
 		route = &msg_routes[i];
 		if (route->source != source) continue;
 
+		/* execute filter if configured */
 		if (route->filter) {
 			memset(&out, 0, sizeof(out));
 			rc = route->filter->func(&out, msg, &route->filter_ctx, route->filter_cfg);
@@ -670,6 +672,7 @@ static int route_msg(
 			memcpy(&out, msg, sizeof(out));
 		}
 
+		/* send message to destination */
 		syslog(LOG_DEBUG, "route: %08x\n", msg->type);
 		rc = write(route->destination->wfd, &out, sizeof(out));
 		if (rc < 0) {
@@ -723,6 +726,7 @@ static void register_destinations(void) /* {{{ */
 
 	pdlist_append(&desc_destinations, &message_log);
 	pdlist_append(&desc_destinations, &nmea_serial);
+	pdlist_append(&desc_destinations, &logbook);
 
 	for (i = 0; i < desc_destinations.num; ++i) {
 		config_register_destination(desc_destinations.data[i].name);

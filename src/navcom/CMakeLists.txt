@@ -9,6 +9,7 @@ add_library(navcom
 	source/timer.c
 	destination/message_log.c
 	destination/nmea_serial.c
+	destination/logbook.c
 	filter/filter_null.c
 	filter/filter_nmea.c
 	)
