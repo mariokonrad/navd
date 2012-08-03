@@ -24,18 +24,51 @@
 #define FILTER_DISCARD 1
 
 /**
+ * Structure to hold filter instance specific data.
+ */
+struct filter_context_t {
+	void * data;
+};
+
+/**
  * Prototype of a filter function to process messages.
+ *
+ * @retval FILTER_SUCCESS
+ * @retval FILTER_FAILURE
+ * @retval FILTER_DISCARD
  */
 typedef int (*filter_function)(
 		struct message_t *,
 		const struct message_t *,
+		struct filter_context_t *,
 		const struct property_list_t *);
+
+/**
+ * Prototype of a filter configuration function.
+ *
+ * @retval  0 Success
+ * @retval -1 Failure
+ */
+typedef int (*filter_config_function)(
+		struct filter_context_t *,
+		const struct property_list_t *);
+
+/**
+ * Prototype for a function to free the filters context data.
+ *
+ * @retval  0 Success
+ * @retval -1 Failure
+ */
+typedef int (*filter_free_context_function)(
+		struct filter_context_t *);
 
 /**
  * Structure representing the description of a filter, holding all
  * necessary information.
  *
- * @note It is not advised for filters to have static data.
+ * @note It is not advised for filters to have static data. Use the
+ *  filter context instead, it can be unique for every route, but
+ *  different for the same filter functions.
  *
  * @todo A setup function is needed similar to the procedures, to avoid
  *  the parsing of the properties every time the filter is executed.
@@ -48,6 +81,17 @@ struct filter_desc_t {
 	 * @note Do not use whitespaces.
 	 */
 	const char * name;
+
+	/**
+	 * The filters configuration function.
+	 */
+	filter_config_function configure;
+
+	/**
+	 * Frees the specific data, possibly allocated by the
+	 * configure function.
+	 */
+	filter_free_context_function free_ctx;
 
 	/**
 	 * The filters function to be called every time the filter

@@ -6,9 +6,12 @@
 static int filter(
 		struct message_t * out,
 		const struct message_t * in,
+		struct filter_context_t * ctx,
 		const struct property_list_t * properties)
 {
 	const struct nmea_sentence_t * nmea = NULL;
+
+	UNUSED_ARG(ctx);
 
 	if (out == NULL) {
 		return FILTER_FAILURE;
@@ -41,7 +44,9 @@ static int filter(
 }
 
 const struct filter_desc_t filter_nmea = {
-	"filter_nmea",
-	filter
+	.name = "filter_nmea",
+	.configure = NULL,
+	.free_ctx = NULL,
+	.func = filter
 };
 

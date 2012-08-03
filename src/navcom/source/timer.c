@@ -6,6 +6,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <sys/select.h>
 
 static int initialized = 0;
 static struct timespec tm_cfg;

@@ -62,6 +62,7 @@ struct msg_route_t {
 	struct proc_config_t * destination;
 	const struct filter_desc_t const * filter;
 	const struct property_list_t const * filter_cfg;
+	struct filter_context_t filter_ctx;
 };
 
 static struct proc_config_t * proc_cfg = NULL;
@@ -186,12 +187,23 @@ static void prepare_proc_configs(const struct config_t * config) /* {{{ */
 	}
 } /* }}} */
 
-static void destroy_msg_routes(void) /* {{{ */
+static void destroy_msg_routes(const struct config_t * config) /* {{{ */
 {
-	if (msg_routes) {
-		free(msg_routes);
-		msg_routes = NULL;
+	size_t i;
+	struct msg_route_t * route;
+
+	if (!msg_routes) {
+		return;
 	}
+
+	for (i = 0; i < config->num_routes; ++i) {
+		route = &msg_routes[i];
+		if (route->filter && route->filter->free_ctx) {
+			route->filter->free_ctx(&route->filter_ctx);
+		}
+	}
+	free(msg_routes);
+	msg_routes = NULL;
 } /* }}} */
 
 static void prepare_msg_routes(const struct config_t * config) /* {{{ */
@@ -199,7 +211,7 @@ static void prepare_msg_routes(const struct config_t * config) /* {{{ */
 	size_t i;
 	struct msg_route_t * route;
 
-	destroy_msg_routes();
+	destroy_msg_routes(config);
 	msg_routes = malloc(sizeof(struct msg_route_t) * config->num_routes);
 	for (i = 0; i < config->num_routes; ++i) {
 		route = &msg_routes[i];
@@ -461,7 +473,15 @@ static int setup_procs(size_t num, size_t base, const struct proc_desc_list_t co
 	return 0;
 } /* }}} */
 
-static int setup_routes(const struct config_t * config) /* {{{ */
+/**
+ * Sets up the routes, consiting of a source and a destination with an optional
+ * filter. The data structure used by the router is set up.
+ *
+ * @param[in] config The configuration data.
+ * @retval  0 Success
+ * @retval -1 Failure
+ */
+static int setup_routes(const struct config_t * config)
 {
 	size_t i;
 	size_t j;
@@ -490,20 +510,28 @@ static int setup_routes(const struct config_t * config) /* {{{ */
 			}
 		}
 
-		/* link filter */
+		/* link initialized filter */
 		if (config->routes[i].filter) {
 			route->filter = filterlist_find(&desc_filters, config->routes[i].filter->type);
 			if (route->filter) {
 				route->filter_cfg = &config->routes[i].filter->properties;
+				if (route->filter->configure) {
+					if (route->filter->configure(&route->filter_ctx, route->filter_cfg)) {
+						syslog(LOG_ERR, "%s:filter configuration failure: '%s'",
+							__FUNCTION__, config->routes[i].name_filter);
+						return -1;
+					}
+				}
 			} else {
-				syslog(LOG_ERR, "%s:unknown filter: '%s'", __FUNCTION__, config->routes[i].name_filter);
+				syslog(LOG_ERR, "%s:unknown filter: '%s'", __FUNCTION__,
+					config->routes[i].name_filter);
 				return -1;
 			}
 		}
 	}
 
 	return 0;
-} /* }}} */
+}
 
 static int route_msg(const struct config_t * config, const struct proc_config_t * source, const struct message_t * msg) /* {{{ */
 {
@@ -518,7 +546,7 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 
 		if (route->filter) {
 			memset(&out, 0, sizeof(out));
-			rc = route->filter->func(&out, msg, route->filter_cfg);
+			rc = route->filter->func(&out, msg, &route->filter_ctx, route->filter_cfg);
 			switch (rc) {
 				case FILTER_SUCCESS:
 					break;
@@ -556,7 +584,7 @@ static void terminate_graceful(const struct config_t const * config) /* {{{ */
 	}
 
 	/* free resources */
-	destroy_msg_routes();
+	destroy_msg_routes(config);
 	destroy_proc_configs();
 	pdlist_free(&desc_sources);
 	pdlist_free(&desc_destinations);
