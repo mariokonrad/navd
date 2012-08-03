@@ -33,19 +33,37 @@
 	#define min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
+/* TODO: define version information */
+
+/**
+ * @todo Documentation
+ */
+enum options_t {
+	 OPTION_HELP        = 'h'
+	,OPTION_DEAMON      = 'd'
+	,OPTION_CONFIG      = 'c'
+	,OPTION_LIST        = 1000
+	,OPTION_DUMP_CONFIG
+	,OPTION_MAX_MSG
+	,OPTION_LOG
+};
+
 static const char * OPTIONS_SHORT = "hdc:";
 
 static const struct option OPTIONS_LONG[] =
 {
-	{ "help",        no_argument,       0, 'h' },
-	{ "daemon",      no_argument,       0, 'd' },
-	{ "config",      required_argument, 0, 'c' },
-	{ "list",        no_argument,       0, 0   },
-	{ "dump-config", no_argument,       0, 0   },
-	{ "max-msg",     required_argument, 0, 0   },
-	{ "log",         required_argument, 0, 0   },
+	{ "help",        no_argument,       0, OPTION_HELP        },
+	{ "daemon",      no_argument,       0, OPTION_DEAMON      },
+	{ "config",      required_argument, 0, OPTION_CONFIG      },
+	{ "list",        no_argument,       0, OPTION_LIST        },
+	{ "dump-config", no_argument,       0, OPTION_DUMP_CONFIG },
+	{ "max-msg",     required_argument, 0, OPTION_MAX_MSG     },
+	{ "log",         required_argument, 0, OPTION_LOG         },
 };
 
+/**
+ * @todo Documentation
+ */
 static struct {
 	int daemonize;
 	int config;
@@ -57,22 +75,87 @@ static struct {
 } option;
 
 
+/**
+ * Structure to hold all runtime information about a route
+ * for messages from sources through filters to destinations.
+ */
 struct msg_route_t {
+	/**
+	 * Source of a message. This information is mandatory.
+	 */
 	struct proc_config_t * source;
+
+	/**
+	 * Destination of a message. This information is mandatory.
+	 */
 	struct proc_config_t * destination;
+
+	/**
+	 * Filter for the message. This information is optional.
+	 * If this is NULL, no filter is applied to the message
+	 * and the original message is routed to the destination.
+	 */
 	const struct filter_desc_t const * filter;
+
+	/**
+	 * Configuration (properties) of the filter. This may be NULL.
+	 */
 	const struct property_list_t const * filter_cfg;
+
+	/**
+	 * Runtime information of the filter. This context
+	 * may hold any information the filter sees fit and is
+	 * unique to the route. This means the same filter may
+	 * be applied to different routes, the context however
+	 * is unique to the route.
+	 */
 	struct filter_context_t filter_ctx;
 };
 
+/**
+ * Array containing all procedures (sources and destinations).
+ *
+ * Since they have the same interface for administration, they
+ * are kept in one array. This way it is easier to send them
+ * all the same system message, e.g. termination message.
+ *
+ * This array is organized the way that all sources are
+ * in consecutive order, followed by all destinations.
+ * The starting indices are defined by proc_cfg_base_src
+ * and proc_cfg_base_dst.
+ */
 static struct proc_config_t * proc_cfg = NULL;
+
+/**
+ * Index within the array proc_cfg from which the sources are
+ * being stored.
+ */
 static size_t proc_cfg_base_src = 0;
+
+/**
+ * Index within the array proc_cfg from which the destinations are
+ * being stored.
+ */
 static size_t proc_cfg_base_dst = 0;
 
+/**
+ * Array of runtime information of all configured routes.
+ */
 static struct msg_route_t * msg_routes = NULL;
 
+/**
+ * List of all available sources.
+ */
 static struct proc_desc_list_t desc_sources;
+
+/**
+ * List of all available destinations.
+ */
 static struct proc_desc_list_t desc_destinations;
+
+/**
+ * List of all available filters.
+ */
 static struct filter_desc_list_t desc_filters;
 
 static void usage(FILE * file, const char * name) /* {{{ */
@@ -107,41 +190,37 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 			break;
 		}
 		switch (rc) {
-			case 'h':
+			case OPTION_HELP:
 				usage(stdout, argv[0]);
 				return -1;
-			case 'd':
+			case OPTION_DEAMON:
 				option.daemonize = 1;
 				break;
-			case 'c':
+			case OPTION_CONFIG:
 				option.config = 1;
 				strncpy(option.config_filename, optarg, sizeof(option.config_filename)-1);
 				break;
-			case 0:
-				switch (index) {
-					case 3:
-						option.list = 1;
-						break;
-					case 4:
-						option.dump_config = 1;
-						break;
-					case 5:
-						option.max_msg = strtoul(optarg, &endptr, 0);
-						if (*endptr != '\0') {
-							syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
-							return -1;
-						}
-						break;
-					case 6:
-						option.log_mask = strtoul(optarg, &endptr, 0);
-						if (*endptr != '\0') {
-							syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
-							return -1;
-						}
-						option.log_mask = max(LOG_EMERG, option.log_mask);
-						option.log_mask = min(LOG_DEBUG, option.log_mask);
-						break;
+			case OPTION_LIST:
+				option.list = 1;
+				break;
+			case OPTION_DUMP_CONFIG:
+				option.dump_config = 1;
+				break;
+			case OPTION_MAX_MSG:
+				option.max_msg = strtoul(optarg, &endptr, 0);
+				if (*endptr != '\0') {
+					syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
+					return -1;
 				}
+				break;
+			case OPTION_LOG:
+				option.log_mask = strtoul(optarg, &endptr, 0);
+				if (*endptr != '\0') {
+					syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
+					return -1;
+				}
+				option.log_mask = max(LOG_EMERG, option.log_mask);
+				option.log_mask = min(LOG_DEBUG, option.log_mask);
 				break;
 			default:
 				break;
@@ -452,7 +531,20 @@ static int send_terminate(const struct proc_config_t * proc) /* {{{ */
 	return 0;
 } /* }}} */
 
-static int setup_procs(size_t num, size_t base, const struct proc_desc_list_t const * list) /* {{{ */
+/**
+ * Sets up the procedures (sources and destinations) and starts them.
+ *
+ * @param[in] num Number of procedures to process.
+ * @param[in] base Starting index within the proc_cfg array, holding
+ *   information about procedures.
+ * @param[in] list List of procedure descriptors.
+ * @retval  0 Success
+ * @retval -1 Failure
+ */
+static int setup_procs(
+		size_t num,
+		size_t base,
+		const struct proc_desc_list_t const * list)
 {
 	size_t i;
 	int rc;
@@ -471,10 +563,10 @@ static int setup_procs(size_t num, size_t base, const struct proc_desc_list_t co
 		}
 	}
 	return 0;
-} /* }}} */
+}
 
 /**
- * Sets up the routes, consiting of a source and a destination with an optional
+ * Sets up the routes, consisting of a source and a destination with an optional
  * filter. The data structure used by the router is set up.
  *
  * @param[in] config The configuration data.
@@ -533,7 +625,24 @@ static int setup_routes(const struct config_t * config)
 	return 0;
 }
 
-static int route_msg(const struct config_t * config, const struct proc_config_t * source, const struct message_t * msg) /* {{{ */
+/**
+ * Routes a message sent by a source to a destination using an optional filter.
+ * The routes are processed sequentially, using a filter in this context.
+ *
+ * @note Filters are running in the context of the main process, therefore
+ *   it has to kept in mind to implement them in a manner as efficient as possible.
+ *   Theoretically a filter does not consume any resources (especially time).
+ *
+ * @param[in] config The system configuration.
+ * @param[in] source The source of the message.
+ * @param[in] msg The message to send.
+ * @retval  0 Success
+ * @retval -1 Failure
+ */
+static int route_msg(
+		const struct config_t * config,
+		const struct proc_config_t * source,
+		const struct message_t * msg)
 {
 	size_t i;
 	int rc;
@@ -569,7 +678,7 @@ static int route_msg(const struct config_t * config, const struct proc_config_t 
 		}
 	}
 	return 0;
-} /* }}} */
+}
 
 static void terminate_graceful(const struct config_t const * config) /* {{{ */
 {

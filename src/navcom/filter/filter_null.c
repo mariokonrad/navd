@@ -9,7 +9,7 @@
  * @param[out] out The resulting message, an exact copy of the
  *  original.
  * @param[in] in The original message which will be copied.
- * @param[inout] ctx The filters context.
+ * @param[in,out] ctx The filters context.
  * @param[in] properties Properties of the filter. As of now
  *  they are parsed every time the filter is executed.
  */
