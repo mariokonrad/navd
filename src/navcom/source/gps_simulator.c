@@ -71,7 +71,7 @@ static int read_prop_uint32(const struct property_list_t * properties, const cha
 			return EXIT_FAILURE;
 		}
 	} else {
-		syslog(LOG_DEBUG, "property '%s' not defined, using default of %u s", key, *value);
+		syslog(LOG_DEBUG, "property '%s' not defined, using default of %u", key, *value);
 	}
 	return EXIT_SUCCESS;
 }
