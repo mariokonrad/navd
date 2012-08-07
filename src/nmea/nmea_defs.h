@@ -52,6 +52,21 @@
 #define NMEA_SELECTIONMODE_MANUAL    'M'
 #define NMEA_SELECTIONMODE_AUTOMATIC 'A'
 
+#define NMEA_NONE       0x00000000
+#define NMEA_RMB        0x00000002
+#define NMEA_RMC        0x00000003
+#define NMEA_GGA        0x00000004
+#define NMEA_GSA        0x00000005
+#define NMEA_GSV        0x00000006
+#define NMEA_GLL        0x00000007
+#define NMEA_RTE        0x00000008
+#define NMEA_VTG        0x00000009
+#define NMEA_BOD        0x0000000a
+#define NMEA_GARMIN_RME 0x00001000
+#define NMEA_GARMIN_RMM 0x00001001
+#define NMEA_GARMIN_RMZ 0x00001002
+#define NMEA_HC_HDG     0x00002000
+
 /**
  * @todo Documenation
  */

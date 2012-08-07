@@ -3,8 +3,6 @@
 
 #include <nmea/nmea_base.h>
 
-#define NMEA_GARMIN_RMZ 0x00001002
-
 extern const struct nmea_sentence_t sentence_pgrmz;
 
 #endif

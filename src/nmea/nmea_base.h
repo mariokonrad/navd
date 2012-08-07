@@ -9,8 +9,6 @@
 
 #define NMEA_MAX_SENTENCE 82
 
-#define NMEA_NONE 0x00000000
-
 /**
  * @todo Documenation
  */

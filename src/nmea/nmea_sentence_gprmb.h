@@ -3,8 +3,6 @@
 
 #include <nmea/nmea_base.h>
 
-#define NMEA_RMB 0x00000002
-
 extern const struct nmea_sentence_t sentence_gprmb;
 
 #endif

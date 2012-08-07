@@ -3,8 +3,6 @@
 
 #include <nmea/nmea_base.h>
 
-#define NMEA_BOD 0x0000000a
-
 extern const struct nmea_sentence_t sentence_gpbod;
 
 #endif
