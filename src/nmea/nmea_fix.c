@@ -121,7 +121,9 @@ int nmea_fix_to_double(double * v, const struct nmea_fix_t * fix)
 }
 
 /**
- * @todo Documenation
+ * Changes the endianess of the specified number from host to network byte order.
+ *
+ * @todo Test
  */
 void nmea_fix_hton(struct nmea_fix_t * v)
 {
@@ -131,7 +133,9 @@ void nmea_fix_hton(struct nmea_fix_t * v)
 }
 
 /**
- * @todo Documenation
+ * Changes the endianess of the specified number from network to host byte order.
+ *
+ * @todo Test
  */
 void nmea_fix_ntoh(struct nmea_fix_t * v)
 {

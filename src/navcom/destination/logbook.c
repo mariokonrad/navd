@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <nmea/nmea.h>
 
@@ -14,6 +15,9 @@ static int initialized = 0;
 
 static struct logbook_config_t {
 	uint32_t save_timer_id;
+	int save_timer_defined;
+	char filename[PATH_MAX+1];
+	int filename_defined;
 } configuration;
 
 static struct information_t {
@@ -66,21 +70,153 @@ static void process_nmea(const struct nmea_t * nmea)
 	}
 }
 
+/**
+ * Write the log entry to either syslog or log file.
+ * All data is separated by semi colons (aka CSV format).
+ */
+static void write_log(void)
+{
+	FILE * file = NULL;
+	char buf[1024];
+	int rc;
+	int len;
+	int buf_len;
+	char * ptr;
+
+	/* TODO: check return of snprintf, right now it is assumed the buffer to be large enough */
+
+	buf_len = (int)sizeof(buf);
+	ptr = buf;
+
+	memset(buf, 0, sizeof(buf));
+
+	/* prepare date */
+	rc = snprintf(ptr, buf_len, "%04u-%02u-%02u;",
+		current.date.y, current.date.m, current.date.d);
+	if (rc < 0) {
+		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
+		return;
+	} else if (rc < buf_len) {
+		ptr += rc;
+		buf_len -= rc;
+	}
+
+	/* prepare time */
+	rc = snprintf(ptr, buf_len, "%02u-%02u-%02u;",
+		current.time.h, current.time.m, current.date.d);
+	if (rc < 0) {
+		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
+		return;
+	} else if (rc < buf_len) {
+		ptr += rc;
+		buf_len -= rc;
+	}
+
+	/* prepare latitude */
+	rc = snprintf(ptr, buf_len, "%02u-%02u,%1u%c;",
+		current.lat.d, current.lat.m, (current.lat.s.i * 100) / 60, current.lat_dir);
+	if (rc < 0) {
+		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
+		return;
+	} else if (rc < buf_len) {
+		ptr += rc;
+		buf_len -= rc;
+	}
+
+	/* prepare longitude */
+	rc = snprintf(ptr, buf_len, "%03u-%02u,%1u%c;",
+		current.lon.d, current.lon.m, (current.lon.s.i * 100) / 60, current.lon_dir);
+	if (rc < 0) {
+		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
+		return;
+	} else if (rc < buf_len) {
+		ptr += rc;
+		buf_len -= rc;
+	}
+
+	/* TODO: prepare heading */
+	/* TODO: prepare speed over ground */
+	/* TODO: prepare wind speed (average, min/max in last period) */
+	/* TODO: prepare wind direction */
+
+	len = (int)strlen(buf);
+
+	/* write entry to syslog or file */
+	if (configuration.filename_defined) {
+		file = fopen(configuration.filename, "wt+");
+		if (!file) {
+			syslog(LOG_ERR, "cannot open logbook file '%s', error: %s", configuration.filename, strerror(errno));
+			return;
+		}
+		rc = fprintf(file, "%s\n", buf);
+		fclose(file);
+		if (rc != len + 1) {
+			syslog(LOG_DEBUG, "error while writing logbook entry: %d bytes written, should have %u", rc, len + 1);
+		}
+	} else {
+		syslog(LOG_INFO, "logbook: %s", buf);
+	}
+}
+
 static void process_timer(uint32_t id)
 {
-	UNUSED_ARG(id);
+	if (!configuration.save_timer_defined) return;
+	if (id != configuration.save_timer_id) return;
+	write_log();
+}
 
-	/* TODO: invoke actions according to configured timer triggers */
+static int read_save_timer(const struct property_list_t * properties)
+{
+	const struct property_t * prop = NULL;
+	char * endptr;
+
+	prop = proplist_find(properties, "save_timer_id");
+	if (prop) {
+		configuration.save_timer_id = strtoul(prop->value, &endptr, 0);
+		if (*endptr != '0') {
+			syslog(LOG_ERR, "invalid save_timer_id: '%s'", prop->key);
+			return EXIT_FAILURE;
+		}
+		configuration.save_timer_defined = 1;
+	} else {
+		configuration.save_timer_defined = 0;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int read_filename(const struct property_list_t * properties)
+{
+	const struct property_t * prop = NULL;
+	size_t len;
+
+	prop = proplist_find(properties, "filename");
+	if (!prop) return EXIT_FAILURE;
+
+	len = strlen(prop->value);
+	if (len > sizeof(configuration.filename) - 1) {
+		return EXIT_FAILURE;
+	}
+
+	if (len > 0) {
+		strncpy(configuration.filename, prop->value, sizeof(configuration.filename) - 1);
+		configuration.filename_defined = 1;
+	} else {
+		configuration.filename_defined = 0;
+	}
+
+	return EXIT_SUCCESS;
 }
 
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	UNUSED_ARG(config);
-	UNUSED_ARG(properties);
 
-	/* TODO: initialization: save_timer_id */
+	memset(&configuration, 0, sizeof(configuration));
 
-	return 0;
+	if (read_save_timer(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (read_filename(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
 }
 
 static int proc(const struct proc_config_t * config)
