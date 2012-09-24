@@ -48,19 +48,16 @@ target_link_libraries(config_test_1
 	common
 	)
 
-add_executable(strlist_test
-	strlist_test.c
+include_directories(
+	"cunit/include"
+	"."
 	)
-
-target_link_libraries(strlist_test
-	common
-	)
-
-include_directories("cunit/include")
 add_executable(testrunner
 	testrunner.c
+	test_strlist.c
 	)
 target_link_libraries(testrunner
 	cunit
+	common
 	)
 
