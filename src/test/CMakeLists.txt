@@ -1,4 +1,6 @@
 
+add_subdirectory(cunit)
+
 add_executable(dump
 	dump.c
 	)
@@ -52,5 +54,13 @@ add_executable(strlist_test
 
 target_link_libraries(strlist_test
 	common
+	)
+
+include_directories("cunit/include")
+add_executable(testrunner
+	testrunner.c
+	)
+target_link_libraries(testrunner
+	cunit
 	)
 

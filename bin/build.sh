@@ -13,6 +13,7 @@ function usage()
 	echo "    build    : builds the software"
 	echo "    tags     : builds the tags file"
 	echo "    doc      : creates the documentation"
+	echo "    unittest : executes the unit tests"
 	echo "    test     : executes the tests"
 	echo "    valgrind : calls valgrind on tests to check for memory problems"
 	echo ""
@@ -55,6 +56,15 @@ function exec_doc()
 	exec_prepare
 	exec_tags
 	doxygen ${BASE}/etc/doxygen.conf
+}
+
+function exec_unittest()
+{
+	if [ -r "${BASE}/build/src/test/testrunner" ] ; then
+		${BASE}/build/src/test/testrunner
+	else
+		echo "error: unit tests not present"
+	fi
 }
 
 function exec_test()
@@ -157,6 +167,9 @@ case $1 in
 		;;
 	doc)
 		exec_doc
+		;;
+	unittest)
+		exec_unittest
 		;;
 	test)
 		exec_test $2
