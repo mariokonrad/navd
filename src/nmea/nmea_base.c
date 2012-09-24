@@ -69,6 +69,7 @@ int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_senten
  * @retval >= 0 Success, number of bytes written to buffer.
  * @retval -1 Invalid parameters.
  * @retval -2 Unknown NMEA sentence.
+ * @retval -3 Sentence does not support writing.
  */
 int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const struct nmea_sentence_t ** tab, uint32_t tab_size)
 {
@@ -78,7 +79,10 @@ int nmea_write_tab(char * buf, uint32_t size, const struct nmea_t * nmea, const 
 	if (buf == NULL || size == 0 || nmea == NULL || tab == NULL || tab_size == 0) return -1;
 	for (i = 0; i < tab_size; ++i) {
 		entry = tab[i];
-		if (entry->write && entry->type == nmea->type) {
+		if (entry->type == nmea->type) {
+			if (!entry->write) {
+				return -3;
+			}
 			return entry->write(buf, size, nmea);
 		}
 	}

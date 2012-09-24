@@ -11,15 +11,6 @@ target_link_libraries(dump
 	common
 	)
 
-add_executable(nmea_test
-	nmea_test.c
-	)
-
-target_link_libraries(nmea_test
-	nmea
-	common
-	)
-
 add_executable(check_size
 	check_size.c
 	)
@@ -55,9 +46,11 @@ include_directories(
 add_executable(testrunner
 	testrunner.c
 	test_strlist.c
+	test_nmea.c
 	)
 target_link_libraries(testrunner
 	cunit
+	nmea
 	common
 	)
 

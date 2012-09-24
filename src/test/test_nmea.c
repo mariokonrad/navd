@@ -1,3 +1,4 @@
+#include <cunit/CUnit.h>
 #include <nmea/nmea.h>
 #include <nmea/nmea_util.h>
 #include <nmea/nmea_int.h>
@@ -174,259 +175,195 @@ static const char * SENTENCES[] = {
 	"$HCHDG,50.3,,,0.6,E*19",
 };
 
-static unsigned int errors = 0;
-
 static void test_nmea_fix_check_zero(void)
 {
-	int rc;
-	int result;
 	struct nmea_fix_t t;
 
-	rc = nmea_fix_check_zero(NULL);
-	result = rc == -1;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_fix_check_zero(NULL), -1);
 
 	t.i = 0; t.d = 0;
-	rc = nmea_fix_check_zero(&t);
-	result = rc == 0;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_fix_check_zero(&t), 0);
 
 	t.i = 1; t.d = 0;
-	rc = nmea_fix_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_fix_check_zero(&t), -2);
 
 	t.i = 0; t.d = 1;
-	rc = nmea_fix_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_fix_check_zero(&t), -2);
 }
 
 static void test_nmea_time_check_zero(void)
 {
-	int rc;
-	int result;
 	struct nmea_time_t t;
 
-	rc = nmea_time_check_zero(NULL);
-	result = rc == -1;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_time_check_zero(NULL), -1);
 
 	t.h = 0; t.m = 0; t.s = 0; t.ms = 0;
-	rc = nmea_time_check_zero(&t);
-	result = rc == 0;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_time_check_zero(&t), 0);
 
 	t.h = 1; t.m = 0; t.s = 0; t.ms = 0;
-	rc = nmea_time_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_time_check_zero(&t), -2);
 
 	t.h = 0; t.m = 1; t.s = 0; t.ms = 0;
-	rc = nmea_time_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_time_check_zero(&t), -2);
 
 	t.h = 0; t.m = 0; t.s = 1; t.ms = 0;
-	rc = nmea_time_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_time_check_zero(&t), -2);
 
 	t.h = 0; t.m = 0; t.s = 0; t.ms = 1;
-	rc = nmea_time_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_time_check_zero(&t), -2);
 }
 
 static void test_check_date_zero(void)
 {
-	int rc;
-	int result;
 	struct nmea_date_t t;
 
-	rc = nmea_date_check_zero(NULL);
-	result = rc == -1;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_date_check_zero(NULL), -1);
 
 	t.y = 0; t.m = 0; t.d = 0;
-	rc = nmea_date_check_zero(&t);
-	result = rc == 0;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_date_check_zero(&t), 0);
 
 	t.y = 1; t.m = 0; t.d = 0;
-	rc = nmea_date_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_date_check_zero(&t), -2);
 
 	t.y = 0; t.m = 1; t.d = 0;
-	rc = nmea_date_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_date_check_zero(&t), -2);
 
 	t.y = 0; t.m = 0; t.d = 1;
-	rc = nmea_date_check_zero(&t);
-	result = rc == -2;
-	if (!result) ++errors;
-	printf("%25s : %d : line:%d\n", __FUNCTION__, result, __LINE__);
+	CU_ASSERT_EQUAL(nmea_date_check_zero(&t), -2);
 }
 
-static void test_utils(void)
-{
-	test_nmea_fix_check_zero();
-	test_nmea_time_check_zero();
-	test_check_date_zero();
-}
-
-static void test_parse_int(const char * s, int outcome)
+static int test_parse_int(const char * s)
 {
 	uint32_t v;
-	int result;
-	int len = strlen(s);
-	const char * p = parse_int(s, s+len, &v);
-	result = outcome == (p == s + len);
-	if (!result) ++errors;
-	printf("%25s : %d : %d : [%s] : %u\n", __FUNCTION__, result, p == s+len, s, v);
+	const char * p;
+
+	p = parse_int(s, s+strlen(s), &v);
+	return p == (s + strlen(s));
 }
 
-static void test_nmea_fix_parse(const char * s, int outcome)
+static void test_parsing_basic_int(void)
+{
+	CU_ASSERT_EQUAL(test_parse_int("0"),    1);
+	CU_ASSERT_EQUAL(test_parse_int("10"),   1);
+	CU_ASSERT_EQUAL(test_parse_int("00"),   1);
+	CU_ASSERT_EQUAL(test_parse_int("0123"), 1);
+	CU_ASSERT_EQUAL(test_parse_int("9999"), 1);
+	CU_ASSERT_EQUAL(test_parse_int("10,"),  0);
+	CU_ASSERT_EQUAL(test_parse_int(""),     1);
+	CU_ASSERT_EQUAL(test_parse_int(","),    0);
+	CU_ASSERT_EQUAL(test_parse_int("0.0"),  0);
+}
+
+static int test_nmea_fix_parse(const char * s)
 {
 	struct nmea_fix_t v;
-	int result;
-	int len = strlen(s);
-	const char * p = nmea_fix_parse(s, s+len, &v);
-	result = outcome == (p == s + len);
-	if (!result) ++errors;
-	printf("%25s : %d : %d : [%s] : %u %06u\n", __FUNCTION__, result, p == s+len, s, v.i, v.d);
+	const char * p;
+
+	p = nmea_fix_parse(s, s+strlen(s), &v);
+	return p == (s + strlen(s));
 }
 
-static void test_nmea_time_parse(const char * s, int outcome)
+static void test_parsing_nmea_fix(void)
 {
-	struct nmea_time_t t;
-	int result;
-	const char * e = s + strlen(s);
-	int r = nmea_time_parse(s, e, &t) == e && !nmea_time_check(&t);
-	result = outcome == r;
-	if (!result) ++errors;
-	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.h, t.m, t.s, t.ms);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("123456789.1234567"), 1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("3.14159265365"),     1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("1.2"),               1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("3"),                 1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse(".5"),                1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("3."),                1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("1.0001"),            1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("1.1,"),              0);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse(""),                  1);
+	CU_ASSERT_EQUAL(test_nmea_fix_parse("."),                 1);
 }
 
-static void test_nmea_date_parse(const char * s, int outcome)
+static int test_nmea_date_parse(const char * s)
 {
 	struct nmea_date_t t;
-	int result;
 	const char * e = s + strlen(s);
-	int r = nmea_date_parse(s, e, &t) == e && !nmea_date_check(&t);
-	result = outcome == r;
-	if (!result) ++errors;
-	printf("%25s : %d : [%s] : %u %u %u\n", __FUNCTION__, result, s, t.y, t.m, t.d);
+
+	return nmea_date_parse(s, e, &t) == e && !nmea_date_check(&t);
 }
 
-static void test_parse_lat(const char * s, int outcome)
+static void test_parsing_nmea_date(void)
+{
+	CU_ASSERT_EQUAL(test_nmea_date_parse("010100"),  1);
+	CU_ASSERT_EQUAL(test_nmea_date_parse("999999"),  0);
+	CU_ASSERT_EQUAL(test_nmea_date_parse("320100"),  0);
+	CU_ASSERT_EQUAL(test_nmea_date_parse("000100"),  0);
+	CU_ASSERT_EQUAL(test_nmea_date_parse("011300"),  0);
+	CU_ASSERT_EQUAL(test_nmea_date_parse("311299"),  1);
+	CU_ASSERT_EQUAL(test_nmea_date_parse("999999,"), 0);
+	CU_ASSERT_EQUAL(test_nmea_date_parse("010100,"), 0);
+}
+
+static int test_nmea_time_parse(const char * s)
+{
+	struct nmea_time_t t;
+	const char * e = s + strlen(s);
+
+	return nmea_time_parse(s, e, &t) == e && !nmea_time_check(&t);
+}
+
+static void test_parsing_nmea_time(void)
+{
+	CU_ASSERT_EQUAL(test_nmea_time_parse("123456"),     1);
+	CU_ASSERT_EQUAL(test_nmea_time_parse("123456,"),    0);
+	CU_ASSERT_EQUAL(test_nmea_time_parse("123456.345"), 1);
+	CU_ASSERT_EQUAL(test_nmea_time_parse("123456."),    1);
+	CU_ASSERT_EQUAL(test_nmea_time_parse("0"),          1);
+	CU_ASSERT_EQUAL(test_nmea_time_parse(""),           1);
+}
+
+static int test_parse_lat(const char * s)
 {
 	struct nmea_angle_t t;
-	int result;
 	const char * e = s + strlen(s);
-	int r = nmea_angle_parse(s, e, &t) == e && !nmea_check_latitude(&t);
-	result = outcome == r;
-	if (!result) ++errors;
-	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.d, t.m, t.s.i, t.s.d);
+
+	return nmea_angle_parse(s, e, &t) == e && !nmea_check_latitude(&t);
 }
 
-static void test_parse_lon(const char * s, int outcome)
+static void test_parsing_nmea_lat(void)
+{
+	CU_ASSERT_EQUAL(test_parse_lat("1234.0000"),  1);
+	CU_ASSERT_EQUAL(test_parse_lat("1234,0000"),  0);
+	CU_ASSERT_EQUAL(test_parse_lat("1234.0000,"), 0);
+	CU_ASSERT_EQUAL(test_parse_lat("9000.0000"),  1);
+	CU_ASSERT_EQUAL(test_parse_lat("0000.0000"),  1);
+	CU_ASSERT_EQUAL(test_parse_lat("8959.9999"),  1);
+	CU_ASSERT_EQUAL(test_parse_lat("8960.0000"),  0);
+	CU_ASSERT_EQUAL(test_parse_lat("9000.1000"),  0);
+}
+
+static int test_parse_lon(const char * s)
 {
 	struct nmea_angle_t t;
-	int result;
 	const char * e = s + strlen(s);
-	int r = nmea_angle_parse(s, e, &t) == e && !nmea_check_longitude(&t);
-	result = outcome == r;
-	if (!result) ++errors;
-	printf("%25s : %d : [%s] : %u %u %u %u\n", __FUNCTION__, result, s, t.d, t.m, t.s.i, t.s.d);
+
+	return nmea_angle_parse(s, e, &t) == e && !nmea_check_longitude(&t);
 }
 
-static void test_basic_parsing(void)
+static void test_parsing_nmea_lon(void)
 {
-	test_parse_int("0", 1);
-	test_parse_int("10", 1);
-	test_parse_int("00", 1);
-	test_parse_int("0123", 1);
-	test_parse_int("9999", 1);
-	test_parse_int("10,", 0);
-	test_parse_int("", 1);
-	test_parse_int(",", 0);
-	test_parse_int("0.0", 0);
-
-	test_nmea_fix_parse("123456789.1234567", 1);
-	test_nmea_fix_parse("3.14159265365", 1);
-	test_nmea_fix_parse("1.2", 1);
-	test_nmea_fix_parse("3", 1);
-	test_nmea_fix_parse(".5", 1);
-	test_nmea_fix_parse("3.", 1);
-	test_nmea_fix_parse("1.0001", 1);
-	test_nmea_fix_parse("1.1,", 0);
-	test_nmea_fix_parse("", 1);
-	test_nmea_fix_parse(".", 1);
-
-	test_nmea_date_parse("010100", 1);
-	test_nmea_date_parse("999999", 0);
-	test_nmea_date_parse("320100", 0);
-	test_nmea_date_parse("000100", 0);
-	test_nmea_date_parse("011300", 0);
-	test_nmea_date_parse("311299", 1);
-	test_nmea_date_parse("999999,", 0);
-	test_nmea_date_parse("010100,", 0);
-
-	test_nmea_time_parse("123456", 1);
-	test_nmea_time_parse("123456,", 0);
-	test_nmea_time_parse("123456.345", 1);
-	test_nmea_time_parse("123456.", 1);
-	test_nmea_time_parse("0", 1);
-	test_nmea_time_parse("", 1);
-
-	test_parse_lat("1234.0000", 1);
-	test_parse_lat("1234,0000", 0);
-	test_parse_lat("1234.0000,", 0);
-	test_parse_lat("9000.0000", 1);
-	test_parse_lat("0000.0000", 1);
-	test_parse_lat("8959.9999", 1);
-	test_parse_lat("8960.0000", 0);
-	test_parse_lat("9000.1000", 0);
-
-	test_parse_lon("12345.0000", 1);
-	test_parse_lon("01234,0000", 0);
-	test_parse_lon("01234.0000,", 0);
-	test_parse_lon("09000.0000", 1);
-	test_parse_lon("00000.0000", 1);
-	test_parse_lon("17959.9999", 1);
-	test_parse_lon("17960.0000", 0);
-	test_parse_lon("18000.0000", 1);
-	test_parse_lon("18000.1000", 0);
+	CU_ASSERT_EQUAL(test_parse_lon("12345.0000"),  1);
+	CU_ASSERT_EQUAL(test_parse_lon("01234,0000"),  0);
+	CU_ASSERT_EQUAL(test_parse_lon("01234.0000,"), 0);
+	CU_ASSERT_EQUAL(test_parse_lon("09000.0000"),  1);
+	CU_ASSERT_EQUAL(test_parse_lon("00000.0000"),  1);
+	CU_ASSERT_EQUAL(test_parse_lon("17959.9999"),  1);
+	CU_ASSERT_EQUAL(test_parse_lon("17960.0000"),  0);
+	CU_ASSERT_EQUAL(test_parse_lon("18000.0000"),  1);
+	CU_ASSERT_EQUAL(test_parse_lon("18000.1000"),  0);
 }
 
 static void test_sentence_parsing()
 {
 	struct nmea_t info;
-	int rc;
 	unsigned int i;
 
-	for (i = 0; i < sizeof(SENTENCES)/sizeof(const char *); ++i) {
+	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
 		memset(&info, 0, sizeof(info));
-		rc = nmea_read(&info, SENTENCES[i]);
-		if (rc != 0) ++errors;
-		printf("%25s : %d : [%s]\n", __FUNCTION__, rc == 0, SENTENCES[i]);
+		CU_ASSERT_EQUAL(nmea_read(&info, SENTENCES[i]), 0);
 	}
 }
 
@@ -434,24 +371,19 @@ static void test_basic_string_writing(void)
 {
 	enum { SIZE = 128 };
 
-	int rc;
 	char buf[SIZE];
 
 	memset(buf, 0, sizeof(buf));
-	rc = write_string(buf, SIZE, "");
-	if (rc != 0) { ++errors; printf("ERROR: %d\n", __LINE__); }
+	CU_ASSERT_EQUAL(write_string(buf, SIZE, ""), 0);
 
 	memset(buf, 0, sizeof(buf));
-	rc = write_string(buf, 0, "hello");
-	if (rc != -1) { ++errors; printf("ERROR: %d\n", __LINE__); }
+	CU_ASSERT_EQUAL(write_string(buf, 0, "hello"), -1);
 
 	memset(buf, 0, sizeof(buf));
-	rc = write_string(NULL, SIZE, "hello");
-	if (rc != -1) { ++errors; printf("ERROR: %d\n", __LINE__); }
+	CU_ASSERT_EQUAL(write_string(NULL, SIZE, "hello"), -1);
 
 	memset(buf, 0, sizeof(buf));
-	rc = write_string(buf, SIZE, "hello");
-	if (rc != strlen("hello")) { ++errors; printf("ERROR: %d\n", __LINE__); }
+	CU_ASSERT_EQUAL(write_string(buf, SIZE, "hello"), strlen("hello"));
 }
 
 static void test_nmea_fix_write(const struct nmea_fix_t * t, uint32_t ni, uint32_t nd, const char * outcome)
@@ -459,74 +391,12 @@ static void test_nmea_fix_write(const struct nmea_fix_t * t, uint32_t ni, uint32
 	enum { SIZE = 128 };
 	int rc;
 	char buf[SIZE];
-	int result;
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_fix_write(buf, SIZE, t, ni, nd);
-	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
-	if (!result) ++errors;
-	printf("%25s : %d : '%06u %06u' / '%s' ==> '%s'\n", __FUNCTION__,
-		result, t->i, t->d, outcome, buf);
-}
 
-static void test_nmea_time_write(const struct nmea_time_t * t, const char * outcome)
-{
-	enum { SIZE = 128 };
-	int rc;
-	char buf[SIZE];
-	int result;
-
-	memset(buf, 0, sizeof(buf));
-	rc = nmea_time_write(buf, SIZE, t);
-	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
-	if (!result) ++errors;
-	printf("%25s : %d : '%02d %02d %02d %04d' / '%s' ==> '%s'\n", __FUNCTION__,
-		result, t->h, t->m, t->s, t->ms, outcome, buf);
-}
-
-static void test_nmea_date_write(const struct nmea_date_t * t, const char * outcome)
-{
-	enum { SIZE = 128 };
-	int rc;
-	char buf[SIZE];
-	int result;
-
-	memset(buf, 0, sizeof(buf));
-	rc = nmea_date_write(buf, SIZE, t);
-	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
-	if (!result) ++errors;
-	printf("%25s : %d : '%02d %02d %02d' / '%s' ==> '%s'\n", __FUNCTION__,
-		result, t->d, t->m, t->d, outcome, buf);
-}
-
-static void test_write_lat(const struct nmea_angle_t * t, const char * outcome)
-{
-	enum { SIZE = 128 };
-	int rc;
-	char buf[SIZE];
-	int result;
-
-	memset(buf, 0, sizeof(buf));
-	rc = nmea_write_latitude(buf, SIZE, t);
-	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
-	if (!result) ++errors;
-	printf("%25s : %d : '%02d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,
-		result, t->d, t->m, t->s.i, t->s.d, outcome, buf);
-}
-
-static void test_write_lon(const struct nmea_angle_t * t, const char * outcome)
-{
-	enum { SIZE = 128 };
-	int rc;
-	char buf[SIZE];
-	int result;
-
-	memset(buf, 0, sizeof(buf));
-	rc = nmea_write_lonitude(buf, SIZE, t);
-	result = (rc == (int)strlen(outcome)) && !strncmp(buf, outcome, SIZE);
-	if (!result) ++errors;
-	printf("%25s : %d : '%03d %02d %06d.%06d' / '%s' ==> '%s'\n", __FUNCTION__,
-		result, t->d, t->m, t->s.i, t->s.d, outcome, buf);
+	CU_ASSERT_EQUAL(rc, (int)strlen(outcome));
+	CU_ASSERT_STRING_EQUAL(buf, outcome);
 }
 
 static void test_basic_fix_writing(void)
@@ -545,6 +415,19 @@ static void test_basic_fix_writing(void)
 	t.i =   100; t.d =      0; test_nmea_fix_write(&t, 5, 6, "  100.000000");
 	t.i =  1000; t.d =      0; test_nmea_fix_write(&t, 5, 6, " 1000.000000");
 	t.i = 10000; t.d =      0; test_nmea_fix_write(&t, 5, 6, "10000.000000");
+}
+
+static void test_nmea_time_write(const struct nmea_time_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+
+	memset(buf, 0, sizeof(buf));
+	rc = nmea_time_write(buf, SIZE, t);
+	
+	CU_ASSERT_EQUAL(rc, (int)strlen(outcome));
+	CU_ASSERT_STRING_EQUAL(buf, outcome);
 }
 
 static void test_basic_time_writing(void)
@@ -566,6 +449,19 @@ static void test_basic_time_writing(void)
 	t.h = 24; t.m = 60; t.s = 60; test_nmea_time_write(&t, "");
 }
 
+static void test_nmea_date_write(const struct nmea_date_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+
+	memset(buf, 0, sizeof(buf));
+	rc = nmea_date_write(buf, SIZE, t);
+
+	CU_ASSERT_EQUAL(rc, (int)strlen(outcome));
+	CU_ASSERT_STRING_EQUAL(buf, outcome);
+}
+
 static void test_basic_date_writing(void)
 {
 	struct nmea_date_t t;
@@ -581,6 +477,19 @@ static void test_basic_date_writing(void)
 	t.y =   0; t.m =  1; t.d =  1; test_nmea_date_write(&t, "010100");
 	t.y =   0; t.m =  1; t.d = 31; test_nmea_date_write(&t, "310100");
 	t.y =   0; t.m =  1; t.d = 32; test_nmea_date_write(&t, "");
+}
+
+static void test_write_lat(const struct nmea_angle_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+
+	memset(buf, 0, sizeof(buf));
+	rc = nmea_write_latitude(buf, SIZE, t);
+
+	CU_ASSERT_EQUAL(rc, (int)strlen(outcome));
+	CU_ASSERT_STRING_EQUAL(buf, outcome);
 }
 
 static void test_basic_latitude_writing(void)
@@ -608,6 +517,19 @@ static void test_basic_latitude_writing(void)
 	t.d = 89; t.m =  0; t.s.i = 61; test_write_lat(&t, "");
 }
 
+static void test_write_lon(const struct nmea_angle_t * t, const char * outcome)
+{
+	enum { SIZE = 128 };
+	int rc;
+	char buf[SIZE];
+
+	memset(buf, 0, sizeof(buf));
+	rc = nmea_write_lonitude(buf, SIZE, t);
+
+	CU_ASSERT_EQUAL(rc, (int)strlen(outcome));
+	CU_ASSERT_STRING_EQUAL(buf, outcome);
+}
+
 static void test_basic_longitude_writing(void)
 {
 	struct nmea_angle_t t;
@@ -632,79 +554,52 @@ static void test_basic_longitude_writing(void)
 	t.d = 181; t.m =  0; t.s.i = 61; test_write_lon(&t, "");
 }
 
-static void test_basic_writing(void)
-{
-	test_basic_string_writing();
-	test_basic_fix_writing();
-	test_basic_time_writing();
-	test_basic_date_writing();
-	test_basic_latitude_writing();
-	test_basic_longitude_writing();
-}
-
-static void test_writing_sentence(const char * s)
-{
-	int rc;
-	char buf[128];
-	struct nmea_t nmea;
-	int result;
-
-	memset(buf, 0, sizeof(buf));
-	memset(&nmea, 0, sizeof(nmea));
-	rc = nmea_read(&nmea, s);
-	if (rc != 0) {
-		++errors;
-		printf("%25s : %d : [%s] : unable to parse : rc=%d\n", __FUNCTION__, 0, s, rc);
-	}
-	rc = nmea_write(buf, sizeof(buf), &nmea);
-	result = (rc >= 0 && !strcmp(s, buf));
-	if (!result) ++errors;
-	printf("%25s : %d : [%s]\n%25s       [%s]\n%25s       rc=%d\n", __FUNCTION__, result, s, "", buf, "", rc);
-}
-
 static void test_sentence_writing(void)
 {
 	unsigned int i;
+	int rc;
+	char buf[128];
+	struct nmea_t nmea;
 
-	for (i = 0; i < sizeof(SENTENCES)/sizeof(const char *); ++i) {
-		test_writing_sentence(SENTENCES[i]);
+	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
+		memset(buf, 0, sizeof(buf));
+		memset(&nmea, 0, sizeof(nmea));
+		rc = nmea_read(&nmea, SENTENCES[i]);
+		CU_ASSERT_EQUAL(rc, 0);
+
+		rc = nmea_write(buf, sizeof(buf), &nmea);
+		if (rc == -3) {
+			continue; /* writing not supported, which is ok */
+		}
+		if (rc == -2) {
+			printf("nmea_write: unknown sentence: '%s' (raw:'%s', type:%u)\n", SENTENCES[i], nmea.raw, nmea.type);
+			CU_ASSERT_NOT_EQUAL_FATAL(rc, -2);
+		}
+		CU_ASSERT_TRUE(rc >= 0);
+		CU_ASSERT_STRING_EQUAL(buf, SENTENCES[i]);
 	}
 }
 
-int main(int argc, char ** argv)
+void register_suite_nmea(void)
 {
-	int test = 0;
-	if (argc > 1) test = atoi(argv[1]);
-
-	switch (test) {
-		case 0:
-			test_utils();
-			test_basic_parsing();
-			test_basic_writing();
-			test_sentence_parsing();
-			test_sentence_writing();
-			break;
-		case 1:
-			test_utils();
-			break;
-		case 2:
-			test_basic_parsing();
-			break;
-		case 3:
-			test_basic_writing();
-			break;
-		case 4:
-			test_sentence_parsing();
-			break;
-		case 5:
-			test_sentence_writing();
-			break;
-	}
-
-	if (errors > 0) {
-		printf("\nERRORS: %u\n\n", errors);
-	}
-
-	return 0;
+	CU_Suite * suite;
+	suite = CU_add_suite("nmea", NULL, NULL);
+	CU_add_test(suite, "nmea fix: check zero", test_nmea_fix_check_zero);
+	CU_add_test(suite, "nmea time: check zero", test_nmea_time_check_zero);
+	CU_add_test(suite, "nmea date: check zero", test_check_date_zero);
+	CU_add_test(suite, "parsing: basic int", test_parsing_basic_int);
+	CU_add_test(suite, "parsing: nmea fix", test_parsing_nmea_fix);
+	CU_add_test(suite, "parsing: nmea date", test_parsing_nmea_date);
+	CU_add_test(suite, "parsing: nmea time", test_parsing_nmea_time);
+	CU_add_test(suite, "parsing: nmea lat", test_parsing_nmea_lat);
+	CU_add_test(suite, "parsing: nmea lon", test_parsing_nmea_lon);
+	CU_add_test(suite, "parsing: sentences", test_sentence_parsing);
+	CU_add_test(suite, "writing: string", test_basic_string_writing);
+	CU_add_test(suite, "writing: nmea fix", test_basic_fix_writing);
+	CU_add_test(suite, "writing: nmea time", test_basic_time_writing);
+	CU_add_test(suite, "writing: nmea date", test_basic_date_writing);
+	CU_add_test(suite, "writing: nmea lat", test_basic_latitude_writing);
+	CU_add_test(suite, "writing: nmea lon", test_basic_longitude_writing);
+	CU_add_test(suite, "writing: sentence", test_sentence_writing);
 }
 
