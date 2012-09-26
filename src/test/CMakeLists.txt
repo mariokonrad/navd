@@ -47,9 +47,11 @@ add_executable(testrunner
 	testrunner.c
 	test_strlist.c
 	test_nmea.c
+	test_config.c
 	)
 target_link_libraries(testrunner
 	cunit
+	config
 	nmea
 	common
 	)

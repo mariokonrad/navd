@@ -2,8 +2,14 @@
 find_package(BISON)
 find_package(FLEX)
 
-BISON_TARGET(parser parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.tab.c)
-FLEX_TARGET(lexer lexer.l ${CMAKE_CURRENT_BINARY_DIR}/lexer.yy.c)
+BISON_TARGET(parser
+	parser.y
+	${CMAKE_CURRENT_BINARY_DIR}/parser.tab.c
+	)
+FLEX_TARGET(lexer
+	lexer.l
+	${CMAKE_CURRENT_BINARY_DIR}/lexer.yy.c
+	)
 
 add_library(config
 	config.c

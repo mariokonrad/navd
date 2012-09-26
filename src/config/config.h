@@ -99,5 +99,6 @@ int config_registered_as_source(const char * s);
 int config_registered_as_destination(const char * s);
 int config_registered_as_filter(const char * s);
 int config_parse_file(const char * filename, struct config_t * config);
+int config_parse_string(const char * s, struct config_t * config);
 
 #endif

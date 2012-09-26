@@ -10,11 +10,15 @@
 		exit(EXIT_FAILURE); \
 	} while (0)
 
-/* manually copied from lexer.yy.h to prevent compiler warnings */
-extern int yylex_init(void * scaner);
-extern void yyset_in(FILE * in_str, void * yyscanner);
-extern int yylex_destroy(void * yyscanner);
-extern int yyparse(void * scanner, struct config_t * config, struct parse_temp_t * tmp);
+/* manually copied from lexer.yy.h to prevent compiler warnings.
+ * this represents not the actual generated interface, some types
+ * are not known at this point, substituting them with void*
+ */
+extern int yylex_init(void *);
+extern void yyset_in(FILE *, void *);
+extern void * yy_scan_string(const char *, void *);
+extern int yylex_destroy(void *);
+extern int yyparse(void *, struct config_t *, struct parse_temp_t *);
 
 static struct {
 	struct string_list_t sources;
@@ -485,6 +489,44 @@ int config_parse_file(const char * filename, struct config_t * config)
 	yylex_destroy(scanner);
 
 	fclose(file);
+	config_free_tmp(&tmp);
+
+	if (rc != 0) {
+		printf("parsing error\n");
+		return -3;
+	}
+
+	finish_routes_linking(config);
+	return 0;
+}
+
+int config_parse_string(const char * s, struct config_t * config)
+{
+	struct parse_temp_t tmp;
+	void * scanner;
+	int rc;
+
+	if (s == NULL) {
+		return -1;
+	}
+
+	if (config == NULL) {
+		return -1;
+	}
+
+	if (strlen(s) <= 0) {
+		return -2;
+	}
+
+	config_init(config);
+	config_clear_tmp_property(&tmp);
+	strlist_init(&tmp.destinations);
+
+	yylex_init(&scanner);
+	yy_scan_string(s, &scanner);
+	rc = yyparse(scanner, config, &tmp);
+	yylex_destroy(scanner);
+
 	config_free_tmp(&tmp);
 
 	if (rc != 0) {
