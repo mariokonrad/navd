@@ -63,7 +63,7 @@ static const struct option OPTIONS_LONG[] =
 };
 
 /**
- * @todo Documentation
+ * This structure contains all possible options the program provides.
  */
 static struct {
 	int daemonize;

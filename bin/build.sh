@@ -15,6 +15,7 @@ function usage()
 	echo "    doc      : creates the documentation"
 	echo "    unittest : executes the unit tests"
 	echo "    test     : executes the tests"
+	echo "    cppcheck : performs cppcheck"
 	echo "    valgrind : calls valgrind on tests to check for memory problems"
 	echo ""
 }
@@ -70,27 +71,11 @@ function exec_unittest()
 function exec_test()
 {
 	case $1 in
-		nmea)
-			if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
-				${BASE}/build/src/test/nmea_test
-			else
-				echo "error: nmea test not present"
-			fi
-			;;
-
 		config)
 			if [ -r "${BASE}/build/src/test/config_test" ] ; then
 				${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small
 			else
 				echo "error: config test not present"
-			fi
-			;;
-
-		strlist)
-			if [ -r "${BASE}/build/src/test/strlist_test" ] ; then
-				${BASE}/build/src/test/strlist_test
-			else
-				echo "error: string list test not present"
 			fi
 			;;
 
@@ -102,25 +87,7 @@ function exec_test()
 
 function exec_valgrind()
 {
-	if [ -r "${BASE}/build/src/test/strlist_test" ] ; then
-		valgrind ${BASE}/build/src/test/strlist_test
-	else
-		echo "error: string list test not present"
-	fi
-
-	echo ""
-	echo "----------------------------------------"
-	echo ""
-
-	if [ -r "${BASE}/build/src/test/nmea_test" ] ; then
-		valgrind --track-origins=yes ${BASE}/build/src/test/nmea_test
-	else
-		echo "error: nmea test not present"
-	fi
-
-	echo ""
-	echo "----------------------------------------"
-	echo ""
+	# TODO: valgrind over cunit tests
 
 	if [ -r "${BASE}/build/src/test/config_test" ] ; then
 		valgrind --leak-check=full ${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small
@@ -149,6 +116,13 @@ function exec_valgrind()
 	fi
 }
 
+function exec_cppcheck()
+{
+	# unfortunately cppcheck cannot handle paths like '${BASE}/src' therefore
+	# cppchecks must be executed from directory ${BASE}
+
+	cppcheck -v -f --enable=all -i src/test/cunit -I src src
+}
 
 if [ $# == 0 ] ; then
 	usage $0
@@ -176,6 +150,9 @@ case $1 in
 		;;
 	valgrind)
 		exec_valgrind
+		;;
+	cppcheck)
+		exec_cppcheck
 		;;
 	*)
 		echo ""
