@@ -145,7 +145,7 @@ int config_add_tmp_property(struct parse_temp_t * tmp, const char * key, const c
 	return 0;
 }
 
-static void config_init(struct config_t * config)
+void config_init(struct config_t * config)
 {
 	config->num_sources = 0;
 	config->num_destinations = 0;
@@ -452,7 +452,7 @@ static void finish_routes_linking(struct config_t * config)
  * @param[in] filename The name of the configuration file. This must be the
  *   entire path, absoute or relative.
  * @param[out] config The data structure to be filled with all the parsed
- *   information.
+ *   information. It is expected to be initialized.
  * @retval  0 Parsing of the configuration file was successful.
  * @retval -1 Error, invalid parameters.
  * @retval -2 Error, not possible to open the file.
@@ -473,13 +473,16 @@ int config_parse_file(const char * filename, struct config_t * config)
 		return -1;
 	}
 
+	if (strlen(filename) <= 0) {
+		return -1;
+	}
+
 	file = fopen(filename, "r");
 	if (file == NULL) {
 		syslog(LOG_CRIT, "cannot open file: '%s'", filename);
 		return -2;
 	}
 
-	config_init(config);
 	config_clear_tmp_property(&tmp);
 	strlist_init(&tmp.destinations);
 
@@ -489,44 +492,6 @@ int config_parse_file(const char * filename, struct config_t * config)
 	yylex_destroy(scanner);
 
 	fclose(file);
-	config_free_tmp(&tmp);
-
-	if (rc != 0) {
-		printf("parsing error\n");
-		return -3;
-	}
-
-	finish_routes_linking(config);
-	return 0;
-}
-
-int config_parse_string(const char * s, struct config_t * config)
-{
-	struct parse_temp_t tmp;
-	void * scanner;
-	int rc;
-
-	if (s == NULL) {
-		return -1;
-	}
-
-	if (config == NULL) {
-		return -1;
-	}
-
-	if (strlen(s) <= 0) {
-		return -2;
-	}
-
-	config_init(config);
-	config_clear_tmp_property(&tmp);
-	strlist_init(&tmp.destinations);
-
-	yylex_init(&scanner);
-	yy_scan_string(s, &scanner);
-	rc = yyparse(scanner, config, &tmp);
-	yylex_destroy(scanner);
-
 	config_free_tmp(&tmp);
 
 	if (rc != 0) {

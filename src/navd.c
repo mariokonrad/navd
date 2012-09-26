@@ -506,9 +506,10 @@ static int config_read(struct config_t * config)
 		syslog(LOG_CRIT, "invalid config file name: '%s'", option.config_filename);
 		return -1;
 	}
+	config_init(config);
 	rc = config_parse_file(option.config_filename, config);
 	if (rc < 0) {
-		syslog(LOG_CRIT, "unable to read config file '%s'", option.config_filename);
+		syslog(LOG_CRIT, "unable to read config file '%s', rc=%d", option.config_filename, rc);
 		return -1;
 	}
 

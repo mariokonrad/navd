@@ -90,6 +90,7 @@ int config_add_route(
 char * config_strdup(const char *);
 char * config_strdup_s(const char *);
 
+void config_init(struct config_t * config);
 void config_free(struct config_t * config);
 void config_register_free(void);
 int config_register_source(const char * type);
@@ -99,6 +100,5 @@ int config_registered_as_source(const char * s);
 int config_registered_as_destination(const char * s);
 int config_registered_as_filter(const char * s);
 int config_parse_file(const char * filename, struct config_t * config);
-int config_parse_string(const char * s, struct config_t * config);
 
 #endif

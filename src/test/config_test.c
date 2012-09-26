@@ -18,6 +18,7 @@ int main(int argc, char ** argv)
 	config_register_filter("filter_null");
 	config_register_filter("filter_nmea");
 
+	config_init(&config);
 	rc = config_parse_file(argv[1], &config);
 	if (rc < 0) return EXIT_FAILURE;
 

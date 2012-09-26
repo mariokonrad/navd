@@ -1,6 +1,7 @@
 #include <cunit/CUnit.h>
 #include <test_config.h>
 #include <config/config.h>
+#include <string.h>
 
 static void test_register_source(void)
 {
@@ -98,9 +99,27 @@ static void test_register_check_filter(void)
 	config_register_free();
 }
 
-static void test_parse_string(void)
+static void test_parse_file_failures(void)
 {
-	CU_FAIL(); /* TODO */
+	int rc;
+	struct config_t config;
+
+	config_init(&config);
+	rc = config_parse_file(NULL, NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+	config_free(&config);
+
+	config_init(&config);
+	rc = config_parse_file(NULL, &config);
+	CU_ASSERT_EQUAL(rc, -1);
+	config_free(&config);
+
+	config_init(&config);
+	rc = config_parse_file("", NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+	config_free(&config);
+
+	config_register_free();
 }
 
 void register_suite_config(void)
@@ -113,6 +132,6 @@ void register_suite_config(void)
 	CU_add_test(suite, "register check source", test_register_check_source);
 	CU_add_test(suite, "register check destination", test_register_check_destination);
 	CU_add_test(suite, "register check filter", test_register_check_filter);
-	CU_add_test(suite, "parse string", test_parse_string);
+	CU_add_test(suite, "parse file failures", test_parse_file_failures);
 }
 
