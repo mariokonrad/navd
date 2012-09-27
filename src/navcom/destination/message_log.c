@@ -2,13 +2,14 @@
 #include <navcom/message.h>
 #include <common/macros.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
 
-enum { MAX_ERRORS = 10 };
+enum { MAX_ERRORS = 10 }; /* TODO: configuration/properties, module providing default value */
 
 struct msg_log_property_t {
 	int enable;
@@ -53,6 +54,23 @@ static int log_message(const struct message_t * msg, const struct msg_log_proper
 	return 0;
 }
 
+static int is_writable(const char * path)
+{
+	int rc;
+	struct stat s;
+
+	if (!path) return 0;
+	if (strlen(path)) return 0;
+
+	rc = stat(path, &s);
+	if (rc < 0) return 0;
+
+	if (!S_ISREG(s.st_mode)) return 0;
+	if (!(s.st_mode & S_IWUSR)) return 0;
+
+	return 1;
+}
+
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	const struct property_t * prop_dst = NULL;
@@ -65,8 +83,11 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	prop_dst = proplist_find(properties, "dst");
 	if (prop_dst) {
-		/* TODO: test if destination is writable */
-		prop.dst = prop_dst->value;
+		if (is_writable(prop_dst->value)) {
+			prop.dst = prop_dst->value;
+		} else {
+			syslog(LOG_ERR, "%s:destination not writable, logging to syslog only", config->cfg->name);
+		}
 	} else {
 		syslog(LOG_ERR, "%s:no destination specified, logging to syslog only", config->cfg->name);
 	}
