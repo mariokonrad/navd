@@ -46,6 +46,7 @@ include_directories(
 add_executable(testrunner
 	testrunner.c
 	test_strlist.c
+	test_property.c
 	test_nmea.c
 	test_config.c
 	)

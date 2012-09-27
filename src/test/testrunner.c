@@ -2,6 +2,7 @@
 #include <cunit/Basic.h>
 #include <stdlib.h>
 #include <test_strlist.h>
+#include <test_property.h>
 #include <test_nmea.h>
 #include <test_config.h>
 
@@ -10,6 +11,7 @@ int main()
 	CU_initialize_registry();
 
 	register_suite_strlist();
+	register_suite_property();
 	register_suite_nmea();
 	register_suite_config();
 
