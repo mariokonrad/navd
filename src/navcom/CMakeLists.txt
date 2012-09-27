@@ -1,4 +1,8 @@
 
+include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/../lua/include
+	)
+
 add_library(navcom
 	proc.c
 	proc_list.c
@@ -12,5 +16,6 @@ add_library(navcom
 	destination/logbook.c
 	filter/filter_null.c
 	filter/filter_nmea.c
+	filter/filter_lua.c
 	)
 

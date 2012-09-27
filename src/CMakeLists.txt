@@ -4,6 +4,7 @@ include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
 	)
 
+add_subdirectory(lua)
 add_subdirectory(common)
 add_subdirectory(config)
 add_subdirectory(device)
