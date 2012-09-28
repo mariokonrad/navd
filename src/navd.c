@@ -19,6 +19,7 @@
 
 #include <navcom/filter/filter_null.h>
 #include <navcom/filter/filter_nmea.h>
+#include <navcom/filter/filter_lua.h>
 #include <navcom/destination/message_log.h>
 #include <navcom/destination/nmea_serial.h>
 #include <navcom/destination/logbook.h>
@@ -742,6 +743,7 @@ static void register_filters(void) /* {{{ */
 
 	filterlist_append(&desc_filters, &filter_null);
 	filterlist_append(&desc_filters, &filter_nmea);
+	filterlist_append(&desc_filters, &filter_lua);
 
 	for (i = 0; i < desc_filters.num; ++i) {
 		config_register_filter(desc_filters.data[i].name);
