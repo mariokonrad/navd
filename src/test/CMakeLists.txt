@@ -49,11 +49,16 @@ add_executable(testrunner
 	test_property.c
 	test_nmea.c
 	test_config.c
+	test_filter_null.c
+	test_filter_nmea.c
+	test_filter_lua.c
 	)
 target_link_libraries(testrunner
 	cunit
+	navcom
 	config
 	nmea
+	lua
 	common
 	)
 
