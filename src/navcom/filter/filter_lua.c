@@ -1,5 +1,6 @@
 #include <navcom/filter/filter_lua.h>
 #include <common/macros.h>
+#include <common/fileutil.h>
 #include <string.h>
 #include <syslog.h>
 #include <lua/lua.h>
@@ -10,19 +11,44 @@ static int configure(
 		struct filter_context_t * ctx,
 		const struct property_list_t * properties)
 {
+	int rc;
 	lua_State * lua = NULL;
+	const struct property_t * prop = NULL;
 
-	UNUSED_ARG(properties);
+	prop = proplist_find(properties, "script");
+	if (!prop) {
+		syslog(LOG_ERR, "no script defined");
+		return FILTER_FAILURE;
+	}
 
-	/* TODO: property: script */
+	if (!file_is_readable(prop->value)) {
+		syslog(LOG_ERR, "file not readable: '%s'", prop->value);
+		return FILTER_FAILURE;
+	}
 
+	/* initialize lua state */
 	lua = luaL_newstate();
+	if (!lua) {
+		syslog(LOG_ERR, "unable to create lua state");
+		return FILTER_FAILURE;
+	}
 	luaopen_base(lua);
 	luaopen_table(lua);
 	luaopen_string(lua);
 	luaopen_math(lua);
-	ctx->data = lua;
 
+	/* TODO: setup error handling */
+	/* TODO: setup debug interface if property is set */
+
+	/* load/execute script */
+	rc = luaL_dofile(lua, prop->value);
+	if (rc) {
+		syslog(LOG_ERR, "unable to load and execute script: '%s'", prop->value);
+		lua_close(lua);
+		return FILTER_FAILURE;
+	}
+
+	ctx->data = lua;
 	return FILTER_SUCCESS;
 }
 

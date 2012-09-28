@@ -5,6 +5,9 @@
 #include <test_property.h>
 #include <test_nmea.h>
 #include <test_config.h>
+#include <test_filter_null.h>
+#include <test_filter_nmea.h>
+#include <test_filter_lua.h>
 
 int main()
 {
@@ -14,6 +17,9 @@ int main()
 	register_suite_property();
 	register_suite_nmea();
 	register_suite_config();
+	register_suite_filter_null();
+	register_suite_filter_nmea();
+	register_suite_filter_lua();
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
