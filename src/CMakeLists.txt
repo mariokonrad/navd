@@ -22,5 +22,7 @@ target_link_libraries(navd
 	nmea
 	config
 	common
+	lua
+	m
 	)
 
