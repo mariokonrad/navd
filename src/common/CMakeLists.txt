@@ -4,5 +4,6 @@ add_library(common
 	queue.c
 	stringlist.c
 	property.c
+	fileutil.c
 	)
 
