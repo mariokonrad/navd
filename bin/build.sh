@@ -65,6 +65,7 @@ function exec_unittest_gcov()
 	do
 		(cd $(dirname $fn) ; gcov -o . $(echo $(basename $fn) | sed 's/\.gcno/\.o/'))
 	done > build/gcov-summary.log 2>&1
+	awk -f ${SCRIPT_BASE}/cov-summary.awk build/gcov-summary.log
 }
 
 function exec_unittest()
