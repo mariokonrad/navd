@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h>
 #include <syslog.h>
 #include <sys/select.h>
-#include <sys/wait.h>
 #include <signal.h>
 #include <libgen.h>
 

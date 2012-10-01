@@ -580,6 +580,29 @@ static void test_sentence_writing(void)
 	}
 }
 
+static void test_endianess(void)
+{
+	int rc;
+	struct nmea_t a;
+	struct nmea_t b;
+	unsigned int i;
+
+	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
+		memset(&a, 0, sizeof(a));
+		CU_ASSERT_EQUAL(nmea_read(&a, SENTENCES[i]), 0);
+		memcpy(&b, &a, sizeof(b));
+		rc = nmea_hton(&a);
+		CU_ASSERT(rc != -1);
+		CU_ASSERT(rc != -2);
+		if (rc == -3) continue;
+		rc = nmea_ntoh(&a);
+		CU_ASSERT(rc != -1);
+		CU_ASSERT(rc != -2);
+		if (rc == -3) continue;
+		CU_ASSERT_EQUAL(memcmp(&a, &b, sizeof(a)), 0);
+	}
+}
+
 void register_suite_nmea(void)
 {
 	CU_Suite * suite;
@@ -601,5 +624,6 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "writing: nmea lat", test_basic_latitude_writing);
 	CU_add_test(suite, "writing: nmea lon", test_basic_longitude_writing);
 	CU_add_test(suite, "writing: sentence", test_sentence_writing);
+	CU_add_test(suite, "endianess", test_endianess);
 }
 

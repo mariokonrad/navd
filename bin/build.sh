@@ -59,10 +59,19 @@ function exec_doc()
 	doxygen ${BASE}/etc/doxygen.conf
 }
 
+function exec_unittest_gcov()
+{
+	find build/src -name "*.gcno" | while read fn
+	do
+		(cd $(dirname $fn) ; gcov -o . $(echo $(basename $fn) | sed 's/\.gcno/\.o/'))
+	done > build/gcov-summary.log 2>&1
+}
+
 function exec_unittest()
 {
 	if [ -r "${BASE}/build/src/test/testrunner" ] ; then
 		${BASE}/build/src/test/testrunner
+		exec_unittest_gcov
 	else
 		echo "error: unit tests not present"
 	fi
