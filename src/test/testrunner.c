@@ -8,6 +8,8 @@
 #include <test_filter_null.h>
 #include <test_filter_nmea.h>
 #include <test_filter_lua.h>
+#include <test_filterlist.h>
+#include <test_device.h>
 
 int main()
 {
@@ -20,6 +22,8 @@ int main()
 	register_suite_filter_null();
 	register_suite_filter_nmea();
 	register_suite_filter_lua();
+	register_suite_filterlist();
+	register_suite_device();
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();

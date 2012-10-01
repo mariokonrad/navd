@@ -52,12 +52,15 @@ add_executable(testrunner
 	test_filter_null.c
 	test_filter_nmea.c
 	test_filter_lua.c
+	test_filterlist.c
+	test_device.c
 	)
 target_link_libraries(testrunner
 	cunit
 	navcom
 	config
 	nmea
+	devices
 	lua
 	common
 	m
