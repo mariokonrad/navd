@@ -9,7 +9,7 @@ BEGIN {
 }
 
 /File.*/ {
-	if (($2 != "'lexer.l'") && ($2 != "'parser.y'")) {
+	if (!match($2, "'lexer.l|parser.y|^'/usr/.*'")) {
 		file_name = $2;
 		file[file_name] = 0;
 	}
