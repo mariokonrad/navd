@@ -26,9 +26,19 @@ BEGIN {
 }
 
 END {
+	# sort indices using helper array
+	k = 1
 	for (i in file) {
-		printf "%10s %s\n", file[i], i;
+		fn[k] = i
+		k++
 	}
+	n = asort(fn)
+
+	# print coverage sorted in ascending filenames
+	for (i = 1; i <= n; ++i) {
+		printf "%10s %s\n", file[fn[i]], fn[i];
+	}
+
 	print "";
 	printf "%9.2f%% AVERAGE\n", sum / num;
 	print "";
