@@ -54,6 +54,7 @@ add_executable(testrunner
 	test_filter_lua.c
 	test_filterlist.c
 	test_device.c
+	test_property_serial.c
 	)
 target_link_libraries(testrunner
 	cunit

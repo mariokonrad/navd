@@ -39,6 +39,28 @@ static void test_list_append(void)
 	CU_ASSERT_EQUAL(proplist_free(&list), 0);
 }
 
+static void test_list_set(void)
+{
+	struct property_list_t list;
+
+	CU_ASSERT_EQUAL(proplist_init(&list), 0);
+	CU_ASSERT_EQUAL(list.num, 0);
+	CU_ASSERT_EQUAL(proplist_set(&list, "key", "value"), 0);
+	CU_ASSERT_EQUAL(list.num, 1);
+	CU_ASSERT_STRING_EQUAL(proplist_value(&list, "key"), "value");
+	CU_ASSERT_EQUAL(proplist_set(&list, "key", "value1"), 1);
+	CU_ASSERT_EQUAL(list.num, 1);
+	CU_ASSERT_STRING_EQUAL(proplist_value(&list, "key"), "value1");
+	CU_ASSERT_EQUAL(proplist_set(&list, "key1", NULL), 0);
+	CU_ASSERT_EQUAL(list.num, 2);
+	CU_ASSERT_EQUAL(proplist_value(&list, "key1"), NULL);
+	CU_ASSERT_EQUAL(proplist_set(&list, "key1", "value2"), 1);
+	CU_ASSERT_EQUAL(list.num, 2);
+	CU_ASSERT_STRING_EQUAL(proplist_value(&list, "key1"), "value2");
+	CU_ASSERT_EQUAL(proplist_free(&list), 0);
+	CU_ASSERT_EQUAL(list.num, 0);
+}
+
 static void test_list_contains(void)
 {
 	struct property_list_t list;
@@ -86,6 +108,8 @@ static void test_list_find(void)
 	CU_ASSERT_EQUAL(proplist_find(NULL, "key0"), NULL);
 	CU_ASSERT_EQUAL(proplist_find(&list, NULL), NULL);
 	CU_ASSERT_EQUAL(proplist_find(&list, ""), NULL);
+	CU_ASSERT_EQUAL(proplist_set(&list, "key2", "value2"), 0);
+	CU_ASSERT_NOT_EQUAL(proplist_find(&list, "key2"), NULL);
 	CU_ASSERT_NOT_EQUAL(proplist_find(&list, "key0"), NULL);
 	CU_ASSERT_NOT_EQUAL(proplist_find(&list, "key1"), NULL);
 	CU_ASSERT_EQUAL(proplist_free(&list), 0);
@@ -98,6 +122,7 @@ void register_suite_property(void)
 	CU_add_test(suite, "list init", test_list_init);
 	CU_add_test(suite, "list free", test_list_free);
 	CU_add_test(suite, "list append", test_list_append);
+	CU_add_test(suite, "list set", test_list_set);
 	CU_add_test(suite, "list contains", test_list_contains);
 	CU_add_test(suite, "list value", test_list_value);
 	CU_add_test(suite, "list find", test_list_find);

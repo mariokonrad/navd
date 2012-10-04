@@ -14,6 +14,8 @@ int prop_serial_read_device(
 {
 	const struct property_t * prop = NULL;
 
+	if (!serial) return EXIT_FAILURE;
+
 	prop = proplist_find(properties, name);
 	if (!prop) {
 		syslog(LOG_DEBUG, "no device configured, using default '%s'", serial->name);
@@ -34,6 +36,8 @@ int prop_serial_read_baudrate(
 	Baud baud;
 	const struct property_t * prop = NULL;
 	char * endptr = NULL;
+
+	if (!serial) return EXIT_FAILURE;
 
 	prop = proplist_find(properties, name);
 	if (!prop) {
@@ -76,6 +80,8 @@ int prop_serial_read_parity(
 {
 	const struct property_t * prop = NULL;
 
+	if (!serial) return EXIT_FAILURE;
+
 	prop = proplist_find(properties, name);
 	if (!prop) {
 		syslog(LOG_DEBUG, "no parity configured, using default '%d'", serial->parity);
@@ -105,6 +111,8 @@ int prop_serial_read_databits(
 	const struct property_t * prop = NULL;
 	char * endptr = NULL;
 
+	if (!serial) return EXIT_FAILURE;
+
 	prop = proplist_find(properties, name);
 	if (!prop) {
 		syslog(LOG_DEBUG, "no data bits configured, using default '%d'", serial->data_bits);
@@ -122,6 +130,7 @@ int prop_serial_read_databits(
 		case DATA_BIT_8:
 			serial->data_bits = bits;
 			syslog(LOG_DEBUG, "data bits configured, using '%u'", serial->data_bits);
+			break;
 		default:
 			syslog(LOG_ERR, "invalid data bits configured: %u", bits);
 			return EXIT_FAILURE;
@@ -138,6 +147,8 @@ int prop_serial_read_stopbits(
 	StopBits bits;
 	const struct property_t * prop = NULL;
 	char * endptr = NULL;
+
+	if (!serial) return EXIT_FAILURE;
 
 	prop = proplist_find(properties, name);
 	if (!prop) {
@@ -156,6 +167,7 @@ int prop_serial_read_stopbits(
 		case STOP_BIT_2:
 			serial->stop_bits = bits;
 			syslog(LOG_DEBUG, "stop configured, using '%u'", serial->stop_bits);
+			break;
 		default:
 			syslog(LOG_ERR, "invalid stop bits configured: %u", bits);
 			return EXIT_FAILURE;
