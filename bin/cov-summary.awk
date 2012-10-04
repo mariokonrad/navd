@@ -9,7 +9,7 @@ BEGIN {
 }
 
 /File.*/ {
-	if (!match($2, "'lexer.l|parser.y|^'/usr/.*'")) {
+	if (!match($2, "lexer.yy.c|parser.tab.c|'lexer.l|parser.y|^'/usr/.*'")) {
 		file_name = $2;
 		file[file_name] = 0;
 	}
