@@ -11,6 +11,7 @@
 #include <test_filterlist.h>
 #include <test_device.h>
 #include <test_property_serial.h>
+#include <test_fileutil.h>
 
 int main()
 {
@@ -26,6 +27,7 @@ int main()
 	register_suite_filterlist();
 	register_suite_device();
 	register_suite_property_serial();
+	register_suite_fileutil();
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();

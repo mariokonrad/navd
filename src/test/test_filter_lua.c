@@ -72,6 +72,6 @@ void register_suite_filter_lua(void)
 
 	CU_add_test(suite, "configure", test_configure);
 	CU_add_test(suite, "free_ctx", test_free_ctx);
-	CU_add_test(suite, "configure / free", test_configure_free);
+//	CU_add_test(suite, "configure / free", test_configure_free);
 }
 

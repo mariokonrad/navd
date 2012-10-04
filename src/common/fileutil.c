@@ -4,7 +4,6 @@
 
 /**
  * @todo Documentation
- * @todo unit test
  */
 int file_is_readable(const char * path)
 {
@@ -12,7 +11,7 @@ int file_is_readable(const char * path)
 	struct stat s;
 
 	if (!path) return 0;
-	if (strlen(path)) return 0;
+	if (strlen(path) <= 0) return 0;
 
 	rc = stat(path, &s);
 	if (rc < 0) return 0;
@@ -25,7 +24,6 @@ int file_is_readable(const char * path)
 
 /**
  * @todo Documentation
- * @todo unit test
  */
 int file_is_writable(const char * path)
 {
@@ -33,7 +31,7 @@ int file_is_writable(const char * path)
 	struct stat s;
 
 	if (!path) return 0;
-	if (strlen(path)) return 0;
+	if (strlen(path) <= 0) return 0;
 
 	rc = stat(path, &s);
 	if (rc < 0) return 0;
