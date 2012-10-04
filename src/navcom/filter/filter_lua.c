@@ -36,6 +36,12 @@ static int configure(
 	luaopen_table(lua);
 	luaopen_string(lua);
 	luaopen_math(lua);
+	lua_pushinteger(lua, FILTER_SUCCESS);
+	lua_setglobal(lua, "FILTER_SUCCESS");
+	lua_pushinteger(lua, FILTER_FAILURE);
+	lua_setglobal(lua, "FILTER_FAILURE");
+	lua_pushinteger(lua, FILTER_DISCARD);
+	lua_setglobal(lua, "FILTER_DISCARD");
 
 	/* TODO: setup error handling */
 	/* TODO: setup debug interface if property is set */
@@ -79,9 +85,17 @@ static int filter(
 	if (!ctx || !ctx->data) return FILTER_FAILURE;
 	lua = (lua_State *)ctx->data;
 
-	/* TODO */
+	lua_pushlightuserdata(lua, (void*)out);
+	lua_pushlightuserdata(lua, (void*)in);
 
-	return FILTER_DISCARD;
+	lua_getglobal(lua, "filter");
+	if (lua_pcall(lua, 2, 1, 0)) {
+		/* error ocurred */
+		/* TODO: write error to syslog */
+		return FILTER_FAILURE;
+	}
+
+	return luaL_checkinteger(lua, -1);
 }
 
 const struct filter_desc_t filter_lua = {

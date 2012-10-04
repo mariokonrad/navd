@@ -8,6 +8,7 @@
 #include <sys/select.h>
 #include <signal.h>
 #include <libgen.h>
+#include <unistd.h>
 
 #include <common/macros.h>
 #include <config/config.h>
