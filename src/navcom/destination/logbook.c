@@ -8,10 +8,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdbool.h>
 
 #include <nmea/nmea.h>
 
-static int initialized = 0;
+static bool initialized = false;
 
 static struct logbook_config_t {
 	uint32_t save_timer_id;
@@ -65,7 +66,7 @@ static void process_nmea(const struct nmea_t * nmea)
 			set_current_nmea_rmc(&nmea->sentence.rmc);
 			break;
 		default:
-			/* NMEA type not supported by now or interesting at all */
+			/* NMEA type not supported by now or not interesting at all */
 			break;
 	}
 }
@@ -103,7 +104,7 @@ static void write_log(void)
 
 	/* prepare time */
 	rc = snprintf(ptr, buf_len, "%02u-%02u-%02u;",
-		current.time.h, current.time.m, current.date.d);
+		current.time.h, current.time.m, current.time.s);
 	if (rc < 0) {
 		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
 		return;
@@ -173,7 +174,7 @@ static int read_save_timer(const struct property_list_t * properties)
 	prop = proplist_find(properties, "save_timer_id");
 	if (prop) {
 		configuration.save_timer_id = strtoul(prop->value, &endptr, 0);
-		if (*endptr != '0') {
+		if (*endptr != '\0') {
 			syslog(LOG_ERR, "invalid save_timer_id: '%s'", prop->key);
 			return EXIT_FAILURE;
 		}
@@ -216,6 +217,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	if (read_save_timer(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_filename(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 
+	initialized = true;
 	return EXIT_SUCCESS;
 }
 

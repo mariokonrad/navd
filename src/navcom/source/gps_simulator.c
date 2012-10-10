@@ -11,16 +11,28 @@
 
 static struct message_t sim_message;
 
-static struct {
+struct option_t {
 	uint32_t period; /* seconds */
 	uint32_t sog; /* tenth of degrees */
 	uint32_t heading; /* tenth of degrees */
 	uint32_t mag; /* tenth of degrees */
-} option = {
+	struct nmea_date_t date;
+	struct nmea_time_t time;
+	struct nmea_angle_t lat;
+	struct nmea_angle_t lon;
+	uint32_t simulated; /* simulation or not */
+};
+
+static struct option_t option = {
 	.period = 1,
 	.sog = 0,
 	.heading = 0,
 	.mag = 0,
+	.date = { 2000, 1, 1 },
+	.time = { 0, 0, 0, 0 },
+	.lat = { 0, 0, { 0, 0 } },
+	.lon = { 0, 0, { 0, 0 } },
+	.simulated = 1,
 };
 
 static void init_message(void)
@@ -30,32 +42,21 @@ static void init_message(void)
 	sim_message.type = MSG_NMEA;
 	sim_message.data.nmea.type = NMEA_RMC;
 	rmc = &sim_message.data.nmea.sentence.rmc;
-	rmc->time.h = 20;
-	rmc->time.m = 15;
-	rmc->time.s = 30;
-	rmc->time.ms = 0;
+	rmc->time = option.time;
 	rmc->status = NMEA_STATUS_OK;
-	rmc->lat.d = 47;
-	rmc->lat.m = 8;
-	rmc->lat.s.i = 0;
-	rmc->lat.s.d = 0;
+	rmc->lat = option.lat;
 	rmc->lat_dir = NMEA_NORTH;
-	rmc->lon.d = 3;
-	rmc->lon.m = 20;
-	rmc->lon.s.i = 0;
-	rmc->lon.s.d = 0;
+	rmc->lon = option.lon;
 	rmc->lon_dir = NMEA_EAST;
 	rmc->sog.i = option.sog / 10;
 	rmc->sog.d = option.sog % 10;
 	rmc->head.i = option.heading / 10;
 	rmc->head.d = option.heading % 10;
-	rmc->date.y = 0;
-	rmc->date.m = 1;
-	rmc->date.d = 1;
+	rmc->date = option.date;
 	rmc->m.i = option.mag / 10;
 	rmc->m.d = option.mag % 10;
 	rmc->m_dir = NMEA_WEST;
-	rmc->sig_integrity = NMEA_SIG_INT_SIMULATED;
+	rmc->sig_integrity = option.simulated ? NMEA_SIG_INT_SIMULATED : NMEA_SIG_INT_AUTONOMOUS;
 }
 
 static int read_prop_uint32(const struct property_list_t * properties, const char * key, uint32_t * value)
@@ -78,12 +79,75 @@ static int read_prop_uint32(const struct property_list_t * properties, const cha
 
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
+	const struct property_t * prop = NULL;
+	uint32_t min_dec;
+	int rc;
+
 	UNUSED_ARG(config);
 
 	if (read_prop_uint32(properties, "period",  &option.period)  != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_prop_uint32(properties, "sog",     &option.sog)     != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_prop_uint32(properties, "heading", &option.heading) != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_prop_uint32(properties, "mag",     &option.mag)     != EXIT_SUCCESS) return EXIT_FAILURE;
+
+	prop = proplist_find(properties, "date");
+	if (prop) {
+		rc = sscanf(prop->value, "%04u-%02u-%02u", &option.date.y, &option.date.m, &option.date.d);
+		if (rc != 3) {
+			syslog(LOG_WARNING, "invalid date '%s', using default", prop->value);
+			option.date.y = 2000;
+			option.date.m = 1;
+			option.date.d = 1;
+		}
+	}
+
+	prop = proplist_find(properties, "time");
+	if (prop) {
+		rc = sscanf(prop->value, "%02u-%02u-%02u", &option.time.h, &option.time.m, &option.time.s);
+		if (rc != 3) {
+			syslog(LOG_WARNING, "invalid time '%s', using default", prop->value);
+			option.time.h = 0;
+			option.time.m = 0;
+			option.time.s = 0;
+		}
+		option.time.ms = 0;
+	}
+
+	prop = proplist_find(properties, "lat");
+	if (prop) {
+		rc = sscanf(prop->value, "%02u-%02u,%u", &option.lat.d, &option.lat.m, &min_dec);
+		if (rc != 3) {
+			syslog(LOG_INFO, "invalid latitude: '%s', using default", prop->value);
+			option.lat.d = 0;
+			option.lat.m = 0;
+			option.lat.s.i = 0;
+			option.lat.s.d = 0;
+		} else {
+			option.lat.s.i = (min_dec * 60) / 100;
+			option.lat.s.d = 0;
+		}
+	}
+
+	prop = proplist_find(properties, "lon");
+	if (prop) {
+		rc = sscanf(prop->value, "%03u-%02u,%u", &option.lon.d, &option.lon.m, &min_dec);
+		if (rc != 3) {
+			syslog(LOG_INFO, "invalid latitude: '%s', using default", prop->value);
+			option.lon.d = 0;
+			option.lon.m = 0;
+			option.lon.s.i = 0;
+			option.lon.s.d = 0;
+		} else {
+			option.lon.s.i = (min_dec * 60) / 100;
+			option.lon.s.d = 0;
+		}
+	}
+
+	/* turn off simulation, ATTENTION: this is for experts use only */
+	prop = proplist_find(properties, "__not_simulated__");
+	if (prop) {
+		option.simulated = 0;
+	}
 
 	return EXIT_SUCCESS;
 }
@@ -96,11 +160,6 @@ static int proc(const struct proc_config_t * config)
 	struct timespec tm;
 
 	char buf[NMEA_MAX_SENTENCE];
-
-	/* TODO: properties: position latitude */
-	/* TODO: properties: position longitude */
-	/* TODO: properties: time */
-	/* TODO: properties: date */
 
 	init_message();
 
