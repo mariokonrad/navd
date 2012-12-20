@@ -72,10 +72,9 @@ int proplist_set(struct property_list_t * list, const char * key, const char * v
 
 int proplist_free(struct property_list_t * list)
 {
-	size_t i;
-
 	if (list == NULL) return -1;
 	if (list->data) {
+		size_t i;
 		for (i = 0; i < list->num; ++i) {
 			struct property_t * p = &list->data[i];
 			if (p->key) free(p->key);

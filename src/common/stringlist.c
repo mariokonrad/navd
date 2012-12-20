@@ -23,10 +23,9 @@ int strlist_append(struct string_list_t * list, const char * s)
 
 int strlist_free(struct string_list_t * list)
 {
-	size_t i;
-
 	if (list == NULL) return -1;
 	if (list->data) {
+		size_t i;
 		for (i = 0; i < list->num; ++i) {
 			if (list->data[i]) free(list->data[i]);
 		}

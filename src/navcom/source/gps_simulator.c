@@ -115,7 +115,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	prop = proplist_find(properties, "lat");
 	if (prop) {
-		rc = sscanf(prop->value, "%02u-%02u,%u", &option.lat.d, &option.lat.m, &min_dec);
+		rc = sscanf(prop->value, "%02u-%02u,%3u", &option.lat.d, &option.lat.m, &min_dec);
 		if (rc != 3) {
 			syslog(LOG_INFO, "invalid latitude: '%s', using default", prop->value);
 			option.lat.d = 0;
@@ -130,7 +130,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	prop = proplist_find(properties, "lon");
 	if (prop) {
-		rc = sscanf(prop->value, "%03u-%02u,%u", &option.lon.d, &option.lon.m, &min_dec);
+		rc = sscanf(prop->value, "%03u-%02u,%3u", &option.lon.d, &option.lon.m, &min_dec);
 		if (rc != 3) {
 			syslog(LOG_INFO, "invalid latitude: '%s', using default", prop->value);
 			option.lon.d = 0;
