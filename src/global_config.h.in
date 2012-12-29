@@ -1,0 +1,6 @@
+/* global configuration file, configured by cmake */
+
+#cmakedefine ENABLE_SOURCE_GPSSIMULATOR
+#cmakedefine ENABLE_SOURCE_GPSD
+#cmakedefine ENABLE_FILTER_LUA
+

@@ -1,3 +1,4 @@
+#include <global_config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,13 +17,19 @@
 #include <navcom/proc_list.h>
 #include <navcom/filter_list.h>
 
+#ifdef ENABLE_FILTER_LUA
+	#include <navcom/filter/filter_lua.h>
+#endif
+
+#ifdef ENABLE_SOURCE_GPSSIMULATOR
+	#include <navcom/source/gps_simulator.h>
+#endif
+
 #include <navcom/filter/filter_null.h>
 #include <navcom/filter/filter_nmea.h>
-#include <navcom/filter/filter_lua.h>
 #include <navcom/destination/message_log.h>
 #include <navcom/destination/nmea_serial.h>
 #include <navcom/destination/logbook.h>
-#include <navcom/source/gps_simulator.h>
 #include <navcom/source/gps_serial.h>
 #include <navcom/source/timer.h>
 
@@ -711,8 +718,11 @@ static void register_sources(void) /* {{{ */
 	pdlist_init(&desc_sources);
 
 	pdlist_append(&desc_sources, &gps_serial);
-	pdlist_append(&desc_sources, &gps_simulator);
 	pdlist_append(&desc_sources, &timer);
+
+#ifdef ENABLE_SOURCE_GPSSIMULATOR
+	pdlist_append(&desc_sources, &gps_simulator);
+#endif
 
 	for (i = 0; i < desc_sources.num; ++i) {
 		config_register_source(desc_sources.data[i].name);
@@ -742,7 +752,10 @@ static void register_filters(void) /* {{{ */
 
 	filterlist_append(&desc_filters, &filter_null);
 	filterlist_append(&desc_filters, &filter_nmea);
+
+#ifdef ENABLE_FILTER_LUA
 	filterlist_append(&desc_filters, &filter_lua);
+#endif
 
 	for (i = 0; i < desc_filters.num; ++i) {
 		config_register_filter(desc_filters.data[i].name);

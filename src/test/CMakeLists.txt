@@ -43,20 +43,29 @@ include_directories(
 	"cunit/include"
 	"."
 	)
-add_executable(testrunner
-	testrunner.c
+
+set(TEST_SOURCES
 	test_strlist.c
 	test_property.c
 	test_nmea.c
 	test_config.c
 	test_filter_null.c
 	test_filter_nmea.c
-	test_filter_lua.c
 	test_filterlist.c
 	test_device.c
 	test_property_serial.c
 	test_fileutil.c
 	)
+
+if (ENABLE_FILTER_LUA)
+	set(TEST_SOURCES ${TEST_SOURCES} test_filter_lua.c)
+endif()
+
+add_executable(testrunner
+	testrunner.c
+	${TEST_SOURCES}
+	)
+
 target_link_libraries(testrunner
 	cunit
 	navcom
