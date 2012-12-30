@@ -11,7 +11,9 @@ function usage()
 	echo "Commands:"
 	echo "    clean          : cleans up the build"
 	echo "    build          : builds the software"
-	echo "    tags           : builds the tags file"
+	echo "    index          : builds source index (tags, scope)"
+	echo "    tags           : builds source tags"
+	echo "    scope          : builds source scope"
 	echo "    doc            : creates the documentation"
 	echo "    unittest       : executes the unit tests"
 	echo "    test           : executes the tests"
@@ -33,19 +35,30 @@ function exec_clean()
 {
 	rm -fr ${BASE}/build
 	rm -f ${BASE}/tags
+	rm -f ${BASE}/cscope.files
+	rm -f ${BASE}/cscope.out
 }
 
 function exec_tags()
 {
-	exec_prepare
 	cd ${BASE}
 	ctags --recurse -f tags src/*
+}
+
+function exec_scope()
+{
+	cd ${BASE}
+	rm -f cscope.out
+	echo "src/navd.c" > cscope.files
+	for dirname in src/common src/config src/device src/navcom src/nmea ; do
+		find ${dirname} -type f -name "*.c" -o -name "*.h" >> cscope.files
+	done
+	cscope -b -i cscope.files
 }
 
 function exec_build()
 {
 	exec_prepare
-	exec_tags
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
 		CMAKE_BUILD_TYPE=Debug cmake ..
@@ -56,7 +69,6 @@ function exec_build()
 function exec_doc()
 {
 	exec_prepare
-	exec_tags
 	doxygen ${BASE}/etc/doxygen.conf
 }
 
@@ -147,8 +159,15 @@ case $1 in
 	build)
 		exec_build
 		;;
+	index)
+		exec_tags
+		exec_scope
+		;;
 	tags)
 		exec_tags
+		;;
+	scope)
+		exec_scope
 		;;
 	doc)
 		exec_doc
