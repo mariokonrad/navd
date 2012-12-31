@@ -2,6 +2,7 @@
 #include <navcom/message.h>
 #include <common/macros.h>
 #include <sys/select.h>
+#include <sys/time.h>
 #include <syslog.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -19,9 +20,11 @@ static struct logbook_config_t {
 	int save_timer_defined;
 	char filename[PATH_MAX+1];
 	int filename_defined;
+	long timeout_for_writing;
 } configuration;
 
 static struct information_t {
+	struct timeval last_update;
 	struct nmea_angle_t lat;
 	char lat_dir;
 	struct nmea_angle_t lon;
@@ -32,21 +35,62 @@ static struct information_t {
 	struct nmea_fix_t speed_over_ground;
 } current;
 
-static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
+static long elapsed_ms_time_since(const struct timeval * tm)
 {
-	switch (rmc->sig_integrity) {
+	long dt = 0;
+	struct timeval t;
+	int rc;
+
+	if (tm == NULL) return -1;
+	if ((tm->tv_sec == 0) && (tm->tv_usec == 0)) return 0;
+
+	rc = gettimeofday(&t, NULL);
+	if (rc < 0) return -1;
+	if (t.tv_sec < tm->tv_sec) return -1;
+
+	dt = (t.tv_sec - tm->tv_sec) * 1000;
+	if (t.tv_usec < tm->tv_usec) {
+		dt -= 1000;
+		dt += (tm->tv_usec - t.tv_usec);
+	} else {
+		dt += (t.tv_usec - tm->tv_usec) / 1000;
+	}
+	return dt;
+}
+
+static bool accept_signal_integrity(char sig_integrity)
+{
+	switch (sig_integrity) {
 		case NMEA_SIG_INT_AUTONOMOUS:
 		case NMEA_SIG_INT_DIFFERENTIAL:
 		case NMEA_SIG_INT_ESTIMATED:
 		case NMEA_SIG_INT_MANUALINPUT:
 			/* those are ok */
-			break;
+			return true;
 		case NMEA_SIG_INT_SIMULATED:
 		case NMEA_SIG_INT_DATANOTVALID:
 			/* not accepting these */
-			return;
+			break;
 	}
+	return false;
+}
 
+static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
+{
+	int rc;
+	struct timeval last_update;
+
+	if (!accept_signal_integrity(rmc->sig_integrity)) return;
+
+	/* timestamp of last update */
+	rc = gettimeofday(&last_update, NULL);
+	if (rc < 0) {
+		syslog(LOG_ERR, "error while reading timestamp, errno=%d", errno);
+		return;
+	}
+	current.last_update = last_update;
+
+	/* position information */
 	current.lat = rmc->lat;
 	current.lat_dir = rmc->lat_dir;
 	current.lon = rmc->lon;
@@ -59,8 +103,6 @@ static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
 
 static void process_nmea(const struct nmea_t * nmea)
 {
-	/* TODO: does the data have to be filtered? sanity check of the current position? */
-
 	switch (nmea->type) {
 		case NMEA_RMC:
 			set_current_nmea_rmc(&nmea->sentence.rmc);
@@ -83,8 +125,19 @@ static void write_log(void)
 	int len;
 	int buf_len;
 	char * ptr;
+	long dt;
 
-	/* TODO: check return of snprintf, right now it is assumed the buffer to be large enough */
+	/* check for age of last update, if to old, writing log makes no sense */
+	dt = elapsed_ms_time_since(&current.last_update);
+	if (dt < 0) {
+		syslog(LOG_WARNING, "not writing log, cannot calculate update time");
+		return;
+	} else if (dt > configuration.timeout_for_writing) {
+		syslog(LOG_WARNING, "not writing log, last position update %ld msec ago", dt);
+		return;
+	}
+
+	/* TODO: check for changes in position, if none, there is no need to write a log */
 
 	buf_len = (int)sizeof(buf);
 	ptr = buf;
@@ -100,6 +153,9 @@ static void write_log(void)
 	} else if (rc < buf_len) {
 		ptr += rc;
 		buf_len -= rc;
+	} else {
+		syslog(LOG_ERR, "error while evaluating date format string, buffer not large enough: %lu at line %d", sizeof(buf), __LINE__);
+		return;
 	}
 
 	/* prepare time */
@@ -111,6 +167,9 @@ static void write_log(void)
 	} else if (rc < buf_len) {
 		ptr += rc;
 		buf_len -= rc;
+	} else {
+		syslog(LOG_ERR, "error while evaluating date format string, buffer not large enough: %lu at line %d", sizeof(buf), __LINE__);
+		return;
 	}
 
 	/* prepare latitude */
@@ -133,6 +192,9 @@ static void write_log(void)
 	} else if (rc < buf_len) {
 		ptr += rc;
 		buf_len -= rc;
+	} else {
+		syslog(LOG_ERR, "error while evaluating date format string, buffer not large enough: %lu at line %d", sizeof(buf), __LINE__);
+		return;
 	}
 
 	/* TODO: prepare heading */
@@ -213,9 +275,12 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	UNUSED_ARG(config);
 
 	memset(&configuration, 0, sizeof(configuration));
+	memset(&current, 0, sizeof(current));
 
 	if (read_save_timer(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_filename(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+
+	configuration.timeout_for_writing = 3000; /* TODO: timeout configurable */
 
 	initialized = true;
 	return EXIT_SUCCESS;

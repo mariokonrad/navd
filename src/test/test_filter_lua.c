@@ -4,6 +4,7 @@
 #include <common/macros.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdlib.h>
 
 static const struct filter_desc_t * filter = &filter_lua;
 static char tmpfilename[PATH_MAX];

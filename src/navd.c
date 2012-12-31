@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <syslog.h>
 #include <sys/select.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <libgen.h>
 #include <unistd.h>
