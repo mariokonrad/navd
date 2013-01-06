@@ -29,7 +29,7 @@ static struct information_t {
 	/* bookkeeping information */
 	struct timeval last_update;
 
-	/* NMEA information */
+	/* navigation information */
 	struct nmea_angle_t lat;
 	char lat_dir;
 	struct nmea_angle_t lon;
@@ -38,8 +38,15 @@ static struct information_t {
 	struct nmea_date_t date;
 	struct nmea_fix_t course_over_ground;
 	struct nmea_fix_t speed_over_ground;
+	struct nmea_fix_t course_magnetic; /* TODO: not used yet */
+	struct nmea_fix_t speed_through_water; /* TODO: not used yet */
+	struct nmea_fix_t wind_speed; /* TODO: not used yet */
+	struct nmea_fix_t wind_direction; /* TODO: not used yet */
 } current;
 
+/**
+ * Returns true if the specified time is not zero.
+ */
 static bool time_valid(const struct timeval * t)
 {
 	return true
@@ -150,28 +157,64 @@ static void process_nmea(const struct nmea_t * nmea)
 	}
 }
 
-static int prepare_date(char * ptr, int buf_len)
+static int prepare_date(char * ptr, int len)
 {
-	return snprintf(ptr, buf_len, "%04u-%02u-%02u;",
+	return snprintf(ptr, len, "%04u-%02u-%02u;",
 		current.date.y, current.date.m, current.date.d);
 }
 
-static int prepare_time(char * ptr, int buf_len)
+static int prepare_time(char * ptr, int len)
 {
-	return snprintf(ptr, buf_len, "%02u-%02u-%02u;",
+	return snprintf(ptr, len, "%02u-%02u-%02u;",
 		current.time.h, current.time.m, current.time.s);
 }
 
-static int prepare_latitude(char * ptr, int buf_len)
+static int prepare_latitude(char * ptr, int len)
 {
-	return snprintf(ptr, buf_len, "%02u-%02u,%1u%c;",
+	return snprintf(ptr, len, "%02u-%02u,%1u%c;",
 		current.lat.d, current.lat.m, (current.lat.s.i * 100) / 60, current.lat_dir);
 }
 
-static int prepare_longitude(char * ptr, int buf_len)
+static int prepare_longitude(char * ptr, int len)
 {
-	return snprintf(ptr, buf_len, "%03u-%02u,%1u%c;",
+	return snprintf(ptr, len, "%03u-%02u,%1u%c;",
 		current.lon.d, current.lon.m, (current.lon.s.i * 100) / 60, current.lon_dir);
+}
+
+static int prepare_course_over_ground(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%u,%02u;",
+		current.course_over_ground.i, current.course_over_ground.d);
+}
+
+static int prepare_speed_over_ground(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%u,%02u;",
+		current.speed_over_ground.i, current.speed_over_ground.d);
+}
+
+static int prepare_course_magnetic(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%u,%02u;",
+		current.course_magnetic.i, current.course_magnetic.d);
+}
+
+static int prepare_speed_through_water(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%u,%02u;",
+		current.speed_through_water.i, current.speed_through_water.d);
+}
+
+static int prepare_wind_speed(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%u,%02u;",
+		current.wind_speed.i, current.wind_speed.d);
+}
+
+static int prepare_wind_direction(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%u;",
+		current.wind_direction.i);
 }
 
 /**
@@ -188,12 +231,13 @@ static void write_log(void)
 		prepare_time,
 		prepare_latitude,
 		prepare_longitude,
-		/* TODO: prepare course over ground */
-		/* TODO: prepare speed over ground */
-		/* TODO: prepare course through water */
-		/* TODO: prepare speed through water */
-		/* TODO: prepare wind speed (average, min/max in last period) */
-		/* TODO: prepare wind direction */
+		prepare_course_over_ground,
+		prepare_speed_over_ground,
+		prepare_course_magnetic,
+		prepare_speed_through_water,
+		prepare_wind_speed,
+		prepare_wind_direction,
+		/* TODO: barometer */
 	};
 
 	FILE * file = NULL;
