@@ -61,7 +61,8 @@ function exec_build()
 	exec_prepare
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
-		CMAKE_BUILD_TYPE=Debug cmake ..
+#		cmake .. -DCMAKE_BUILD_TYPE=Debug
+		cmake .. -DCMAKE_BUILD_TYPE=Release
 	fi
 	make
 }

@@ -9,7 +9,7 @@ sim : gps_sim {
 	heading=105
 	__not_simulated__
 };
-logtimer : timer { id=1 period=1000 };
-log : logbook { save_timer_id=1 filename='' };
+logtimer : timer { id=1 period=5000 };
+log : logbook { save_timer_id=1 filename='' write_timeout=3 };
 sim -> log;
 logtimer -> log;

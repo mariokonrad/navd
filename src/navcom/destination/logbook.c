@@ -20,41 +20,74 @@ static struct logbook_config_t {
 	int save_timer_defined;
 	char filename[PATH_MAX+1];
 	int filename_defined;
+
+	/* timeout for the last reported position, if the position is older, no log will be written */
 	long timeout_for_writing;
 } configuration;
 
 static struct information_t {
+	/* bookkeeping information */
 	struct timeval last_update;
+
+	/* NMEA information */
 	struct nmea_angle_t lat;
 	char lat_dir;
 	struct nmea_angle_t lon;
 	char lon_dir;
 	struct nmea_time_t time;
 	struct nmea_date_t date;
-	struct nmea_fix_t heading;
+	struct nmea_fix_t course_over_ground;
 	struct nmea_fix_t speed_over_ground;
 } current;
 
-static long elapsed_ms_time_since(const struct timeval * tm)
+static bool time_valid(const struct timeval * t)
+{
+	return true
+		&& (t != NULL)
+		&& (t->tv_sec > 0)
+		&& (t->tv_usec > 0)
+		;
+}
+
+static long diff_msec(const struct timeval * ts, const struct timeval * te)
 {
 	long dt = 0;
-	struct timeval t;
+
+	if (ts == NULL) return -1;
+	if (te == NULL) return -1;
+
+	dt = (te->tv_sec - ts->tv_sec) * 1000;
+	dt += (te->tv_usec - ts->tv_usec) / 1000;
+
+	return (dt >= 0) ? dt : -2;
+}
+
+/**
+ * Returns the elapsed milliseconds since the last update.
+ *
+ * @param[in] tm Time of the last update.
+ * @retval    -1 Parameter failure.
+ * @retval    -2 Provided timestamps not valid.
+ * @retval other Elapsed time in milliseconds since specified timestamp.
+ */
+static long elapsed_ms_time(const struct timeval * tm)
+{
+	long dt = 0;
 	int rc;
+	struct timeval t;
 
 	if (tm == NULL) return -1;
-	if ((tm->tv_sec == 0) && (tm->tv_usec == 0)) return 0;
+	if (!time_valid(tm)) return -1;
 
 	rc = gettimeofday(&t, NULL);
-	if (rc < 0) return -1;
-	if (t.tv_sec < tm->tv_sec) return -1;
-
-	dt = (t.tv_sec - tm->tv_sec) * 1000;
-	if (t.tv_usec < tm->tv_usec) {
-		dt -= 1000;
-		dt += (tm->tv_usec - t.tv_usec);
-	} else {
-		dt += (t.tv_usec - tm->tv_usec) / 1000;
+	if (rc < 0) {
+		syslog(LOG_ERR, "error while reading timestamp, errno=%d", errno);
+		return -1;
 	}
+
+	dt = diff_msec(tm, &t);
+	if (dt < 0) return -2;
+
 	return dt;
 }
 
@@ -75,6 +108,10 @@ static bool accept_signal_integrity(char sig_integrity)
 	return false;
 }
 
+/**
+ * Sets the current position (RMC sentence) if the signal integrity is
+ * accepted and the last update is not too long since.
+ */
 static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
 {
 	int rc;
@@ -97,7 +134,7 @@ static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
 	current.lon_dir = rmc->lon_dir;
 	current.time = rmc->time;
 	current.date = rmc->date;
-	current.heading = rmc->head;
+	current.course_over_ground = rmc->head;
 	current.speed_over_ground = rmc->sog;
 }
 
@@ -113,12 +150,52 @@ static void process_nmea(const struct nmea_t * nmea)
 	}
 }
 
+static int prepare_date(char * ptr, int buf_len)
+{
+	return snprintf(ptr, buf_len, "%04u-%02u-%02u;",
+		current.date.y, current.date.m, current.date.d);
+}
+
+static int prepare_time(char * ptr, int buf_len)
+{
+	return snprintf(ptr, buf_len, "%02u-%02u-%02u;",
+		current.time.h, current.time.m, current.time.s);
+}
+
+static int prepare_latitude(char * ptr, int buf_len)
+{
+	return snprintf(ptr, buf_len, "%02u-%02u,%1u%c;",
+		current.lat.d, current.lat.m, (current.lat.s.i * 100) / 60, current.lat_dir);
+}
+
+static int prepare_longitude(char * ptr, int buf_len)
+{
+	return snprintf(ptr, buf_len, "%03u-%02u,%1u%c;",
+		current.lon.d, current.lon.m, (current.lon.s.i * 100) / 60, current.lon_dir);
+}
+
 /**
  * Write the log entry to either syslog or log file.
  * All data is separated by semi colons (aka CSV format).
  */
 static void write_log(void)
 {
+	typedef int (*prepare_func_t)(char *, int);
+
+	static const prepare_func_t PREPARE[] =
+	{
+		prepare_date,
+		prepare_time,
+		prepare_latitude,
+		prepare_longitude,
+		/* TODO: prepare course over ground */
+		/* TODO: prepare speed over ground */
+		/* TODO: prepare course through water */
+		/* TODO: prepare speed through water */
+		/* TODO: prepare wind speed (average, min/max in last period) */
+		/* TODO: prepare wind direction */
+	};
+
 	FILE * file = NULL;
 	char buf[1024];
 	int rc;
@@ -126,9 +203,12 @@ static void write_log(void)
 	int buf_len;
 	char * ptr;
 	long dt;
+	size_t i;
+
+	/* TODO: honor minimum time of logging period of n minutes, no matter how the timer is configured, this timeout should be configurable */
 
 	/* check for age of last update, if to old, writing log makes no sense */
-	dt = elapsed_ms_time_since(&current.last_update);
+	dt = elapsed_ms_time(&current.last_update);
 	if (dt < 0) {
 		syslog(LOG_WARNING, "not writing log, cannot calculate update time");
 		return;
@@ -144,67 +224,26 @@ static void write_log(void)
 
 	memset(buf, 0, sizeof(buf));
 
-	/* prepare date */
-	rc = snprintf(ptr, buf_len, "%04u-%02u-%02u;",
-		current.date.y, current.date.m, current.date.d);
-	if (rc < 0) {
-		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
-		return;
-	} else if (rc < buf_len) {
-		ptr += rc;
-		buf_len -= rc;
-	} else {
-		syslog(LOG_ERR, "error while evaluating date format string, buffer not large enough: %lu at line %d", sizeof(buf), __LINE__);
-		return;
-	}
+	/* prepare log entry */
 
-	/* prepare time */
-	rc = snprintf(ptr, buf_len, "%02u-%02u-%02u;",
-		current.time.h, current.time.m, current.time.s);
-	if (rc < 0) {
-		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
-		return;
-	} else if (rc < buf_len) {
-		ptr += rc;
-		buf_len -= rc;
-	} else {
-		syslog(LOG_ERR, "error while evaluating date format string, buffer not large enough: %lu at line %d", sizeof(buf), __LINE__);
-		return;
+	for (i = 0; i < sizeof(PREPARE) / sizeof(PREPARE[0]); ++i) {
+		rc = PREPARE[i](ptr, buf_len);
+		if (rc < 0) {
+			syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
+			return;
+		} else if (rc < buf_len) {
+			ptr += rc;
+			buf_len -= rc;
+		} else {
+			syslog(LOG_ERR, "error while evaluating date format string, buffer not large enough: %lu at line %d", sizeof(buf), __LINE__);
+			return;
+		}
 	}
-
-	/* prepare latitude */
-	rc = snprintf(ptr, buf_len, "%02u-%02u,%1u%c;",
-		current.lat.d, current.lat.m, (current.lat.s.i * 100) / 60, current.lat_dir);
-	if (rc < 0) {
-		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
-		return;
-	} else if (rc < buf_len) {
-		ptr += rc;
-		buf_len -= rc;
-	}
-
-	/* prepare longitude */
-	rc = snprintf(ptr, buf_len, "%03u-%02u,%1u%c;",
-		current.lon.d, current.lon.m, (current.lon.s.i * 100) / 60, current.lon_dir);
-	if (rc < 0) {
-		syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
-		return;
-	} else if (rc < buf_len) {
-		ptr += rc;
-		buf_len -= rc;
-	} else {
-		syslog(LOG_ERR, "error while evaluating date format string, buffer not large enough: %lu at line %d", sizeof(buf), __LINE__);
-		return;
-	}
-
-	/* TODO: prepare heading */
-	/* TODO: prepare speed over ground */
-	/* TODO: prepare wind speed (average, min/max in last period) */
-	/* TODO: prepare wind direction */
 
 	len = (int)strlen(buf);
 
 	/* write entry to syslog or file */
+
 	if (configuration.filename_defined) {
 		file = fopen(configuration.filename, "wt+");
 		if (!file) {
@@ -270,6 +309,29 @@ static int read_filename(const struct property_list_t * properties)
 	return EXIT_SUCCESS;
 }
 
+static int read_timeout(const struct property_list_t * properties)
+{
+	const struct property_t * prop = NULL;
+	char * endptr = NULL;
+
+	prop = proplist_find(properties, "write_timeout");
+	configuration.timeout_for_writing = 5; /* default value */
+	if (prop != NULL) {
+		long tmp = strtol(prop->value, &endptr, 0);
+		if (*endptr != '\0') {
+			syslog(LOG_ERR, "invalid value in timeout: '%s'", prop->value);
+			return EXIT_FAILURE;
+		}
+		if (tmp <= 0) {
+			syslog(LOG_ERR, "invalid value for timeout: %ld, must be greater than zero", tmp);
+			return EXIT_FAILURE;
+		}
+		configuration.timeout_for_writing = tmp;
+	}
+	configuration.timeout_for_writing *= 1000; /* unit: seconds */
+	return EXIT_SUCCESS;
+}
+
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	UNUSED_ARG(config);
@@ -279,8 +341,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	if (read_save_timer(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_filename(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
-
-	configuration.timeout_for_writing = 3000; /* TODO: timeout configurable */
+	if (read_timeout(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 
 	initialized = true;
 	return EXIT_SUCCESS;
