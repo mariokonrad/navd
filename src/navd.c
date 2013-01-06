@@ -450,7 +450,14 @@ static void config_dump_properties(FILE * file, const struct property_list_t con
 	fprintf(file, "{");
 	for (i = 0; i < properties->num; ++i) {
 		const struct property_t const * prop = &properties->data[i];
-		fprintf(file, " %s = %s", prop->key, prop->value);
+		if (prop->value) {
+			fprintf(file, " %s : %s", prop->key, prop->value);
+		} else {
+			fprintf(file, " %s", prop->key);
+		}
+		if (i < properties->num - 1) {
+			fprintf(file, ", ");
+		}
 	}
 	fprintf(file, " }");
 } /* }}} */
