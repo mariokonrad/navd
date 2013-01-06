@@ -10,7 +10,7 @@ function usage()
 	echo ""
 	echo "Commands:"
 	echo "    clean          : cleans up the build"
-	echo "    build          : builds the software"
+	echo "    build [type]   : builds the software, type: Debug, Release (default: Debug)"
 	echo "    index          : builds source index (tags, scope)"
 	echo "    tags           : builds source tags"
 	echo "    scope          : builds source scope"
@@ -61,8 +61,7 @@ function exec_build()
 	exec_prepare
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
-#		cmake .. -DCMAKE_BUILD_TYPE=Debug
-		cmake .. -DCMAKE_BUILD_TYPE=Release
+		cmake .. -DCMAKE_BUILD_TYPE=$1
 	fi
 	make
 }
@@ -145,7 +144,8 @@ function exec_cppcheck()
 	# unfortunately cppcheck cannot handle paths like '${BASE}/src' therefore
 	# cppchecks must be executed from directory ${BASE}
 
-	cppcheck -v -f --enable=all -i src/test/cunit -I src src
+	cd ${BASE}
+	cppcheck -v -f --enable=all -i src/test/cunit -i src/lua/src -I src/lua/include/lua -I src src
 }
 
 if [ $# == 0 ] ; then
@@ -158,7 +158,21 @@ case $1 in
 		exec_clean
 		;;
 	build)
-		exec_build
+		if [ $# -eq 2 ] ; then
+			case $2 in
+				Debug)
+					exec_build Debug
+					;;
+				Release)
+					exec_build Release
+					;;
+				*)
+					echo "Invalid build type: $2"
+					;;
+			esac
+		else
+			exec_build Debug
+		fi
 		;;
 	index)
 		exec_tags

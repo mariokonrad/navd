@@ -1,1 +1,1 @@
-timer_1s : timer { id=1 period=1000 };
+timer_1s : timer { id:1, period:1000 };

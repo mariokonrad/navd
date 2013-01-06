@@ -156,12 +156,12 @@ config
 	;
 
 property_list
-	: property_list property
-	| property
+	: property
+	| property ',' property_list
 	;
 
 property
-	: IDENTIFIER '=' value
+	: IDENTIFIER ':' value
 		{
 			if (config_add_tmp_property(tmp, $1, $3) < 0) {
 				yyerror(scanner, config, tmp, "property already defined");

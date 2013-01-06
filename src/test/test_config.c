@@ -217,7 +217,7 @@ static void test_parse_file_source_properties(void)
 	struct config_t config;
 
 	const char CONFIG[] =
-		"a : src { enable baud=9600 };\n"
+		"a : src { enable, baud:9600, paritiy:none };\n"
 		;
 
 	rc = ftruncate(fd, 0);
@@ -240,15 +240,15 @@ static void test_parse_file(void)
 	struct config_t config;
 
 	const char CONFIG[] =
-		"a  : src { enable baud=9600 };\n"
-		"b0 : dst { file=test.txt };\n"
-		"b1 : dst { file=test.txt };\n"
-		"b2 : dst { file=test.txt };\n"
-		"b3 : dst { file=test.txt };\n"
-		"b4 : dst { file=test.txt };\n"
-		"b5 : dst { file=test.txt };\n"
-		"b6 : dst { file=test.txt };\n"
-		"b7 : dst { file=test.txt };\n"
+		"a  : src { enable, baud:9600, parity:none };\n"
+		"b0 : dst { file:'test.txt' };\n"
+		"b1 : dst { file:'test.txt' };\n"
+		"b2 : dst { file:'test.txt' };\n"
+		"b3 : dst { file:'test.txt' };\n"
+		"b4 : dst { file:'test.txt' };\n"
+		"b5 : dst { file:'test.txt' };\n"
+		"b6 : dst { file:'test.txt' };\n"
+		"b7 : dst { file:'test.txt' };\n"
 		"c  : flt { GPS };\n"
 		"a -> b0;\n"
 		"a -> b1;\n"

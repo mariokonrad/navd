@@ -22,13 +22,12 @@ int identifier_type(const char * s)
 
 %}
 
-D		[0-9]
-A		[a-zA-Z_]
-H		[0-9a-fA-F]
-S		[ ]
-WS		[ \t\n]
-SPECIAL	[\-\.:,;/\+\\\?&@]
-SPECIAL1 [\-\+\.:/?&@]
+D        [0-9]
+A        [a-zA-Z_]
+H        [0-9a-fA-F]
+S        [ ]
+WS       [ \t\n]
+SPECIAL  [\-\+\.:/?&@\\,;]
 
 %option yylineno
 %option reentrant
@@ -62,11 +61,12 @@ SPECIAL1 [\-\+\.:/?&@]
 "("                           { return '('; }
 ")"                           { return ')'; }
 "="                           { return '='; }
+","                           { return ','; }
 ";"                           { return ';'; }
 ":"                           { return ':'; }
-"\n"                          { }
-[ \t\v\f]                     { }
-.                             { }
+"\n"                          {}
+[ \t\v\f]                     {}
+.                             {}
 
 %%
 

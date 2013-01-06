@@ -1,15 +1,15 @@
 sim : gps_sim {
-	period=2
-	lat='12-34,45N'
-	lon='123-45,60W'
-	time='12-34-56'
-	date='2012-07-31'
-	sog=55
-	mag=25
-	heading=105
+	period:2,
+	lat:'12-34,45N',
+	lon:'123-45,60W',
+	time:'12-34-56',
+	date:'2012-07-31',
+	sog:55,
+	mag:25,
+	heading:105,
 	__not_simulated__
 };
-logtimer : timer { id=1 period=5000 };
-log : logbook { save_timer_id=1 filename='' write_timeout=3 };
+logtimer : timer { id:1, period:5000 };
+log : logbook { save_timer_id:1, filename:'', write_timeout:3 };
 sim -> log;
 logtimer -> log;
