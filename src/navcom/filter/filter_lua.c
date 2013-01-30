@@ -7,6 +7,53 @@
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
 
+static int lua__syslog(lua_State * lua)
+{
+	int type = -1;
+	const char * str = NULL;
+
+	type = luaL_checkinteger(lua, -2);
+	str = luaL_checkstring(lua, -1);
+
+	syslog(type, "%s", str);
+	return 0;
+}
+
+static void define_const(lua_State * lua, const char * sym, int val)
+{
+	lua_pushinteger(lua, val);
+	lua_setglobal(lua, sym);
+}
+
+static int setup_lua_state(lua_State * lua)
+{
+	luaopen_base(lua);
+	luaopen_table(lua);
+	luaopen_string(lua);
+	luaopen_math(lua);
+
+	/* filter result values */
+	define_const(lua, "FILTER_SUCCESS", FILTER_SUCCESS);
+	define_const(lua, "FILTER_FAILURE", FILTER_FAILURE);
+	define_const(lua, "FILTER_DISCARD", FILTER_DISCARD);
+
+	/* setup syslog */
+	define_const(lua, "LOG_CRIT",    LOG_CRIT);
+	define_const(lua, "LOG_ERR",     LOG_ERR);
+	define_const(lua, "LOG_WARNING", LOG_WARNING);
+	define_const(lua, "LOG_DEBUG",   LOG_DEBUG);
+	define_const(lua, "LOG_NOTICE",  LOG_NOTICE);
+	lua_register(lua, "syslog", lua__syslog);
+
+	/* TODO: setup message handling functions */
+
+	/* TODO: setup error handling */
+
+	/* TODO: setup debug interface if property is set */
+
+	return 0;
+}
+
 static int configure(
 		struct filter_context_t * ctx,
 		const struct property_list_t * properties)
@@ -26,25 +73,16 @@ static int configure(
 		return FILTER_FAILURE;
 	}
 
-	/* initialize lua state */
+	/* setup lua state */
 	lua = luaL_newstate();
 	if (!lua) {
 		syslog(LOG_ERR, "unable to create lua state");
 		return FILTER_FAILURE;
 	}
-	luaopen_base(lua);
-	luaopen_table(lua);
-	luaopen_string(lua);
-	luaopen_math(lua);
-	lua_pushinteger(lua, FILTER_SUCCESS);
-	lua_setglobal(lua, "FILTER_SUCCESS");
-	lua_pushinteger(lua, FILTER_FAILURE);
-	lua_setglobal(lua, "FILTER_FAILURE");
-	lua_pushinteger(lua, FILTER_DISCARD);
-	lua_setglobal(lua, "FILTER_DISCARD");
-
-	/* TODO: setup error handling */
-	/* TODO: setup debug interface if property is set */
+	if (setup_lua_state(lua)) {
+		syslog(LOG_ERR, "unable to setup lua state");
+		return FILTER_FAILURE;
+	}
 
 	/* load/execute script */
 	rc = luaL_dofile(lua, prop->value);
@@ -76,7 +114,9 @@ static int filter(
 		struct filter_context_t * ctx,
 		const struct property_list_t * properties)
 {
+	int rc;
 	lua_State * lua = NULL;
+	const char * err_string = NULL;
 
 	UNUSED_ARG(out);
 	UNUSED_ARG(in);
@@ -85,13 +125,27 @@ static int filter(
 	if (!ctx || !ctx->data) return FILTER_FAILURE;
 	lua = (lua_State *)ctx->data;
 
+	lua_getglobal(lua, "filter");
 	lua_pushlightuserdata(lua, (void*)out);
 	lua_pushlightuserdata(lua, (void*)in);
-
-	lua_getglobal(lua, "filter");
-	if (lua_pcall(lua, 2, 1, 0)) {
-		/* error ocurred */
-		/* TODO: write error to syslog */
+	rc = lua_pcall(lua, 2, 1, 0);
+	if (rc != LUA_OK) {
+		err_string = lua_tostring(lua, -1);
+		lua_pop(lua, 1);
+		switch (rc) {
+			case LUA_ERRRUN:
+				syslog(LOG_ERR, "runtime error: '%s'", err_string);
+				break;
+			case LUA_ERRMEM:
+				syslog(LOG_ERR, "memory allocation error: '%s'", err_string);
+				break;
+			case LUA_ERRERR:
+				syslog(LOG_ERR, "message handler error: '%s'", err_string);
+				break;
+			case LUA_ERRGCMM:
+				syslog(LOG_ERR, "error while calling metamethod: '%s'", err_string);
+				break;
+		}
 		return FILTER_FAILURE;
 	}
 
