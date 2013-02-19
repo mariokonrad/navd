@@ -116,7 +116,6 @@ static int filter(
 {
 	int rc;
 	lua_State * lua = NULL;
-	const char * err_string = NULL;
 
 	UNUSED_ARG(out);
 	UNUSED_ARG(in);
@@ -130,8 +129,7 @@ static int filter(
 	lua_pushlightuserdata(lua, (void*)in);
 	rc = lua_pcall(lua, 2, 1, 0);
 	if (rc != LUA_OK) {
-		err_string = lua_tostring(lua, -1);
-		lua_pop(lua, 1);
+		const char * err_string = lua_tostring(lua, -1);
 		switch (rc) {
 			case LUA_ERRRUN:
 				syslog(LOG_ERR, "runtime error: '%s'", err_string);
@@ -146,6 +144,7 @@ static int filter(
 				syslog(LOG_ERR, "error while calling metamethod: '%s'", err_string);
 				break;
 		}
+		lua_pop(lua, 1);
 		return FILTER_FAILURE;
 	}
 
