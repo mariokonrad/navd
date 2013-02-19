@@ -42,13 +42,12 @@
 	#define min(a, b)  ((a) < (b) ? (a) : (b))
 #endif
 
-/* TODO: define version information */
-
 /**
  * @todo Documentation
  */
 enum options_t {
 	 OPTION_HELP        = 'h'
+	,OPTION_VERSION     = 'v'
 	,OPTION_DEAMON      = 'd'
 	,OPTION_CONFIG      = 'c'
 	,OPTION_LIST        = 1000
@@ -57,11 +56,12 @@ enum options_t {
 	,OPTION_LOG
 };
 
-static const char * OPTIONS_SHORT = "hdc:";
+static const char * OPTIONS_SHORT = "hvdc:";
 
 static const struct option OPTIONS_LONG[] =
 {
 	{ "help",        no_argument,       0, OPTION_HELP        },
+	{ "version",     no_argument,       0, OPTION_VERSION     },
 	{ "daemon",      no_argument,       0, OPTION_DEAMON      },
 	{ "config",      required_argument, 0, OPTION_CONFIG      },
 	{ "list",        no_argument,       0, OPTION_LIST        },
@@ -167,13 +167,22 @@ static struct proc_desc_list_t desc_destinations;
  */
 static struct filter_desc_list_t desc_filters;
 
+static void print_version(FILE * file)
+{
+	fprintf(file, "%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+}
+
 static void usage(FILE * file, const char * name) /* {{{ */
 {
 	fprintf(file, "\n");
 	fprintf(file, "usage: %s [options]\n", name);
 	fprintf(file, "\n");
+	fprintf(file, "Version: ");
+	print_version(file);
+	fprintf(file, "\n");
 	fprintf(file, "Options:\n");
 	fprintf(file, "  -h      | --help        : help information\n");
+	fprintf(file, "  -v      | --version     : version information\n");
 	fprintf(file, "  -d      | --daemon      : daemonize process\n");
 	fprintf(file, "  -c file | --config file : configuration file\n");
 	fprintf(file, "  --list                  : lists all sources, destinations and filters\n");
@@ -201,6 +210,9 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 		switch (rc) {
 			case OPTION_HELP:
 				usage(stdout, argv[0]);
+				return -1;
+			case OPTION_VERSION:
+				print_version(stdout);
 				return -1;
 			case OPTION_DEAMON:
 				option.daemonize = 1;
@@ -892,7 +904,6 @@ int main(int argc, char ** argv) /* {{{ */
 				continue;
 			}
 			if (rc == 0) {
-				/* TODO: stop and restart instead of complete shutdown? */
 				syslog(LOG_WARNING, "process '%s' has given up.", proc_cfg[i].cfg->name);
 				proc_close_wait(&proc_cfg[i]);
 				graceful_termination = 1;

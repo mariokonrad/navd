@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(navd)
 
+set(VERSION_MAJOR "0")
+set(VERSION_MINOR "1")
+set(VERSION_PATCH "0")
+
 option(ENABLE_SOURCE_GPSSIMULATOR
 	"Enable source GPS Simulator" ON)
 

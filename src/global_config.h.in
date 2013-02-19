@@ -1,5 +1,9 @@
 /* global configuration file, configured by cmake */
 
+#define VERSION_MAJOR @VERSION_MAJOR@
+#define VERSION_MINOR @VERSION_MINOR@
+#define VERSION_PATCH @VERSION_PATCH@
+
 #cmakedefine ENABLE_SOURCE_GPSSIMULATOR
 #cmakedefine ENABLE_SOURCE_GPSD
 #cmakedefine ENABLE_FILTER_LUA
