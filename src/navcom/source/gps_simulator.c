@@ -1,4 +1,5 @@
 #include <navcom/source/gps_simulator.h>
+#include <navcom/property_read.h>
 #include <navcom/message.h>
 #include <common/macros.h>
 #include <nmea/nmea_sentence_gprmc.h>
@@ -59,24 +60,6 @@ static void init_message(void)
 	rmc->sig_integrity = option.simulated ? NMEA_SIG_INT_SIMULATED : NMEA_SIG_INT_AUTONOMOUS;
 }
 
-static int read_prop_uint32(const struct property_list_t * properties, const char * key, uint32_t * value)
-{
-	const struct property_t * prop = NULL;
-	char * endptr = NULL;
-
-	prop = proplist_find(properties, key);
-	if (prop) {
-		*value = strtoul(prop->value, &endptr, 0);
-		if (*endptr != '\0') {
-			syslog(LOG_ERR, "invalid value in '%s': '%s'", prop->key, prop->value);
-			return EXIT_FAILURE;
-		}
-	} else {
-		syslog(LOG_DEBUG, "property '%s' not defined, using default of %u", key, *value);
-	}
-	return EXIT_SUCCESS;
-}
-
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	const struct property_t * prop = NULL;
@@ -85,10 +68,10 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	UNUSED_ARG(config);
 
-	if (read_prop_uint32(properties, "period",  &option.period)  != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (read_prop_uint32(properties, "sog",     &option.sog)     != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (read_prop_uint32(properties, "heading", &option.heading) != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (read_prop_uint32(properties, "mag",     &option.mag)     != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (property_read_uint32(properties, "period",  &option.period)  != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (property_read_uint32(properties, "sog",     &option.sog)     != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (property_read_uint32(properties, "heading", &option.heading) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (property_read_uint32(properties, "mag",     &option.mag)     != EXIT_SUCCESS) return EXIT_FAILURE;
 
 	prop = proplist_find(properties, "date");
 	if (prop) {

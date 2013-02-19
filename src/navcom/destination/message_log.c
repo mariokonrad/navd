@@ -1,5 +1,6 @@
 #include <navcom/destination/message_log.h>
 #include <navcom/message.h>
+#include <navcom/property_read.h>
 #include <common/macros.h>
 #include <common/fileutil.h>
 #include <sys/select.h>
@@ -9,11 +10,10 @@
 #include <unistd.h>
 #include <syslog.h>
 
-enum { MAX_ERRORS = 10 }; /* TODO: configuration/properties, module providing default value */
-
 struct msg_log_property_t {
 	int enable;
 	const char * dst;
+	uint32_t max_errors;
 };
 
 static struct msg_log_property_t prop;
@@ -64,6 +64,9 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	prop.enable = proplist_contains(properties, "enable");
 
+	prop.max_errors = 10; /* default value */
+	if (property_read_uint32(properties, "max_errors",  &prop.max_errors) != EXIT_SUCCESS) return EXIT_FAILURE;
+
 	prop_dst = proplist_find(properties, "dst");
 	if (prop_dst) {
 		if (file_is_writable(prop_dst->value)) {
@@ -84,7 +87,7 @@ static int proc(const struct proc_config_t * config)
 	int rc;
 	fd_set rfds;
 	struct message_t msg;
-	unsigned int cnt_error = 0;
+	uint32_t cnt_error = 0;
 
 	while (!request_terminate) {
 		FD_ZERO(&rfds);
@@ -125,8 +128,8 @@ static int proc(const struct proc_config_t * config)
 						rc = log_message(&msg, &prop);
 						if (rc < 0) {
 							++cnt_error;
-							if (cnt_error >= MAX_ERRORS) {
-								syslog(LOG_ERR, "MAX_ERRORS (%u) reached, disable logging", MAX_ERRORS);
+							if (cnt_error >= prop.max_errors) {
+								syslog(LOG_ERR, "max_errors (%u) reached, disable logging", prop.max_errors);
 								prop.enable = 0;
 							}
 						}

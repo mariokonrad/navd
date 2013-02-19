@@ -32,6 +32,7 @@ add_library(navcom
 	proc_list.c
 	filter_list.c
 	property_serial.c
+	property_read.c
 	${SOURCES}
 	${DESTINATIONS}
 	${FILTERS}
