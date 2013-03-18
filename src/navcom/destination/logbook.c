@@ -9,6 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <math.h>
 #include <stdbool.h>
 
 #include <nmea/nmea.h>
@@ -101,6 +102,45 @@ static long elapsed_ms_time(const struct timeval * tm)
 	if (dt < 0) return -2;
 
 	return dt;
+}
+
+static double sqr(double x)
+{
+	return x * x;
+}
+
+/**
+ * Returns the number of meters the positon has changed since the last
+ * write update.
+ *
+ * @retval    -1 Unable to calculate distance
+ * @retval other Distance in meters
+ */
+static long diff_position(void)
+{
+	static const double EARTH_RADIUS = 6378000.0; /* [m] mean radius */
+
+	double lat_0 = 0.0;
+	double lat_1 = 0.0;
+	double lon_0 = 0.0;
+	double lon_1 = 0.0;
+
+	nmea_angle_to_double(&lat_0, &last_written_data.lat);
+	nmea_angle_to_double(&lon_0, &last_written_data.lon);
+	nmea_angle_to_double(&lat_1, &current.lat);
+	nmea_angle_to_double(&lon_1, &current.lon);
+
+	if (last_written_data.lat_dir != 'N') lat_0 = -lat_0;
+	if (last_written_data.lon_dir != 'W') lon_0 = -lon_0;
+	if (current.lat_dir != 'N') lat_1 = -lat_1;
+	if (current.lon_dir != 'W') lon_1 = -lon_1;
+
+	/* calculate distance in meters on sphere, precise enough approximation */
+
+	return (long)round(EARTH_RADIUS * atan(sqrt(
+		sqr(cos(lat_1) * sin(lon_1 - lon_0))
+			+ sqr(cos(lat_0) * sin(lat_1) - sin(lat_1) * cos(lat_1) * cos(lon_1 - lon_0)))
+		/ (sin(lat_0) * sin(lat_1) + cos(lat_0) * cos(lat_1) * cos(lon_1 - lon_0))));
 }
 
 static bool accept_signal_integrity(char sig_integrity)
@@ -267,7 +307,7 @@ static int check_position_change(void)
 	if (configuration.min_meter_position_change <= 0)
 		return 0; /* check disabled, always write log */
 
-	/* TODO: calculate position change between last_written_data and current */
+	ds = diff_position();
 
 	if (ds < 0) {
 		syslog(LOG_WARNING, "not writing log, cannot calculate position change");

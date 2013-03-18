@@ -24,4 +24,6 @@ int nmea_write_lonitude(char * buf, uint32_t size, const struct nmea_angle_t * v
 void nmea_angle_hton(struct nmea_angle_t * v);
 void nmea_angle_ntoh(struct nmea_angle_t * v);
 
+int nmea_angle_to_double(double *, const struct nmea_angle_t *);
+
 #endif

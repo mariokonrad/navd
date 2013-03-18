@@ -161,3 +161,21 @@ void nmea_angle_ntoh(struct nmea_angle_t * v)
 	nmea_fix_ntoh(&v->s);
 }
 
+/**
+ * Converts an angle to double.
+ * @param[out] v converted number
+ * @param[in] angle the angle to convert
+ * @retval  0 success
+ * @retval -1 failure
+ * @todo Test
+ */
+int nmea_angle_to_double(double * v, const struct nmea_angle_t * angle)
+{
+	double sec = 0.0;
+
+	if (!v || !angle) return -1;
+	nmea_fix_to_double(&sec, &angle->s);
+	*v = (double)angle->d + ((double)angle->m / 60.0) + (sec / 3600.0);
+	return 0;
+}
+
