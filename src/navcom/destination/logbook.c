@@ -38,10 +38,12 @@ static struct information_t {
 	struct nmea_date_t date;
 	struct nmea_fix_t course_over_ground;
 	struct nmea_fix_t speed_over_ground;
-	struct nmea_fix_t course_magnetic; /* TODO: not used yet */
-	struct nmea_fix_t speed_through_water; /* TODO: not used yet */
-	struct nmea_fix_t wind_speed; /* TODO: not used yet */
-	struct nmea_fix_t wind_direction; /* TODO: not used yet */
+	struct nmea_fix_t course_magnetic;
+	struct nmea_fix_t speed_through_water;
+	struct nmea_fix_t wind_speed;
+	struct nmea_fix_t wind_direction;
+	uint32_t pressure; /* units of 0.1 mbar */
+	int32_t air_temperature; /* units of degree celcius */
 } current, last_written_data;
 
 /**
@@ -217,6 +219,18 @@ static int prepare_wind_direction(char * ptr, int len)
 		current.wind_direction.i);
 }
 
+static int prepare_pressure(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%u;",
+		current.pressure);
+}
+
+static int prepare_air_temperature(char * ptr, int len)
+{
+	return snprintf(ptr, len, "%d;",
+		current.air_temperature);
+}
+
 /**
  * @retval  0 Success, do write update
  * @retval -1 Unable to calculate update time, do not write
@@ -274,7 +288,8 @@ static void write_log(void)
 		prepare_speed_through_water,
 		prepare_wind_speed,
 		prepare_wind_direction,
-		/* TODO: barometer */
+		prepare_pressure,
+		prepare_air_temperature,
 	};
 
 	FILE * file = NULL;
