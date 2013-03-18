@@ -23,6 +23,9 @@ static struct logbook_config_t {
 
 	/* timeout for the last reported position, if the position is older, no log will be written */
 	long timeout_for_writing;
+
+	/* minimal distance change to write log entry in meters */
+	long min_meter_position_change;
 } configuration;
 
 static struct information_t {
@@ -244,7 +247,8 @@ static int check_age_last_update(void)
 	if (dt < 0) {
 		syslog(LOG_WARNING, "not writing log, cannot calculate update time");
 		return -1;
-	} else if (dt > configuration.timeout_for_writing) {
+	}
+	if (dt > configuration.timeout_for_writing) {
 		syslog(LOG_WARNING, "not writing log, last position update %ld msec ago", dt);
 		return -2;
 	}
@@ -253,11 +257,26 @@ static int check_age_last_update(void)
 
 /**
  * @retval  0 Position changed considerably, do write log
- * @retval -1 No significant position change, log entry not worth it
+ * @retval -1 Unable to calculate position change, do not write log entry
+ * @retval -2 No significant position change, log entry not worth it
  */
 static int check_position_change(void)
 {
-	/* TODO: calc position chagne */
+	long ds = 0;
+
+	if (configuration.min_meter_position_change <= 0)
+		return 0; /* check disabled, always write log */
+
+	/* TODO: calculate position change between last_written_data and current */
+
+	if (ds < 0) {
+		syslog(LOG_WARNING, "not writing log, cannot calculate position change");
+		return -1;
+	}
+	if (ds < configuration.min_meter_position_change) {
+		syslog(LOG_INFO, "not writing log, position has not changed significantly");
+		return -2;
+	}
 	return 0;
 }
 
@@ -421,6 +440,28 @@ static int read_timeout(const struct property_list_t * properties)
 	return EXIT_SUCCESS;
 }
 
+static int read_min_position_change(const struct property_list_t * properties)
+{
+	const struct property_t * prop = NULL;
+	char * endptr = NULL;
+
+	prop = proplist_find(properties, "min_position_change");
+	configuration.min_meter_position_change = 0; /* default value */
+	if (prop != NULL) {
+		long tmp = strtol(prop->value, &endptr, 0);
+		if (*endptr != '\0') {
+			syslog(LOG_ERR, "invalid value in timeout: '%s'", prop->value);
+			return EXIT_FAILURE;
+		}
+		if (tmp < 0) {
+			syslog(LOG_ERR, "invalid value for timeout: %ld, must be greater than zero", tmp);
+			return EXIT_FAILURE;
+		}
+		configuration.min_meter_position_change = tmp;
+	}
+	return EXIT_SUCCESS;
+}
+
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	UNUSED_ARG(config);
@@ -432,6 +473,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	if (read_save_timer(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_filename(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_timeout(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (read_min_position_change(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 
 	initialized = true;
 	return EXIT_SUCCESS;
