@@ -42,7 +42,7 @@ static struct information_t {
 	struct nmea_fix_t speed_through_water; /* TODO: not used yet */
 	struct nmea_fix_t wind_speed; /* TODO: not used yet */
 	struct nmea_fix_t wind_direction; /* TODO: not used yet */
-} current;
+} current, last_written_data;
 
 /**
  * Returns true if the specified time is not zero.
@@ -218,12 +218,49 @@ static int prepare_wind_direction(char * ptr, int len)
 }
 
 /**
+ * @retval  0 Success, do write update
+ * @retval -1 Unable to calculate update time, do not write
+ * @retval -2 Last position update too long ago, do not write
+ */
+static int check_age_last_update(void)
+{
+	long dt;
+
+	dt = elapsed_ms_time(&current.last_update);
+	if (dt < 0) {
+		syslog(LOG_WARNING, "not writing log, cannot calculate update time");
+		return -1;
+	} else if (dt > configuration.timeout_for_writing) {
+		syslog(LOG_WARNING, "not writing log, last position update %ld msec ago", dt);
+		return -2;
+	}
+	return 0;
+}
+
+/**
+ * @retval  0 Position changed considerably, do write log
+ * @retval -1 No significant position change, log entry not worth it
+ */
+static int check_position_change(void)
+{
+	/* TODO: calc position chagne */
+	return 0;
+}
+
+/**
  * Write the log entry to either syslog or log file.
  * All data is separated by semi colons (aka CSV format).
  */
 static void write_log(void)
 {
 	typedef int (*prepare_func_t)(char *, int);
+	typedef int (*check_func_t)(void);
+
+	static const check_func_t CHECK[] =
+	{
+		check_age_last_update,
+		check_position_change,
+	};
 
 	static const prepare_func_t PREPARE[] =
 	{
@@ -246,29 +283,20 @@ static void write_log(void)
 	int len;
 	int buf_len;
 	char * ptr;
-	long dt;
 	size_t i;
 
-	/* TODO: honor minimum time of logging period of n minutes, no matter how the timer is configured, this timeout should be configurable */
+	/* perform checks */
 
-	/* check for age of last update, if to old, writing log makes no sense */
-	dt = elapsed_ms_time(&current.last_update);
-	if (dt < 0) {
-		syslog(LOG_WARNING, "not writing log, cannot calculate update time");
-		return;
-	} else if (dt > configuration.timeout_for_writing) {
-		syslog(LOG_WARNING, "not writing log, last position update %ld msec ago", dt);
-		return;
+	for (i = 0; i < sizeof(CHECK) / sizeof(CHECK[0]); ++i) {
+		if (CHECK[i]())
+			return;
 	}
 
-	/* TODO: check for changes in position, if none, there is no need to write a log */
+	/* prepare log entry */
 
 	buf_len = (int)sizeof(buf);
 	ptr = buf;
-
 	memset(buf, 0, sizeof(buf));
-
-	/* prepare log entry */
 
 	for (i = 0; i < sizeof(PREPARE) / sizeof(PREPARE[0]); ++i) {
 		rc = PREPARE[i](ptr, buf_len);
@@ -302,6 +330,8 @@ static void write_log(void)
 	} else {
 		syslog(LOG_INFO, "logbook: %s", buf);
 	}
+
+	last_written_data = current;
 }
 
 static void process_timer(uint32_t id)
@@ -382,6 +412,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	memset(&configuration, 0, sizeof(configuration));
 	memset(&current, 0, sizeof(current));
+	memset(&last_written_data, 0, sizeof(last_written_data));
 
 	if (read_save_timer(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (read_filename(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
