@@ -18,6 +18,7 @@ function usage()
 	echo "    unittest       : executes the unit tests"
 	echo "    test           : executes the tests"
 	echo "    cppcheck       : performs cppcheck"
+	echo "    cccc           : calculates metrics"
 	echo "    valgrind       : calls valgrind on tests to check for memory problems"
 	echo "    check-coverage : checks if all files are being used for code coverage (debug build only)"
 	echo ""
@@ -37,6 +38,7 @@ function exec_clean()
 	rm -f ${BASE}/tags
 	rm -f ${BASE}/cscope.files
 	rm -f ${BASE}/cscope.out
+	rm -f ${BASE}/cccc
 }
 
 function exec_tags()
@@ -148,6 +150,12 @@ function exec_cppcheck()
 	cppcheck -v -f --enable=all -i src/test/cunit -i src/lua/src -I src/lua/include/lua -I src src
 }
 
+function exec_cccc()
+{
+	exec_prepare
+	cat cscope.files | xargs cccc --lang="c" --outdir=${BASE}/build/doc/cccc
+}
+
 if [ $# == 0 ] ; then
 	usage $0
 	exit
@@ -198,6 +206,9 @@ case $1 in
 		;;
 	cppcheck)
 		exec_cppcheck
+		;;
+	cccc)
+		exec_cccc
 		;;
 	check-coverage)
 		rm -f buildfiles.txt sourcefiles.txt
