@@ -7,7 +7,10 @@
 #define NMEA_FIX_DECIMAL_DIGITS 6
 
 /**
- * @todo Documenation
+ * Data representation of a fixed number, used by all NMEA functions.
+ * Integer and decimal values are stored independently. Contstraints:
+ * - Only positive numbers are supported.
+ * - Decimal value up to NMEA_FIX_DECIMAL_DIGITS
  */
 struct nmea_fix_t { /* x.xxxxxx */
 	uint32_t i; /* integer part, max. 6 digits, see NMEA_FIX_DECIMALS */

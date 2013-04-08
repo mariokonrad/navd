@@ -10,7 +10,8 @@
 #define NMEA_MAX_SENTENCE 82
 
 /**
- * @todo Documenation
+ * Represents a NMEA message, containing the original raw NMEA sentence
+ * and the already (if possible) parsed data.
  */
 struct nmea_t {
 	uint32_t type;
@@ -33,7 +34,7 @@ struct nmea_t {
 };
 
 /**
- * @todo Documenation
+ * Base structure for all implmentations of NMEA sentences.
  */
 struct nmea_sentence_t {
 	const uint32_t type;

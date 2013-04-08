@@ -92,7 +92,10 @@ int nmea_time_write(char * buf, uint32_t size, const struct nmea_time_t * v)
 }
 
 /**
- * @todo Documenation
+ * Converts the byte order for the nmea_time structure from host to
+ * network byte order.
+ *
+ * @param[inout] v Data to convert. Nothing is done if this is NULL.
  */
 void nmea_time_hton(struct nmea_time_t * v)
 {
@@ -104,7 +107,10 @@ void nmea_time_hton(struct nmea_time_t * v)
 }
 
 /**
- * @todo Documenation
+ * Converts the byte order for the nmea_time structure from network to
+ * host byte order.
+ *
+ * @param[inout] v Data to convert. Nothing is done if this is NULL.
  */
 void nmea_time_ntoh(struct nmea_time_t * v)
 {

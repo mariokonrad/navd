@@ -7,7 +7,8 @@
 #define NMEA_ANGLE_DECIMAL_DIGITS 4
 
 /**
- * @todo Documenation
+ * Represents an angle used by the NMEA functions. This structure
+ * supports degrees, minutes and seconds (plus fractions of them).
  */
 struct nmea_angle_t {
 	uint32_t d; /* degrees */
