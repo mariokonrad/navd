@@ -425,7 +425,7 @@ static void test_nmea_time_write(const struct nmea_time_t * t, const char * outc
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_time_write(buf, SIZE, t);
-	
+
 	CU_ASSERT_EQUAL(rc, (int)strlen(outcome));
 	CU_ASSERT_STRING_EQUAL(buf, outcome);
 }
@@ -603,6 +603,78 @@ static void test_endianess(void)
 	}
 }
 
+static void test_conv_float_fix(float expected, const struct nmea_fix_t * fix)
+{
+	int rc;
+	float f;
+
+	rc = nmea_fix_to_float(&f, fix);
+	CU_ASSERT_EQUAL(rc, 0);
+	CU_ASSERT_EQUAL(f, expected);
+}
+
+static void test_convert_nmea_fix_float(void)
+{
+	struct nmea_fix_t fix;
+	float f;
+	int rc;
+
+	fix.i = 0;
+	fix.d = 0;
+	f = 0.0f;
+
+	rc = nmea_fix_to_float(NULL, NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	rc = nmea_fix_to_float(&f, NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	rc = nmea_fix_to_float(NULL, &fix);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	fix.i = 0; fix.d = 0;      test_conv_float_fix(0.0f, &fix);
+	fix.i = 0; fix.d = 500000; test_conv_float_fix(0.5f, &fix);
+	fix.i = 1; fix.d = 0;      test_conv_float_fix(1.0f, &fix);
+	fix.i = 2; fix.d = 0;      test_conv_float_fix(2.0f, &fix);
+	fix.i = 3; fix.d = 0;      test_conv_float_fix(3.0f, &fix);
+}
+
+static void test_conv_double_fix(double expected, const struct nmea_fix_t * fix)
+{
+	int rc;
+	double d;
+
+	rc = nmea_fix_to_double(&d, fix);
+	CU_ASSERT_EQUAL(rc, 0);
+	CU_ASSERT_EQUAL(d, expected);
+}
+
+static void test_convert_nmea_fix_double(void)
+{
+	struct nmea_fix_t fix;
+	double d;
+	int rc;
+
+	fix.i = 0;
+	fix.d = 0;
+	d = 0.0;
+
+	rc = nmea_fix_to_double(NULL, NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	rc = nmea_fix_to_double(&d, NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	rc = nmea_fix_to_float(NULL, &fix);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	fix.i = 0; fix.d = 0;      test_conv_double_fix(0.0, &fix);
+	fix.i = 0; fix.d = 500000; test_conv_double_fix(0.5, &fix);
+	fix.i = 1; fix.d = 0;      test_conv_double_fix(1.0, &fix);
+	fix.i = 2; fix.d = 0;      test_conv_double_fix(2.0, &fix);
+	fix.i = 3; fix.d = 0;      test_conv_double_fix(3.0, &fix);
+}
+
 void register_suite_nmea(void)
 {
 	CU_Suite * suite;
@@ -625,5 +697,7 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "writing: nmea lon", test_basic_longitude_writing);
 	CU_add_test(suite, "writing: sentence", test_sentence_writing);
 	CU_add_test(suite, "endianess", test_endianess);
+	CU_add_test(suite, "conversion: float", test_convert_nmea_fix_float);
+	CU_add_test(suite, "conversion: double", test_convert_nmea_fix_double);
 }
 
