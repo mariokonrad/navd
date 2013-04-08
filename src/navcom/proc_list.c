@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-int pdlist_init(struct proc_desc_list_t * list) /* {{{ */
+int pdlist_init(struct proc_desc_list_t * list)
 {
 	if (list == NULL) return -1;
 	list->num = 0;
 	list->data = NULL;
 	return 0;
-} /* }}} */
+}
 
-int pdlist_free(struct proc_desc_list_t * list) /* {{{ */
+int pdlist_free(struct proc_desc_list_t * list)
 {
 	if (list == NULL) return -1;
 	if (list->data) {
@@ -19,9 +19,9 @@ int pdlist_free(struct proc_desc_list_t * list) /* {{{ */
 	}
 	list->num = 0;
 	return 0;
-} /* }}} */
+}
 
-int pdlist_append(struct proc_desc_list_t * list, const struct proc_desc_t const * desc) /* {{{ */
+int pdlist_append(struct proc_desc_list_t * list, const struct proc_desc_t const * desc)
 {
 	if (list == NULL) return -1;
 	if (desc == NULL) return -1;
@@ -30,9 +30,11 @@ int pdlist_append(struct proc_desc_list_t * list, const struct proc_desc_t const
 	list->data = realloc(list->data, list->num * sizeof(struct proc_desc_t));
 	list->data[list->num-1] = *desc;
 	return 0;
-} /* }}} */
+}
 
-const struct proc_desc_t const * pdlist_find(const struct proc_desc_list_t const * list, const char * name) /* {{{ */
+const struct proc_desc_t const * pdlist_find(
+		const struct proc_desc_list_t const * list,
+		const char * name)
 {
 	size_t i;
 
@@ -45,5 +47,5 @@ const struct proc_desc_t const * pdlist_find(const struct proc_desc_list_t const
 		}
 	}
 	return NULL;
-} /* }}} */
+}
 

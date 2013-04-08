@@ -12,6 +12,7 @@
 #include <test_device.h>
 #include <test_property_serial.h>
 #include <test_fileutil.h>
+#include <test_proc.h>
 
 #ifdef ENABLE_FILTER_LUA
 	#include <test_filter_lua.h>
@@ -31,6 +32,7 @@ int main()
 	register_suite_device();
 	register_suite_property_serial();
 	register_suite_fileutil();
+	register_suite_proc();
 
 #ifdef ENABLE_FILTER_LUA
 	register_suite_filter_lua();

@@ -55,6 +55,7 @@ set(TEST_SOURCES
 	test_device.c
 	test_property_serial.c
 	test_fileutil.c
+	test_proc.c
 	)
 
 if (ENABLE_FILTER_LUA)
