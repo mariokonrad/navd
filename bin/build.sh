@@ -160,6 +160,11 @@ function exec_cppcheck()
 
 function exec_cccc()
 {
+	if [ ! -r cscope.files ] ; then
+		echo "error: index not present"
+		exit -1
+	fi
+
 	exec_prepare
 	cat cscope.files | xargs cccc --lang="c" --outdir=${BASE}/build/doc/cccc
 }
