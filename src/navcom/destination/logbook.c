@@ -143,6 +143,14 @@ static long diff_position(void)
 		/ (sin(lat_0) * sin(lat_1) + cos(lat_0) * cos(lat_1) * cos(lon_1 - lon_0))));
 }
 
+/**
+ * Determines whether to accept or not the signal integrity. Currently
+ * only the following are accepted:
+ * - autonomous
+ * - differential
+ * - estimated
+ * - manual input
+ */
 static bool accept_signal_integrity(char sig_integrity)
 {
 	switch (sig_integrity) {
@@ -190,6 +198,9 @@ static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
 	current.speed_over_ground = rmc->sog;
 }
 
+/**
+ * @todo Add more NMEA sentences (wind, sounder, etc.)
+ */
 static void process_nmea(const struct nmea_t * nmea)
 {
 	switch (nmea->type) {
