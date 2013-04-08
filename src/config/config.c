@@ -281,8 +281,8 @@ int config_add_source(
 	config->sources = realloc(config->sources,
 		config->num_sources * sizeof(struct proc_t));
 	source = &config->sources[config->num_sources-1];
-	source->name = strdup(name);
-	source->type = strdup(type);
+	source->name = config_strdup(name);
+	source->type = config_strdup(type);
 	source->properties = *properties;
 	return 0;
 }
@@ -306,8 +306,8 @@ int config_add_destination(
 	config->destinations = realloc(config->destinations,
 		config->num_destinations * sizeof(struct proc_t));
 	destination = &config->destinations[config->num_destinations-1];
-	destination->name = strdup(name);
-	destination->type = strdup(type);
+	destination->name = config_strdup(name);
+	destination->type = config_strdup(type);
 	destination->properties = *properties;
 	return 0;
 }
@@ -331,8 +331,8 @@ int config_add_filter(
 	config->filters = realloc(config->filters,
 		config->num_filters * sizeof(struct filter_t));
 	filter = &config->filters[config->num_filters-1];
-	filter->name = strdup(name);
-	filter->type = strdup(type);
+	filter->name = config_strdup(name);
+	filter->type = config_strdup(type);
 	filter->properties = *properties;
 	return 0;
 }
@@ -371,11 +371,13 @@ int config_add_route(
 	config->num_routes++;
 	config->routes = realloc(config->routes,
 		config->num_routes * sizeof(struct route_t));
+
+	/* fill data of new route */
 	route = &config->routes[config->num_routes-1];
-	route->name_source = strdup(source);
-	route->name_destination = strdup(destination);
+	route->name_source = config_strdup(source);
+	route->name_destination = config_strdup(destination);
 	if (filter) {
-		route->name_filter = strdup(filter);
+		route->name_filter = config_strdup(filter);
 	} else {
 		route->name_filter = NULL;
 	}
