@@ -112,8 +112,6 @@ function exec_test()
 
 function exec_valgrind()
 {
-	# TODO: valgrind over cunit tests
-
 	if [ -r "${BASE}/build/src/test/config_test" ] ; then
 		valgrind --leak-check=full ${BASE}/build/src/test/config_test ${BASE}/src/test/testconfig-small
 	else
@@ -138,6 +136,16 @@ function exec_valgrind()
 		valgrind --leak-check=full --show-reachable=yes ${BASE}/build/src/test/config_test_1
 	else
 		echo "error: config test 1 not present"
+	fi
+
+	echo ""
+	echo "----------------------------------------"
+	echo ""
+
+	if [ -r "${BASE}/build/src/test/config_test_1" ] ; then
+		valgrind -v --leak-check=full --show-reachable=yes ${BASE}/build/src/test/testrunner
+	else
+		echo "error: testrunner not present"
 	fi
 }
 
