@@ -3,11 +3,11 @@
 export SCRIPT_BASE=$(dirname `readlink -f $0`)
 export BASE=${SCRIPT_BASE}/..
 
-export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=../etc"
+export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=${BASE}/etc"
 
 case `uname -m` in
-	i686)   export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-linux32.cmake" ;;
-	x86_64) export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-linux64.cmake" ;;
+	i686)   export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-i686-linux.cmake" ;;
+	x86_64) export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-x86_64-linux.cmake" ;;
 	*)      export TOOLCHAIN_FILE="" ;;
 esac
 
