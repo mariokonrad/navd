@@ -3,12 +3,21 @@
 export SCRIPT_BASE=$(dirname `readlink -f $0`)
 export BASE=${SCRIPT_BASE}/..
 
+export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=../etc"
+
+case `uname -m` in
+	i686)   export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-linux32.cmake" ;;
+	x86_64) export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-linux64.cmake" ;;
+	*)      export TOOLCHAIN_FILE="" ;;
+esac
+
 function usage()
 {
 	echo ""
 	echo "usage: $1 command"
 	echo ""
 	echo "Commands:"
+	echo "    info           : displays info"
 	echo "    clean          : cleans up the build"
 	echo "    build [type]   : builds the software, type: Debug, Release (default: Debug)"
 	echo "    index          : builds source index (tags, scope)"
@@ -21,6 +30,16 @@ function usage()
 	echo "    cccc           : calculates metrics"
 	echo "    valgrind       : calls valgrind on tests to check for memory problems"
 	echo "    check-coverage : checks if all files are being used for code coverage (debug build only)"
+	echo ""
+}
+
+function exec_info()
+{
+	echo ""
+	echo "INFO:"
+	echo "    SCRIPT_BASE    = ${SCRIPT_BASE}"
+	echo "    BASE           = ${BASE}"
+	echo "    TOOLCHAIN_FILE = ${TOOLCHAIN_FILE}"
 	echo ""
 }
 
@@ -63,7 +82,7 @@ function exec_build()
 	exec_prepare
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
-		cmake .. -DCMAKE_BUILD_TYPE=$1
+		cmake .. -DCMAKE_BUILD_TYPE=$1 ${TOOLCHAIN_FILE}
 	fi
 	make
 }
@@ -175,6 +194,9 @@ if [ $# == 0 ] ; then
 fi
 
 case $1 in
+	info)
+		exec_info
+		;;
 	clean)
 		exec_clean
 		;;

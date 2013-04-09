@@ -1,22 +1,22 @@
 SET(CMAKE_SYSTEM_NAME Linux)
 SET(CMAKE_SYSTEM_VERSION 1)
 
+SET(CMAKE_C_COMPILER   gcc)
+SET(CMAKE_CXX_COMPILER g++)
+
 ADD_DEFINITIONS(-D__LINUX__=1 -D__LINUX=1)
 
-# Set Compiler options for Debug Builds
-set(CMAKE_CXX_FLAGS_DEBUG   "-g -m64")
-set(CMAKE_C_FLAGS_DEBUG     "-g -m64")
+if (CMAKE_COMPILER_IS_GNUCC)
+	# pedantic and c99 disabled because of sigaction/etc and pselect
+	set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Wextra -DNDEBUG -m64")
+	set(CMAKE_C_FLAGS         "-O2 -Wall -Wextra -m64")
+	set(CMAKE_C_FLAGS_DEBUG   "-O0 -ggdb -Wall -Wextra -fprofile-arcs -ftest-coverage -m64")
 
-set(CMAKE_CXX_FLAGS_PROFILE "-g -Wall -Wno-long-long -pedantic -g3 -ggdb -Wconversion -Wextra -Wfloat-equal -Woverloaded-virtual -fprofile-arcs -ftest-coverage -m64")
-set(CMAKE_C_FLAGS_PROFILE   "-g -Wall -Wno-long-long -pedantic -g3 -ggdb -Wconversion -Wextra -Wfloat-equal -Woverloaded-virtual -fprofile-arcs -ftest-coverage -m64")
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
+	set(CMAKE_EXE_LINKER_FLAGS         "")
+	set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "-fprofile-arcs -ftest-coverage")
+endif()
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -g -m64")
-set(CMAKE_C_FLAGS_RELEASE   "-O2 -DNDEBUG -g -m64")
-set(CMAKE_SHARED_LINKER_FLAGS "--hash-style=gnu -z now")
-
-# search for programs in the build host directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-
-# for libraries and headers in the target directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
