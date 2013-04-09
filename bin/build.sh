@@ -82,8 +82,14 @@ function exec_build()
 	exec_prepare
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
-		cmake .. -DCMAKE_BUILD_TYPE=$1 ${TOOLCHAIN_FILE}
+		cmake \
+			-DCMAKE_VERBOSE_MAKEFILE=FALSE \
+			-DCMAKE_COLOR_MAKEFILE=TRUE \
+			-DCMAKE_BUILD_TYPE=$1 \
+			${TOOLCHAIN_FILE} \
+			..
 	fi
+	#cmake --build .
 	make
 }
 
