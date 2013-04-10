@@ -2,14 +2,16 @@
 
 export SCRIPT_BASE=$(dirname `readlink -f $0`)
 export BASE=${SCRIPT_BASE}/..
+export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=${BASE}/etc/toolchain-${PLATFORM}.cmake"
+export PLATFORM=${PLATFORM:-auto}
 
-export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=${BASE}/etc"
-
-case `uname -m` in
-	i686)   export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-i686-linux.cmake" ;;
-	x86_64) export TOOLCHAIN_FILE="${TOOLCHAIN_FILE}/toolchain-x86_64-linux.cmake" ;;
-	*)      export TOOLCHAIN_FILE="" ;;
-esac
+if [ "${PLATFORM}" == "auto" ] ; then
+	case `uname -m` in
+		i686)   export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=${BASE}/etc/toolchain-i686-linux.cmake" ;;
+		x86_64) export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=${BASE}/etc/toolchain-x86_64-linux.cmake" ;;
+		*)      export TOOLCHAIN_FILE="" ;;
+	esac
+fi
 
 function usage()
 {
@@ -37,6 +39,7 @@ function exec_info()
 {
 	echo ""
 	echo "INFO:"
+	echo "    PLATFORM       = ${PLATFORM}"
 	echo "    SCRIPT_BASE    = ${SCRIPT_BASE}"
 	echo "    BASE           = ${BASE}"
 	echo "    TOOLCHAIN_FILE = ${TOOLCHAIN_FILE}"
@@ -186,8 +189,7 @@ function exec_cppcheck()
 function exec_cccc()
 {
 	if [ ! -r cscope.files ] ; then
-		echo "error: index not present"
-		exit -1
+		exec_scope
 	fi
 
 	exec_prepare
