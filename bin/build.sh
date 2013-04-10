@@ -4,6 +4,7 @@ export SCRIPT_BASE=$(dirname `readlink -f $0`)
 export BASE=${SCRIPT_BASE}/..
 export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=${BASE}/etc/toolchain-${PLATFORM}.cmake"
 export PLATFORM=${PLATFORM:-auto}
+export BUILD_TYPE=${BUILD_TYPE:-Debug}
 
 if [ "${PLATFORM}" == "auto" ] ; then
 	case `uname -m` in
@@ -21,7 +22,7 @@ function usage()
 	echo "Commands:"
 	echo "    info           : displays info"
 	echo "    clean          : cleans up the build"
-	echo "    build [type]   : builds the software, type: Debug, Release (default: Debug)"
+	echo "    build          : builds the software, available build types: Debug, Release (default: Debug)"
 	echo "    index          : builds source index (tags, scope)"
 	echo "    tags           : builds source tags"
 	echo "    scope          : builds source scope"
@@ -39,6 +40,7 @@ function exec_info()
 {
 	echo ""
 	echo "INFO:"
+	echo "    BUILD_TYPE     = ${BUILD_TYPE}"
 	echo "    PLATFORM       = ${PLATFORM}"
 	echo "    SCRIPT_BASE    = ${SCRIPT_BASE}"
 	echo "    BASE           = ${BASE}"
@@ -86,10 +88,10 @@ function exec_build()
 	cd ${BASE}/build
 	if [ ! -r Makefile ] ; then
 		cmake \
+			${TOOLCHAIN_FILE} \
 			-DCMAKE_VERBOSE_MAKEFILE=FALSE \
 			-DCMAKE_COLOR_MAKEFILE=TRUE \
-			-DCMAKE_BUILD_TYPE=$1 \
-			${TOOLCHAIN_FILE} \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
 			..
 	fi
 	#cmake --build .
@@ -209,21 +211,7 @@ case $1 in
 		exec_clean
 		;;
 	build)
-		if [ $# -eq 2 ] ; then
-			case $2 in
-				Debug)
-					exec_build Debug
-					;;
-				Release)
-					exec_build Release
-					;;
-				*)
-					echo "Invalid build type: $2"
-					;;
-			esac
-		else
-			exec_build Debug
-		fi
+		exec_build
 		;;
 	index)
 		exec_tags

@@ -23,7 +23,7 @@ static char i2hex(int i)
 }
 
 /**
- * Calculates and returns the nmea_checksum between the two position of a string.
+ * Calculates and returns the nmea_checksum between the two positions of a string.
  * The nmea_checksum is calculated inclusive start token and exclusive the end
  * token. If either one is wrong 0x00 will return.
  */

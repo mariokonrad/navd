@@ -675,6 +675,30 @@ static void test_convert_nmea_fix_double(void)
 	fix.i = 3; fix.d = 0;      test_conv_double_fix(3.0, &fix);
 }
 
+static void test_checksum(void)
+{
+	struct checksum_test_t
+	{
+		const char * str;
+		uint8_t chk;
+	};
+
+	static const struct checksum_test_t TESTS[] =
+	{
+		{ "GPRMC,201034,A,4702.4040,N,00818.3281,E,0.0,328.4,260807,0.6,E,A", 0x17 },
+		{ "GPRMC,201124,A,4702.3947,N,00818.3372,E,0.3,328.4,260807,0.6,E,A", 0x10 },
+		{ "GPRMC,201126,A,4702.3944,N,00818.3381,E,0.0,328.4,260807,0.6,E,A", 0x1E },
+	};
+
+	unsigned int i;
+	uint8_t chk;
+
+	for (i = 0 ; i < sizeof(TESTS) / sizeof(TESTS[0]); ++i) {
+		chk = nmea_checksum(TESTS[i].str, TESTS[i].str + strlen(TESTS[i].str));
+		CU_ASSERT_EQUAL(chk, TESTS[i].chk);
+	}
+}
+
 void register_suite_nmea(void)
 {
 	CU_Suite * suite;
@@ -699,5 +723,8 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "endianess", test_endianess);
 	CU_add_test(suite, "conversion: float", test_convert_nmea_fix_float);
 	CU_add_test(suite, "conversion: double", test_convert_nmea_fix_double);
+/*
+	CU_add_test(suite, "checksum", test_checksum);
+*/
 }
 
