@@ -68,7 +68,7 @@
 #define NMEA_HC_HDG     0x00002000
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the RMB sentence.
  */
 struct nmea_rmb_t {
 	char status; /* V:warning */
@@ -87,7 +87,7 @@ struct nmea_rmb_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the RMC sentence.
  */
 struct nmea_rmc_t {
 	struct nmea_time_t time;
@@ -105,7 +105,7 @@ struct nmea_rmc_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the GGA sentence.
  */
 struct nmea_gga_t {
 	struct nmea_time_t time;
@@ -125,7 +125,7 @@ struct nmea_gga_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the GSA sentence.
  */
 struct nmea_gsa_t {
 	char selection_mode; /* A:automatic, M:manual */
@@ -137,7 +137,7 @@ struct nmea_gsa_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the GSV sentence.
  */
 struct nmea_gsv_t {
 	uint32_t n_messages;
@@ -146,7 +146,7 @@ struct nmea_gsv_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the GLL sentence.
  */
 struct nmea_gll_t {
 	struct nmea_angle_t lat;
@@ -158,7 +158,7 @@ struct nmea_gll_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the RTE sentence.
  */
 struct nmea_rte_t {
 	uint32_t n_messages;
@@ -168,7 +168,7 @@ struct nmea_rte_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the VTG sentence.
  */
 struct nmea_vtg_t {
 	struct nmea_fix_t track_true;
@@ -182,7 +182,7 @@ struct nmea_vtg_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the BOD sentence.
  */
 struct nmea_bod_t {
 	struct nmea_fix_t bearing_true;
@@ -194,7 +194,7 @@ struct nmea_bod_t {
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the RME sentence.
  */
 struct nmea_garmin_rme_t { /* estimated position error */
 	struct nmea_fix_t hpe; /* horizontal position error in meters */
@@ -206,14 +206,14 @@ struct nmea_garmin_rme_t { /* estimated position error */
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the RMM sentence.
  */
 struct nmea_garmin_rmm_t { /* map datum */
 	char map_datum[64];
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the RMZ sentence.
  */
 struct nmea_garmin_rmz_t { /* altitude information */
 	struct nmea_fix_t alt; /* altitude in feet */
@@ -222,7 +222,7 @@ struct nmea_garmin_rmz_t { /* altitude information */
 } __attribute__((packed));
 
 /**
- * @todo Documenation
+ * This structure contains all data provided by the HDG sentence.
  */
 struct nmea_hc_hdg_t {
 	struct nmea_fix_t heading; /* magnetic sensor heading in deg */
