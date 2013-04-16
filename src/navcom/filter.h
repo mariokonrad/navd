@@ -69,9 +69,6 @@ typedef int (*filter_free_context_function)(
  * @note It is not advised for filters to have static data. Use the
  *  filter context instead, it can be unique for every route, but
  *  different for the same filter functions.
- *
- * @todo A setup function is needed similar to the procedures, to avoid
- *  the parsing of the properties every time the filter is executed.
  */
 struct filter_desc_t {
 	/**
