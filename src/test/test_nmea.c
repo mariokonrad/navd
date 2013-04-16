@@ -1,7 +1,10 @@
 #include <cunit/CUnit.h>
+#include <common/endian.h>
 #include <nmea/nmea.h>
 #include <nmea/nmea_util.h>
 #include <nmea/nmea_int.h>
+#include <nmea/nmea_fix.h>
+#include <nmea/nmea_checksum.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -699,6 +702,88 @@ static void test_checksum(void)
 	}
 }
 
+static void test_checksum_check(void)
+{
+	struct checksum_test_t
+	{
+		const char * str;
+	};
+
+	static const struct checksum_test_t TESTS[] =
+	{
+		{ "$GPRMC,201034,A,4702.4040,N,00818.3281,E,0.0,328.4,260807,0.6,E,A*17" },
+		{ "$GPRMC,201124,A,4702.3947,N,00818.3372,E,0.3,328.4,260807,0.6,E,A*10" },
+		{ "$GPRMC,201126,A,4702.3944,N,00818.3381,E,0.0,328.4,260807,0.6,E,A*1E" },
+	};
+
+	unsigned int i;
+
+	for (i = 0 ; i < sizeof(TESTS) / sizeof(TESTS[0]); ++i) {
+		CU_ASSERT_EQUAL(nmea_checksum_check(TESTS[i].str, '$'), 0);
+	}
+}
+
+static void test_checksum_write(void)
+{
+	struct checksum_test_t
+	{
+		const char * str;
+		const char * chk;
+	};
+
+	static const struct checksum_test_t TESTS[] =
+	{
+		{ "GPRMC,201034,A,4702.4040,N,00818.3281,E,0.0,328.4,260807,0.6,E,A", "17" },
+		{ "GPRMC,201124,A,4702.3947,N,00818.3372,E,0.3,328.4,260807,0.6,E,A", "10" },
+		{ "GPRMC,201126,A,4702.3944,N,00818.3381,E,0.0,328.4,260807,0.6,E,A", "1E" },
+	};
+
+	unsigned int i;
+	char buf[8];
+	int rc;
+
+	for (i = 0 ; i < sizeof(TESTS) / sizeof(TESTS[0]); ++i) {
+		rc = nmea_checksum_write(buf, sizeof(buf),
+			TESTS[i].str, TESTS[i].str + strlen(TESTS[i].str));
+		CU_ASSERT_EQUAL(rc, 2);
+		CU_ASSERT_STRING_EQUAL(buf, TESTS[i].chk);
+	}
+}
+
+static void test_nmea_fix_endianess_hton()
+{
+	struct nmea_fix_t fix;
+
+	fix.i = 0x12345678;
+	fix.d = 0x87654321;
+
+	nmea_fix_hton(&fix);
+	if (endian_is_little()) {
+		CU_ASSERT_EQUAL(fix.i, 0x78563412);
+		CU_ASSERT_EQUAL(fix.d, 0x21436587);
+	} else {
+		CU_ASSERT_EQUAL(fix.i, 0x12345678);
+		CU_ASSERT_EQUAL(fix.d, 0x87654321);
+	}
+}
+
+static void test_nmea_fix_endianess_ntoh()
+{
+	struct nmea_fix_t fix;
+
+	fix.i = 0x12345678;
+	fix.d = 0x87654321;
+
+	nmea_fix_ntoh(&fix);
+	if (endian_is_little()) {
+		CU_ASSERT_EQUAL(fix.i, 0x78563412);
+		CU_ASSERT_EQUAL(fix.d, 0x21436587);
+	} else {
+		CU_ASSERT_EQUAL(fix.i, 0x12345678);
+		CU_ASSERT_EQUAL(fix.d, 0x87654321);
+	}
+}
+
 void register_suite_nmea(void)
 {
 	CU_Suite * suite;
@@ -723,8 +808,10 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "endianess", test_endianess);
 	CU_add_test(suite, "conversion: float", test_convert_nmea_fix_float);
 	CU_add_test(suite, "conversion: double", test_convert_nmea_fix_double);
-/*
+	CU_add_test(suite, "nmea fix: endianess hton", test_nmea_fix_endianess_hton);
+	CU_add_test(suite, "nmea fix: endianess ntoh", test_nmea_fix_endianess_ntoh);
 	CU_add_test(suite, "checksum", test_checksum);
-*/
+	CU_add_test(suite, "checksum check", test_checksum_check);
+	CU_add_test(suite, "checksum write", test_checksum_write);
 }
 

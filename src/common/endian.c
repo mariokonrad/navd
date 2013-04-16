@@ -13,7 +13,7 @@ static const union endian_test_t _endian_test = { 0x01 };
 /**
  * @todo Documenation
  */
-static int endian_is_little(void)
+int endian_is_little(void)
 {
 	static int little = -1;
 	if (little < 0) little = _endian_test.c[0] == 0x01;

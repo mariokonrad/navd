@@ -30,14 +30,12 @@ static char i2hex(int i)
 uint8_t nmea_checksum(const char * s, const char * e)
 {
 	uint8_t chk = 0x00;
-	for (; *s && *e && s != e; ++s) chk ^= *s;
+	for (; *s && *e && (s < e); ++s) chk ^= *s;
 	return chk;
 }
 
 /**
  * Checks the nmea_checksum of the sentence.
- *
- * @todo Test
  *
  * @param[in] s sentence to check
  * @retval  0 success
@@ -54,8 +52,16 @@ int nmea_checksum_check(const char * s, char start_token)
 }
 
 /**
- * @todo Documenation
- * @todo Test
+ * Writes the checksum, computed from the specified string, into the
+ * buffer.
+ *
+ * @param[out] buf The buffer to contain the checksum in ASCII form.
+ * @param[in] size Size of the buffer. Must be at least 3 characters,
+ *     terminating zero will be added.
+ * @param[in] s Start of the string to compute the checksum for.
+ * @param[in] e End of the string.
+ * @retval -1 Parameter failure.
+ * @return Number of characters written into the specified buffer.
  */
 int nmea_checksum_write(char * buf, uint32_t size, const char * s, const char * e)
 {

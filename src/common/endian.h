@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+int endian_is_little(void);
+
 uint16_t byte_swap_16(uint16_t);
 uint32_t byte_swap_32(uint32_t);
 uint64_t byte_swap_64(uint64_t);

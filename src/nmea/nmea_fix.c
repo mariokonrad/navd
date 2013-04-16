@@ -108,6 +108,7 @@ int nmea_fix_to_float(float * v, const struct nmea_fix_t * fix)
 
 /**
  * Converts a fix point number to double.
+ *
  * @param[out] v converted number
  * @param[in] fix the fix point number to convert
  * @retval  0 success
