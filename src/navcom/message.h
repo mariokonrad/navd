@@ -10,15 +10,21 @@
  *   while values within 0xyyffffff (with y=0x01..0xff) are for application purposes.
  */
 enum MessageType {
+	/** System message */
 	 MSG_SYSTEM = 0x00000000
+
+	/** Messages from timers */
 	,MSG_TIMER  = 0x01000000
+
+	/** Navigational messages */
 	,MSG_NMEA   = 0x01000001
 };
 
 /**
- * @todo Documentation
+ * Enumeration of system messages.
  */
 enum System {
+	/** Graceful termination of the system */
 	SYSTEM_TERMINATE = 0x00000000
 };
 
