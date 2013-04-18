@@ -161,11 +161,11 @@ void nmea_angle_ntoh(struct nmea_angle_t * v)
 
 /**
  * Converts an angle to double.
+ *
  * @param[out] v converted number
  * @param[in] angle the angle to convert
  * @retval  0 success
  * @retval -1 failure
- * @todo Test
  */
 int nmea_angle_to_double(double * v, const struct nmea_angle_t * angle)
 {

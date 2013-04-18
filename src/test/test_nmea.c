@@ -700,6 +700,43 @@ static void test_convert_nmea_fix_double(void)
 	fix.i = 3; fix.d = 0;      test_conv_double_fix(3.0, &fix);
 }
 
+static void test_conv_double_angle(double expected, const struct nmea_angle_t * angle)
+{
+	int rc;
+	double d;
+
+	rc = nmea_angle_to_double(&d, angle);
+	CU_ASSERT_EQUAL(rc, 0);
+	CU_ASSERT_DOUBLE_EQUAL(d, expected, 1e-4);
+}
+
+static void test_convert_nmea_angle_double(void)
+{
+	struct nmea_angle_t angle;
+	double d;
+	int rc;
+
+	angle.d = 0;
+	angle.m = 0;
+	angle.s.i = 0;
+	angle.s.d = 0;
+	d = 0.0;
+
+	rc = nmea_angle_to_double(NULL, NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	rc = nmea_angle_to_double(&d, NULL);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	rc = nmea_angle_to_double(NULL, &angle);
+	CU_ASSERT_EQUAL(rc, -1);
+
+	angle.d =  0; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle( 0.0,      &angle);
+	angle.d = 90; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(90.0,      &angle);
+	angle.d =  0; angle.m = 30; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle( 0.5,      &angle);
+	angle.d =  0; angle.m =  0; angle.s.i = 1; angle.s.d = 0; test_conv_double_angle( 0.000278, &angle);
+}
+
 static void test_checksum(void)
 {
 	struct checksum_test_t
@@ -810,10 +847,10 @@ void register_suite_nmea(void)
 {
 	CU_Suite * suite;
 	suite = CU_add_suite("nmea", NULL, NULL);
-	CU_add_test(suite, "nmea fix: check zero", test_nmea_fix_check_zero);
-	CU_add_test(suite, "nmea time: check zero", test_nmea_time_check_zero);
-	CU_add_test(suite, "nmea date: check zero", test_check_date_zero);
-	CU_add_test(suite, "nmea angle: check zero", test_check_angle_zero);
+	CU_add_test(suite, "check zero: fix", test_nmea_fix_check_zero);
+	CU_add_test(suite, "check zero: time", test_nmea_time_check_zero);
+	CU_add_test(suite, "check zero: date", test_check_date_zero);
+	CU_add_test(suite, "check zero: angle", test_check_angle_zero);
 	CU_add_test(suite, "parsing: basic int", test_parsing_basic_int);
 	CU_add_test(suite, "parsing: nmea fix", test_parsing_nmea_fix);
 	CU_add_test(suite, "parsing: nmea date", test_parsing_nmea_date);
@@ -829,10 +866,11 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "writing: nmea lon", test_basic_longitude_writing);
 	CU_add_test(suite, "writing: sentence", test_sentence_writing);
 	CU_add_test(suite, "endianess", test_endianess);
-	CU_add_test(suite, "conversion: float", test_convert_nmea_fix_float);
-	CU_add_test(suite, "conversion: double", test_convert_nmea_fix_double);
-	CU_add_test(suite, "nmea fix: endianess hton", test_nmea_fix_endianess_hton);
-	CU_add_test(suite, "nmea fix: endianess ntoh", test_nmea_fix_endianess_ntoh);
+	CU_add_test(suite, "endianess: fix hton", test_nmea_fix_endianess_hton);
+	CU_add_test(suite, "endianess: fix ntoh", test_nmea_fix_endianess_ntoh);
+	CU_add_test(suite, "conversion: fix to float", test_convert_nmea_fix_float);
+	CU_add_test(suite, "conversion: fix to double", test_convert_nmea_fix_double);
+	CU_add_test(suite, "conversion: angle to double", test_convert_nmea_angle_double);
 	CU_add_test(suite, "checksum", test_checksum);
 	CU_add_test(suite, "checksum check", test_checksum_check);
 	CU_add_test(suite, "checksum write", test_checksum_write);
