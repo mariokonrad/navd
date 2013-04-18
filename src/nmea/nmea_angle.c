@@ -5,8 +5,6 @@
 /**
  * Checks whether all members of the angle information are zero.
  *
- * @todo Test
- *
  * @retval 0 All members are zero.
  * @retval -1 Parameter error
  * @retval -2 Not all members are zero

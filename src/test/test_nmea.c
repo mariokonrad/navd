@@ -235,6 +235,28 @@ static void test_check_date_zero(void)
 	CU_ASSERT_EQUAL(nmea_date_check_zero(&t), -2);
 }
 
+static void test_check_angle_zero(void)
+{
+	struct nmea_angle_t t;
+
+	CU_ASSERT_EQUAL(nmea_angle_check_zero(NULL), -1);
+
+	t.d = 0; t.m = 0; t.s.i = 0; t.s.d = 0;
+	CU_ASSERT_EQUAL(nmea_angle_check_zero(&t), 0);
+
+	t.d = 1; t.m = 0; t.s.i = 0; t.s.d = 0;
+	CU_ASSERT_EQUAL(nmea_angle_check_zero(&t), -2);
+
+	t.d = 0; t.m = 1; t.s.i = 0; t.s.d = 0;
+	CU_ASSERT_EQUAL(nmea_angle_check_zero(&t), -2);
+
+	t.d = 0; t.m = 0; t.s.i = 1; t.s.d = 0;
+	CU_ASSERT_EQUAL(nmea_angle_check_zero(&t), -2);
+
+	t.d = 0; t.m = 0; t.s.i = 0; t.s.d = 1;
+	CU_ASSERT_EQUAL(nmea_angle_check_zero(&t), -2);
+}
+
 static int test_parse_int(const char * s)
 {
 	uint32_t v;
@@ -791,6 +813,7 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "nmea fix: check zero", test_nmea_fix_check_zero);
 	CU_add_test(suite, "nmea time: check zero", test_nmea_time_check_zero);
 	CU_add_test(suite, "nmea date: check zero", test_check_date_zero);
+	CU_add_test(suite, "nmea angle: check zero", test_check_angle_zero);
 	CU_add_test(suite, "parsing: basic int", test_parsing_basic_int);
 	CU_add_test(suite, "parsing: nmea fix", test_parsing_nmea_fix);
 	CU_add_test(suite, "parsing: nmea date", test_parsing_nmea_date);
