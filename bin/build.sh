@@ -33,6 +33,7 @@ function usage()
 	echo "    cccc           : calculates metrics"
 	echo "    valgrind       : calls valgrind on tests to check for memory problems"
 	echo "    check-coverage : checks if all files are being used for code coverage (debug build only)"
+	echo "    todo           : searches and displays all todos, fixmes and temps"
 	echo ""
 }
 
@@ -198,6 +199,11 @@ function exec_cccc()
 	cat cscope.files | xargs cccc --lang="c" --outdir=${BASE}/build/doc/cccc
 }
 
+function exec_todo()
+{
+	grep --color -Erni "\<todo\>|\<fixme\>|\<temp\>" --exclude-dir=${BASE}/src/lua ${BASE}/src/*
+}
+
 if [ $# == 0 ] ; then
 	usage $0
 	exit
@@ -250,6 +256,9 @@ case $1 in
 		diff sourcefiles.txt buildfiles.txt
 		echo ""
 		rm -f buildfiles.txt sourcefiles.txt
+		;;
+	todo)
+		exec_todo
 		;;
 	*)
 		echo ""
