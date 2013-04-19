@@ -40,7 +40,16 @@ int nmea_date_check(const struct nmea_date_t * v)
 }
 
 /**
- * @todo Documenation
+ * Parses the date within the specified string (start and end of string).
+ * If the string is empty, the result will be initialized to zero.
+ *
+ * The date to be parsed must be in the form: "DDMMYY"
+ *  - DD : zero leading day of the month (01..31)
+ *  - MM : zero leading month of the year (01..12)
+ *  - YY : two digit year, 00 = 2000
+ *
+ * Note: this function does not do any range checks. To perform checks,
+ *       use nmea_date_check()
  *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)
@@ -88,7 +97,9 @@ int nmea_date_write(char * buf, uint32_t size, const struct nmea_date_t * v)
 }
 
 /**
- * @todo Documenation
+ * Converts the byte order of the specified date from host to network order.
+ *
+ * @param[inout] v Date to convert.
  */
 void nmea_date_hton(struct nmea_date_t * v)
 {
@@ -99,7 +110,9 @@ void nmea_date_hton(struct nmea_date_t * v)
 }
 
 /**
- * @todo Documenation
+ * Converts the byte order of the specified date from network to host order.
+ *
+ * @param[inout] v Date to convert.
  */
 void nmea_date_ntoh(struct nmea_date_t * v)
 {
