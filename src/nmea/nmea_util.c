@@ -72,7 +72,11 @@ const char * find_token_end(const char * s)
 }
 
 /**
- * @todo Documenation
+ * Searches for the end of the NMEA sentence, the character '*'.
+ *
+ * @param[in] s The string to search for the end.
+ * @return Points to the end of the sentence. If the string has ended
+ *   before, the result points to the end of the string.
  */
 const char * find_sentence_end(const char * s)
 {
@@ -81,7 +85,7 @@ const char * find_sentence_end(const char * s)
 }
 
 /**
- * @todo Documentation
+ * Thecks both specified characters to be valid and not '*'.
  *
  * @retval 1 token seems to be valid
  * @retval 0 token seems to be invalid

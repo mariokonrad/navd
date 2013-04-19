@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /**
- * @todo Documenation
+ * Information about satelite information when handling NMEA data.
  */
 struct nmea_satelite_t {
 	uint32_t id;

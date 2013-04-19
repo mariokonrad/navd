@@ -42,7 +42,19 @@ int nmea_time_check(const struct nmea_time_t * v)
 }
 
 /**
- * @todo Documentation
+ * Parses the time information within the specified string (start and end of string).
+ * If the string is empty, the result will be initialized to zero.
+ *
+ * The time to be parsed must  be in the form: "HHMMSS.mmm"
+ *  - HH  : zero leading hour of the day (00..23)
+ *  - MM  : zero leading minute of the hour (00..59)
+ *  - SS  : zero leading second of the minute (00..59)
+ *  - mmm : milliseconds (000..999)
+ *
+ * ".msec" is optional
+ *
+ * @note This function does not do any range checks. To perform checks,
+ *       use nmea_time_check()
  *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)

@@ -48,7 +48,7 @@ int nmea_date_check(const struct nmea_date_t * v)
  *  - MM : zero leading month of the year (01..12)
  *  - YY : two digit year, 00 = 2000
  *
- * Note: this function does not do any range checks. To perform checks,
+ * @note This function does not do any range checks. To perform checks,
  *       use nmea_date_check()
  *
  * @param[in] s start of string to parse (inclusive)

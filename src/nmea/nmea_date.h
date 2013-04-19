@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 /**
- * @todo Documenation
+ * Structure representing a date. This is used for handling all NMEA related
+ * stuff.
  */
 struct nmea_date_t {
 	uint32_t y; /* year */

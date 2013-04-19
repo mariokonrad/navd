@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /**
- * @todo Documenation
+ * Date information for NMEA data handling.
  */
 struct nmea_time_t {
 	uint32_t h;  /* hour: 0..23 */
