@@ -4,7 +4,10 @@
 #include <stdint.h>
 
 /**
- * @todo Documenation
+ * Structure to handle devices.
+ *
+ * This structure contains the file descriptor in use and device
+ * specific data.
  */
 struct device_t
 {
@@ -15,7 +18,7 @@ struct device_t
 struct device_config_t;
 
 /**
- * @todo Documenation
+ * Structure to carry device specific operations.
  */
 struct device_operations_t
 {

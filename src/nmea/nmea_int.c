@@ -3,7 +3,9 @@
 #include <ctype.h>
 
 /**
- * @todo Documenation
+ * Parses an unsigned integer value from a specified string. The string
+ * is defined by a start and endpoint (not inclusive).
+ * This function reads only unsigned integers in decimal form.
  *
  * @param[in] s start of string to parse (inclusive)
  * @param[in] e end of string to parse (exclusive)

@@ -136,7 +136,9 @@ int nmea_write_lonitude(char * buf, uint32_t size, const struct nmea_angle_t * v
 }
 
 /**
- * @todo Documenation
+ * Converts the specified angle from host to network byte order.
+ *
+ * @param[inout] v Angle to convert.
  * @todo Test
  */
 void nmea_angle_hton(struct nmea_angle_t * v)
@@ -148,7 +150,9 @@ void nmea_angle_hton(struct nmea_angle_t * v)
 }
 
 /**
- * @todo Documenation
+ * Converts the specified angle from network to host byte order.
+ *
+ * @param[inout] v Angle to convert.
  * @todo Test
  */
 void nmea_angle_ntoh(struct nmea_angle_t * v)

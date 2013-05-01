@@ -6,7 +6,12 @@
 #include <unistd.h>
 
 /**
- * @todo Documenation
+ * Opens a serial device.
+ *
+ * @param[inout] device The device handling structure.
+ * @param[in] cfg The device configuration.
+ * @retval  0 Success or file descriptor already valid.
+ * @retval -1 Parameter failure.
  */
 static int serial_open(struct device_t * device, const struct device_config_t * cfg)
 {
@@ -48,7 +53,11 @@ static int serial_open(struct device_t * device, const struct device_config_t * 
 }
 
 /**
- * @todo Documenation
+ * Closes the device, specified by the device handling structure.
+ *
+ * @param[inout] device The device to be closed.
+ * @retval  0 Success.
+ * @retval -1 Parameter failure.
  */
 static int serial_close(struct device_t * device)
 {
@@ -60,7 +69,14 @@ static int serial_close(struct device_t * device)
 }
 
 /**
- * @todo Documenation
+ * Reads the specified amount of bytes from the serial line into the
+ * provided buffer.
+ *
+ * @param[inout] device The device to read from.
+ * @param[out] buf The buffer to hold the data.
+ * @param[in] size The size of the buffer in bytes.
+ * @retval -1 Parameter failure.
+ * @return Number of read bytes (might be 0).
  */
 static int serial_read(struct device_t * device, char * buf, uint32_t size)
 {
@@ -71,7 +87,13 @@ static int serial_read(struct device_t * device, char * buf, uint32_t size)
 }
 
 /**
- * @todo Documenation
+ * Writes the speicified buffer to the serial line.
+ *
+ * @param[inout] device The device to write the data to.
+ * @param[in] buf The data to write.
+ * @param[in] size Number of bytes to write from the buffer to the serial line.
+ * @retval -1 Parameter failure.
+ * @return Number of written bytes.
  */
 static int serial_write(struct device_t * device, const char * buf, uint32_t size)
 {
@@ -82,7 +104,7 @@ static int serial_write(struct device_t * device, const char * buf, uint32_t siz
 }
 
 /**
- * @todo Documenation
+ * Exported structure for serial device operations.
  */
 const struct device_operations_t serial_device_operations =
 {

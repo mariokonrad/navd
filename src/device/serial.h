@@ -33,7 +33,7 @@ typedef enum {
 } Parity;
 
 /**
- * @todo Documenation
+ * Configuration for a serial communication line (RS232).
  */
 struct serial_config_t {
 	char name[128];

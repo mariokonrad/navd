@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 /**
- * @todo Documenation
+ * @todo Documentation
  */
 static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
@@ -32,7 +32,7 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 }
 
 /**
- * @todo Documenation
+ * @todo Documentation
  */
 const struct nmea_sentence_t sentence_gpgll =
 {

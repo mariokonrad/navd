@@ -2,7 +2,9 @@
 #include <stdio.h>
 
 /**
- * @todo Documenation
+ * Initializes the specified device structure.
+ *
+ * @param[out] device Structure to initialize.
  */
 void device_init(struct device_t * device)
 {
