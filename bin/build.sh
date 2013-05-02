@@ -36,6 +36,7 @@ function usage()
 	echo "    cccc           : calculates metrics"
 	echo "    valgrind       : calls valgrind on tests to check for memory problems"
 	echo "    check-coverage : checks if all files are being used for code coverage (debug build only)"
+	echo "    pmccabe        : calculates the cyclomatic complexity of the relevant source (without Lua, tests)"
 	echo "    todo           : searches and displays all todos, fixmes and temps"
 	echo ""
 }
@@ -209,6 +210,12 @@ function exec_cccc()
 	cat cscope.files | xargs cccc --lang="c" --outdir=${BASE}/build/doc/cccc
 }
 
+function exec_pmccabe()
+{
+	cd ${BASE}
+	pmccabe $(cat cscope.files)
+}
+
 function exec_todo()
 {
 	grep --color -Erni "\<todo\>|\<fixme\>|\<temp\>" --exclude-dir=${BASE}/src/lua ${BASE}/src/*
@@ -276,6 +283,9 @@ case $1 in
 		diff sourcefiles.txt buildfiles.txt
 		echo ""
 		rm -f buildfiles.txt sourcefiles.txt
+		;;
+	pmccabe)
+		exec_pmccabe
 		;;
 	todo)
 		exec_todo
