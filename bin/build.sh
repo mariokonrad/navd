@@ -5,6 +5,7 @@ export BASE=${SCRIPT_BASE}/..
 export TOOLCHAIN_FILE="-DCMAKE_TOOLCHAIN_FILE=${BASE}/etc/toolchain-${PLATFORM}.cmake"
 export PLATFORM=${PLATFORM:-auto}
 export BUILD_TYPE=${BUILD_TYPE:-Debug}
+export PACKAGE=${PACKAGE:-TGZ}
 
 if [ "${PLATFORM}" == "auto" ] ; then
 	case `uname -m` in
@@ -23,6 +24,8 @@ function usage()
 	echo "    info           : displays info"
 	echo "    clean          : cleans up the build"
 	echo "    build          : builds the software, available build types: Debug, Release (default: Debug)"
+	echo "    package        : packs the software."
+	echo "    release        : executes clean/build/pack"
 	echo "    index          : builds source index (tags, scope)"
 	echo "    tags           : builds source tags"
 	echo "    scope          : builds source scope"
@@ -42,6 +45,7 @@ function exec_info()
 	echo ""
 	echo "INFO:"
 	echo "    BUILD_TYPE     = ${BUILD_TYPE}"
+	echo "    PACKAGE        = ${PACKAGE}"
 	echo "    PLATFORM       = ${PLATFORM}"
 	echo "    SCRIPT_BASE    = ${SCRIPT_BASE}"
 	echo "    BASE           = ${BASE}"
@@ -97,6 +101,12 @@ function exec_build()
 	fi
 	#cmake --build .
 	make
+}
+
+function exec_package()
+{
+	cd ${BASE}/build
+	cpack -G ${PACKAGE}
 }
 
 function exec_doc()
@@ -218,6 +228,16 @@ case $1 in
 		;;
 	build)
 		exec_build
+		;;
+	package)
+		exec_package
+		;;
+	release)
+		export BUILD_TYPE=Release
+		exec_clean
+		exec_info
+		exec_build
+		exec_package
 		;;
 	index)
 		exec_tags

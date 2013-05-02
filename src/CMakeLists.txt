@@ -41,3 +41,10 @@ target_link_libraries(navd
 	m
 	)
 
+install(TARGETS navd
+	RUNTIME
+	DESTINATION bin
+	COMPONENT applications
+	)
+
+

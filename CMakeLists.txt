@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 2.8.9)
 project(navd)
 
+################################################################################
+# version
+################################################################################
+
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "1")
 set(VERSION_PATCH "0")
+
+################################################################################
+# options
+################################################################################
 
 option(ENABLE_SOURCE_GPSSIMULATOR
 	"Enable source GPS Simulator" ON)
@@ -13,6 +21,10 @@ option(ENABLE_SOURCE_GPSD
 
 option(ENABLE_FILTER_LUA
 	"Enable filter LUA" ON)
+
+################################################################################
+# build
+################################################################################
 
 find_program(GCOV_PATH gcov)
 
@@ -47,4 +59,37 @@ message("!  BUILD_TYPE                 : ${CMAKE_BUILD_TYPE}")
 message("!  ENABLE_SOURCE_GPSSIMULATOR : ${ENABLE_SOURCE_GPSSIMULATOR}")
 message("!  ENABLE_SOURCE_GPSD         : ${ENABLE_SOURCE_GPSD}")
 message("!  ENABLE_FILTER_LUA          : ${ENABLE_FILTER_LUA}")
+
+################################################################################
+# installation
+################################################################################
+
+set(CPACK_PACKAGE_VERSION_MAJOR ${VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+set(CPACK_PACKAGE_NAME "navd")
+set(CPACK_PACKAGE_VENDOR "Mario Konrad")
+set(CPACK_PACKAGE_CONTACT "Mario Konrad <mario.konrad@gmx.net>")
+set(CPACK_PACAKGE_DESCRIPTION "navd is a logging/multiplexing software, intended to run on low-power linux boxes.")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Logger/Multiplexer")
+set(CPACK_MONOLITHIC_INSTALL 1)
+set(CPACK_PACKAGE_EXECUTABLES "navd" "navd")
+set(CPACK_STRIP_FILES true)
+
+# debian
+
+set(CPACK_DEBIAN_PACKAGE_NAME ${CPACK_DEBIAN_PACKAGE_NAME})
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_CONTACT})
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CPACK_PACAKGE_DESCRIPTION})
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3)")
+set(CPACK_DEBIAN_PACKAGE_SECTION "misc")
+if (CMAKE_SIZEOF_VOID_P MATCHES "8")
+	set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+else()
+	set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+endif()
+
+
+include(CPack)
 
