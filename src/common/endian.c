@@ -11,7 +11,10 @@ union endian_test_t {
 static const union endian_test_t _endian_test = { 0x01 };
 
 /**
- * @todo Documenation
+ * Checks whether or not the machine is little endian.
+ *
+ * @retval 0 Big endian.
+ * @retval 1 Little endian.
  */
 int endian_is_little(void)
 {
@@ -21,7 +24,10 @@ int endian_is_little(void)
 }
 
 /**
- * @todo Documenation
+ * Swaps byte order.
+ *
+ * @param[in] v Value to swap.
+ * @return Swapped value.
  */
 uint16_t byte_swap_16(uint16_t v)
 {
@@ -32,7 +38,10 @@ uint16_t byte_swap_16(uint16_t v)
 }
 
 /**
- * @todo Documenation
+ * Swaps byte order.
+ *
+ * @param[in] v Value to swap.
+ * @return Swapped value.
  */
 uint32_t byte_swap_32(uint32_t v)
 {
@@ -45,7 +54,10 @@ uint32_t byte_swap_32(uint32_t v)
 }
 
 /**
- * @todo Documenation
+ * Swaps byte order.
+ *
+ * @param[in] v Value to swap.
+ * @return Swapped value.
  */
 uint64_t byte_swap_64(uint64_t v)
 {
@@ -62,7 +74,10 @@ uint64_t byte_swap_64(uint64_t v)
 }
 
 /**
- * @todo Documenation
+ * Convertes the value from host to network byte order.
+ *
+ * @param[in] v Value to convert.
+ * @return Converted value.
  */
 uint16_t endian_hton_16(uint16_t v)
 {
@@ -70,7 +85,10 @@ uint16_t endian_hton_16(uint16_t v)
 }
 
 /**
- * @todo Documenation
+ * Convertes the value from host to network byte order.
+ *
+ * @param[in] v Value to convert.
+ * @return Converted value.
  */
 uint32_t endian_hton_32(uint32_t v)
 {
@@ -78,7 +96,10 @@ uint32_t endian_hton_32(uint32_t v)
 }
 
 /**
- * @todo Documenation
+ * Convertes the value from host to network byte order.
+ *
+ * @param[in] v Value to convert.
+ * @return Converted value.
  */
 uint64_t endian_hton_64(uint64_t v)
 {
@@ -86,7 +107,10 @@ uint64_t endian_hton_64(uint64_t v)
 }
 
 /**
- * @todo Documenation
+ * Convertes the value from network to host byte order.
+ *
+ * @param[in] v Value to convert.
+ * @return Converted value.
  */
 uint16_t endian_ntoh_16(uint16_t v)
 {
@@ -94,7 +118,10 @@ uint16_t endian_ntoh_16(uint16_t v)
 }
 
 /**
- * @todo Documenation
+ * Convertes the value from network to host byte order.
+ *
+ * @param[in] v Value to convert.
+ * @return Converted value.
  */
 uint32_t endian_ntoh_32(uint32_t v)
 {
@@ -102,7 +129,10 @@ uint32_t endian_ntoh_32(uint32_t v)
 }
 
 /**
- * @todo Documenation
+ * Convertes the value from network to host byte order.
+ *
+ * @param[in] v Value to convert.
+ * @return Converted value.
  */
 uint64_t endian_ntoh_64(uint64_t v)
 {
