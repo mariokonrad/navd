@@ -6,7 +6,13 @@
 #define TAG "GPRMC"
 
 /**
- * @todo Documenation
+ * Reads the NMEA sentence into the specified structure.
+ *
+ * @param[out] nmea Structure to hold the parsed data.
+ * @param[in] s Start of the string to parse (inclusive).
+ * @param[in] e End of the string to parse (exclusive).
+ * @retval -1 Parameter failure, parsing error.
+ * @retval  0 Success
  */
 static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
@@ -41,7 +47,13 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 }
 
 /**
- * @todo Documenation
+ * Writes the NMEA sentence defined by the structure to the specified buffer.
+ *
+ * @param[out] buf The buffer to contain the resulting NMEA sentence.
+ * @param[in] size The size of the buffer.
+ * @param[in] nmea The NMEA data to write to the buffer.
+ * @retval -1 Parameter failure.
+ * @return Number of characters written to the buffer.
  */
 static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 {
@@ -102,7 +114,7 @@ static int write(char * buf, uint32_t size, const struct nmea_t * nmea)
 }
 
 /**
- * @todo Documenation
+ * Byte order conversion of the data from host to network byte order.
  */
 static void hton(struct nmea_t * nmea)
 {
@@ -120,7 +132,7 @@ static void hton(struct nmea_t * nmea)
 }
 
 /**
- * @todo Documenation
+ * Byte order conversion of the data from network to host byte order.
  */
 static void ntoh(struct nmea_t * nmea)
 {
@@ -138,7 +150,7 @@ static void ntoh(struct nmea_t * nmea)
 }
 
 /**
- * @todo Documenation
+ * Description of the NMEA sentence.
  */
 const struct nmea_sentence_t sentence_gprmc =
 {
