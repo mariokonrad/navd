@@ -4,7 +4,13 @@
 #include <stdio.h>
 
 /**
- * @todo Documenation
+ * Reads the NMEA sentence into the specified structure.
+ *
+ * @param[out] nmea Structure to hold the parsed data.
+ * @param[in] s Start of the string to parse (inclusive).
+ * @param[in] e End of the string to parse (exclusive).
+ * @retval -1 Parameter failure, parsing error.
+ * @retval  0 Success
  */
 static int read(struct nmea_t * nmea, const char * s, const char * e)
 {
@@ -40,7 +46,7 @@ static int read(struct nmea_t * nmea, const char * s, const char * e)
 }
 
 /**
- * @todo Documenation
+ * Description of the NMEA sentence.
  */
 const struct nmea_sentence_t sentence_gprte =
 {

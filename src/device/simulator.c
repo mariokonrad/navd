@@ -4,7 +4,7 @@
 #include <string.h>
 
 /**
- * @todo Documenation
+ * Structure to hand simulation data.
  */
 static struct simulator_data_t
 {
@@ -14,7 +14,12 @@ static struct simulator_data_t
 } simulator_data;
 
 /**
- * @todo Documenation
+ * Opens the simulator device.
+ *
+ * @param[out] device The device descriptor structure.
+ * @param[in] cfg The configuration.
+ * @retval -1 Parameter failure.
+ * @retval  0 Success.
  */
 static int simulator_open(struct device_t * device, const struct device_config_t * cfg)
 {
@@ -36,7 +41,11 @@ static int simulator_open(struct device_t * device, const struct device_config_t
 }
 
 /**
- * @todo Documenation
+ * Closes the device.
+ *
+ * @param[inout] device The device descriptor device.
+ * @retval -1 Parameter failure.
+ * @retval  0 Success.
  */
 static int simulator_close(struct device_t * device)
 {
@@ -47,7 +56,13 @@ static int simulator_close(struct device_t * device)
 }
 
 /**
- * @todo Documenation
+ * Reads data from the simulator.
+ *
+ * @param[out] device The device descriptor.
+ * @param[out] buf The buffer to contain the read data.
+ * @param[in] size Buffer size in bytes.
+ * @retval -1 Parameter failure.
+ * @return Number of read bytes.
  */
 static int simulator_read(struct device_t * device, char * buf, uint32_t size)
 {
@@ -67,7 +82,7 @@ static int simulator_read(struct device_t * device, char * buf, uint32_t size)
 }
 
 /**
- * @todo Documenation
+ * Does nothing. Returns always -1.
  */
 static int simulator_write(struct device_t * device, const char * buf, uint32_t size)
 {
@@ -78,7 +93,7 @@ static int simulator_write(struct device_t * device, const char * buf, uint32_t 
 }
 
 /**
- * @todo Documenation
+ * Structure to describe the simulator device.
  */
 const struct device_operations_t simulator_operations =
 {
