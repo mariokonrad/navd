@@ -1,7 +1,7 @@
 #include <common/endian.h>
 
 /**
- * @todo Documenation
+ * Structure to perform endian test.
  */
 union endian_test_t {
 	uint16_t x;
