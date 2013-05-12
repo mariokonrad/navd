@@ -32,17 +32,17 @@ if (CMAKE_COMPILER_IS_GNUCC)
 	if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 		# pedantic and c99 disabled because of sigaction/etc and pselect
 		set(CMAKE_C_FLAGS         "-O2 -Wall -Wextra -m64")
-		set(CMAKE_C_FLAGS_DEBUG   "-O0 -ggdb -Wall -Wextra -fprofile-arcs -ftest-coverage -m64")
+		set(CMAKE_C_FLAGS_DEBUG   "-O0 -Wall -Wextra -ggdb -fprofile-arcs -ftest-coverage -m64")
 		set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Wextra -DNDEBUG -m64")
 	elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "i686")
 		# pedantic and c99 disabled because of sigaction/etc and pselect
 		set(CMAKE_C_FLAGS         "-O2 -Wall -Wextra -m32")
-		set(CMAKE_C_FLAGS_DEBUG   "-O0 -ggdb -Wall -Wextra -fprofile-arcs -ftest-coverage -m32")
+		set(CMAKE_C_FLAGS_DEBUG   "-O0 -Wall -Wextra -ggdb -fprofile-arcs -ftest-coverage -m32")
 		set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Wextra -DNDEBUG -m32")
 	else()
 		# pedantic and c99 disabled because of sigaction/etc and pselect
 		set(CMAKE_C_FLAGS         "-O2 -Wall -Wextra")
-		set(CMAKE_C_FLAGS_DEBUG   "-O0 -ggdb -Wall -Wextra -fprofile-arcs -ftest-coverage")
+		set(CMAKE_C_FLAGS_DEBUG   "-O0 -Wall -Wextra -ggdb -fprofile-arcs -ftest-coverage")
 		set(CMAKE_C_FLAGS_RELEASE "-O2 -Wall -Wextra -DNDEBUG")
 	endif()
 
