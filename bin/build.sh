@@ -285,6 +285,7 @@ case $1 in
 		rm -f buildfiles.txt sourcefiles.txt
 		;;
 	pmccabe)
+		exec_tags
 		exec_pmccabe
 		;;
 	todo)
