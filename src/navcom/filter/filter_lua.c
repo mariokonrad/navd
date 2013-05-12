@@ -7,6 +7,14 @@
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
 
+/**
+ * Writes the string by the Lua script to the syslog.
+ *
+ * Lua Example:
+ * @code
+ * syslog(LOG_NOTICE, 'Message')
+ * @endcode
+ */
 static int lua__syslog(lua_State * lua)
 {
 	int type = -1;
