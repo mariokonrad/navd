@@ -223,6 +223,147 @@ static void test_func_msg_type(void)
 	proplist_free(&properties);
 }
 
+static void test_func_msg_to_table(void)
+{
+	int rc;
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+	struct message_t msg_in;
+	struct message_t msg_out;
+
+	const char SCRIPT[] =
+		"function filter(msg_out, msg_in)\n"
+		"	local t = msg_to_table(msg_in)\n"
+		"   if t == nil then\n"
+		"		return FILTER_DISCARD\n"
+		"	end\n"
+		"	return FILTER_SUCCESS\n"
+		"end\n"
+		"\n"
+		;
+
+	memset(&msg_in, 0, sizeof(msg_in));
+	memset(&msg_out, 0, sizeof(msg_out));
+
+	CU_ASSERT_NOT_EQUAL(filter, NULL);
+	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+
+	proplist_init(&properties);
+	proplist_set(&properties, "script", tmpfilename);
+
+	prepare_script(SCRIPT);
+
+	rc = filter->configure(&ctx, &properties);
+	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+
+	rc = filter->func(&msg_out, NULL, &ctx, &properties);
+	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
+
+	msg_in.type = MSG_SYSTEM;
+
+	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
+	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	proplist_free(&properties);
+}
+
+static void test_func_msg_to_table_system(void)
+{
+	int rc;
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+	struct message_t msg_in;
+	struct message_t msg_out;
+
+	const char SCRIPT[] =
+		"function filter(msg_out, msg_in)\n"
+		"	local t = msg_to_table(msg_in)\n"
+		"   if t == nil then\n"
+		"		return FILTER_DISCARD\n"
+		"	end\n"
+		"	if t.type == MSG_SYSTEM then\n"
+		"		if t.data.system == SYSTEM_TERMINATE then\n"
+		"			return FILTER_SUCCESS\n"
+		"		end\n"
+		"	end\n"
+		"	return FILTER_FAILURE\n"
+		"end\n"
+		"\n"
+		;
+
+	memset(&msg_in, 0, sizeof(msg_in));
+	memset(&msg_out, 0, sizeof(msg_out));
+
+	CU_ASSERT_NOT_EQUAL(filter, NULL);
+	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+
+	proplist_init(&properties);
+	proplist_set(&properties, "script", tmpfilename);
+
+	prepare_script(SCRIPT);
+
+	rc = filter->configure(&ctx, &properties);
+	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+
+	msg_in.type = MSG_SYSTEM;
+	msg_in.data.system = SYSTEM_TERMINATE;
+
+	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
+	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	proplist_free(&properties);
+}
+
+static void test_func_msg_to_table_timer(void)
+{
+	int rc;
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+	struct message_t msg_in;
+	struct message_t msg_out;
+
+	const char SCRIPT[] =
+		"function filter(msg_out, msg_in)\n"
+		"	local t = msg_to_table(msg_in)\n"
+		"   if t == nil then\n"
+		"		return FILTER_DISCARD\n"
+		"	end\n"
+		"	if t.type == MSG_TIMER then\n"
+		"		if t.data.timer_id == 12345678 then\n"
+		"			return FILTER_SUCCESS\n"
+		"		end\n"
+		"	end\n"
+		"	return FILTER_FAILURE\n"
+		"end\n"
+		"\n"
+		;
+
+	memset(&msg_in, 0, sizeof(msg_in));
+	memset(&msg_out, 0, sizeof(msg_out));
+
+	CU_ASSERT_NOT_EQUAL(filter, NULL);
+	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+
+	proplist_init(&properties);
+	proplist_set(&properties, "script", tmpfilename);
+
+	prepare_script(SCRIPT);
+
+	rc = filter->configure(&ctx, &properties);
+	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+
+	msg_in.type = MSG_TIMER;
+	msg_in.data.timer_id = 12345678;
+
+	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
+	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	proplist_free(&properties);
+}
+
 void register_suite_filter_lua(void)
 {
 	CU_Suite * suite;
@@ -234,5 +375,8 @@ void register_suite_filter_lua(void)
 	CU_add_test(suite, "func: syslog", test_func_syslog);
 	CU_add_test(suite, "func: msg_clone", test_func_msg_clone);
 	CU_add_test(suite, "func: msg_type", test_func_msg_type);
+	CU_add_test(suite, "func: msg_to_table", test_func_msg_to_table);
+	CU_add_test(suite, "func: msg_to_table: system", test_func_msg_to_table_system);
+	CU_add_test(suite, "func: msg_to_table: timer", test_func_msg_to_table_timer);
 }
 

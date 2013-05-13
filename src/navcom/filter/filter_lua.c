@@ -81,6 +81,76 @@ static int lua__msg_type(lua_State * lua)
 	return 1;
 }
 
+static void msg_table_system(lua_State * lua, const struct message_t * msg)
+{
+	lua_pushunsigned(lua, msg->data.system);
+	lua_setfield(lua, -2, "system");
+}
+
+static void msg_table_timer(lua_State * lua, const struct message_t * msg)
+{
+	lua_pushunsigned(lua, msg->data.timer_id);
+	lua_setfield(lua, -2, "timer_id");
+}
+
+/**
+ * Converts the speficied message to a table.
+ *
+ * Currently supported message types:
+ * - MSG_SYSTEM
+ * - MSG_TIMER
+ *
+ * Lua example:
+ * @code
+ * function filter(msg_out, msg_in)
+ *     local t = msg_to_table(msg_in)
+ *     if t.type == MSG_SYSTEM then
+ *         return FILTER_SUCCESS
+ *     end
+ *     return FILTER_FAILURE
+ * end
+ * @endcode
+ */
+static int lua__msg_to_table(lua_State * lua)
+{
+	struct msg_conversion_t
+	{
+		uint32_t type;
+		void (*func)(lua_State *, const struct message_t *);
+	};
+
+	static const struct msg_conversion_t CONV[] =
+	{
+		{ MSG_SYSTEM, msg_table_system },
+		{ MSG_TIMER,  msg_table_timer  },
+	};
+
+	struct message_t * msg;
+	size_t i;
+
+	msg = lua_touserdata(lua, -1);
+	if (msg == NULL) {
+		lua_pushnil(lua);
+		return 1;
+	}
+
+	lua_newtable(lua);
+
+	lua_pushunsigned(lua, msg->type);
+	lua_setfield(lua, -2, "type");
+
+	lua_newtable(lua);
+	for (i = 0; i < sizeof(CONV) / sizeof(CONV[0]); ++i) {
+		if ((CONV[i].type == msg->type) && CONV[i].func) {
+			CONV[i].func(lua, msg);
+			break;
+		}
+	}
+	lua_setfield(lua, -2, "data");
+
+	return 1;
+}
+
 static void define_const(lua_State * lua, const char * sym, int val)
 {
 	lua_pushinteger(lua, val);
@@ -120,6 +190,7 @@ static int setup_lua_state(lua_State * lua)
 	define_unsigned_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
 	lua_register(lua, "msg_clone", lua__msg_clone);
 	lua_register(lua, "msg_type", lua__msg_type);
+	lua_register(lua, "msg_to_table", lua__msg_to_table);
 
 	/* TODO: setup error handling */
 
