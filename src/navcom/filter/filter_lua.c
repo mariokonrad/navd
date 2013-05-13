@@ -10,7 +10,7 @@
 /**
  * Writes the string by the Lua script to the syslog.
  *
- * Lua Example:
+ * Lua example:
  * @code
  * syslog(LOG_NOTICE, 'Message')
  * @endcode
@@ -28,27 +28,57 @@ static int lua__syslog(lua_State * lua)
 }
 
 /**
- * @todo Documentation
- * @todo Test
+ * Clones the message.
+ *
+ * Lua example:
+ * @code
+ * function filter(msg_out, msg_in)
+ *     local rc = msg_clone(msg_out, msg_in)
+ *     return FILTER_SUCCESS
+ * end
+ * @endcode
  */
 static int lua__msg_clone(lua_State * lua)
 {
-	UNUSED_ARG(lua);
+	struct message_t * msg_out;
+	struct message_t * msg_in;
 
-	/* TODO: IMPLEMENATION */
-	return 0;
+	msg_out = lua_touserdata(lua, -2);
+	msg_in = lua_touserdata(lua, -1);
+
+	if (!msg_out || !msg_in) {
+		lua_pushinteger(lua, FILTER_FAILURE);
+		return 1;
+	}
+
+	memcpy(msg_out, msg_in, sizeof(struct message_t));
+
+	lua_pushinteger(lua, FILTER_SUCCESS);
+	return 1;
 }
 
 /**
- * @todo Documentation
- * @todo Test
+ * Returns the message type. The resulting type is unsigned.
+ *
+ * Lua example:
+ * @code
+ * function filter(msg_out, msg_in)
+ *     local t = msg_type(msg_in)
+ *     return FILTER_SUCCESS
+ * end
+ * @endcode
  */
 static int lua__msg_type(lua_State * lua)
 {
-	UNUSED_ARG(lua);
+	struct message_t * msg;
 
-	/* TODO: IMPLEMENATION */
-	return 0;
+	msg = lua_touserdata(lua, -1);
+	if (msg == NULL) {
+		lua_pushunsigned(lua, MSG_INVALID);
+		return 1;
+	}
+	lua_pushunsigned(lua, msg->type);
+	return 1;
 }
 
 static void define_const(lua_State * lua, const char * sym, int val)

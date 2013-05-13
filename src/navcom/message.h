@@ -10,14 +10,17 @@
  *   while values within 0xyyffffff (with y=0x01..0xff) are for application purposes.
  */
 enum MessageType {
+	/** Invalid message */
+	 MSG_INVALID = 0x00000000
+
 	/** System message */
-	 MSG_SYSTEM = 0x00000000
+	,MSG_SYSTEM  = 0x00000001
 
 	/** Messages from timers */
-	,MSG_TIMER  = 0x01000000
+	,MSG_TIMER   = 0x01000000
 
 	/** Navigational messages */
-	,MSG_NMEA   = 0x01000001
+	,MSG_NMEA    = 0x01000001
 };
 
 /**
