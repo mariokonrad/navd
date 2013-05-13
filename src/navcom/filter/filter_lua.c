@@ -57,6 +57,12 @@ static void define_const(lua_State * lua, const char * sym, int val)
 	lua_setglobal(lua, sym);
 }
 
+static void define_unsigned_const(lua_State * lua, const char * sym, uint32_t val)
+{
+	lua_pushunsigned(lua, val);
+	lua_setglobal(lua, sym);
+}
+
 static int setup_lua_state(lua_State * lua)
 {
 	luaopen_base(lua);
@@ -78,10 +84,10 @@ static int setup_lua_state(lua_State * lua)
 	lua_register(lua, "syslog", lua__syslog);
 
 	/* TODO: setup message handling functions */
-	define_const(lua, "MSG_SYSTEM", MSG_SYSTEM);
-	define_const(lua, "MSG_TIMER",  MSG_TIMER);
-	define_const(lua, "MSG_NMEA",   MSG_NMEA);
-	define_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
+	define_unsigned_const(lua, "MSG_SYSTEM", MSG_SYSTEM);
+	define_unsigned_const(lua, "MSG_TIMER",  MSG_TIMER);
+	define_unsigned_const(lua, "MSG_NMEA",   MSG_NMEA);
+	define_unsigned_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
 	lua_register(lua, "msg_clone", lua__msg_clone);
 	lua_register(lua, "msg_type", lua__msg_type);
 
