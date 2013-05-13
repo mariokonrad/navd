@@ -10,6 +10,7 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 
 
 /*
@@ -336,12 +337,14 @@
 ** this.
 */
 #if LUAI_BITSINT >= 32		/* { */
-#define LUA_INT32	int
+#define LUA_INT32	int32_t
+#define LUA_UINT32	uint32_t
 #define LUAI_UMEM	size_t
 #define LUAI_MEM	ptrdiff_t
 #else				/* }{ */
 /* 16-bit ints */
-#define LUA_INT32	long
+#define LUA_INT32	int32_t
+#define LUA_UINT32	uint32_t
 #define LUAI_UMEM	unsigned long
 #define LUAI_MEM	long
 #endif				/* } */
@@ -457,7 +460,7 @@
 @@ LUA_UNSIGNED is the integral type used by lua_pushunsigned/lua_tounsigned.
 ** It must have at least 32 bits.
 */
-#define LUA_UNSIGNED	unsigned LUA_INT32
+#define LUA_UNSIGNED	LUA_UINT32
 
 
 
