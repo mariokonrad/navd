@@ -417,7 +417,87 @@ static void test_func_msg_to_table_nmea(void)
 
 static void test_func_msg_to_table_nmea_rmc(void)
 {
-	CU_FAIL();
+	int rc;
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+	struct message_t msg_in;
+	struct message_t msg_out;
+
+	const char SCRIPT[] =
+		"function filter(msg_out, msg_in)\n"
+		"	local t = msg_to_table(msg_in)\n"
+		"   if t == nil then\n"
+		"		return FILTER_DISCARD\n"
+		"	end\n"
+		"	if t.type ~= MSG_NMEA then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.type ~= NMEA_RMC then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.sentence.rmc.status ~= NMEA_STATUS_OK then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.sentence.rmc.lat ~= 1.5 then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.sentence.rmc.lat_dir ~= NMEA_NORTH then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.sentence.rmc.lon ~= 1.5 then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.sentence.rmc.lon_dir ~= NMEA_WEST then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.sentence.rmc.sog ~= 5.0 then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	if t.data.nmea.sentence.rmc.head ~= 10.0 then\n"
+		"		return FILTER_FAILURE\n"
+		"	end\n"
+		"	return FILTER_SUCCESS\n"
+		"end\n"
+		"\n"
+		;
+
+	memset(&msg_in, 0, sizeof(msg_in));
+	memset(&msg_out, 0, sizeof(msg_out));
+
+	CU_ASSERT_NOT_EQUAL(filter, NULL);
+	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+
+	proplist_init(&properties);
+	proplist_set(&properties, "script", tmpfilename);
+
+	prepare_script(SCRIPT);
+
+	rc = filter->configure(&ctx, &properties);
+	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+
+	msg_in.type = MSG_NMEA;
+	msg_in.data.nmea.type = NMEA_RMC;
+	msg_in.data.nmea.sentence.rmc.status = NMEA_STATUS_OK;
+	msg_in.data.nmea.sentence.rmc.lat.d = 1;
+	msg_in.data.nmea.sentence.rmc.lat.m = 30;
+	msg_in.data.nmea.sentence.rmc.lat.s.i = 0;
+	msg_in.data.nmea.sentence.rmc.lat.s.d = 0;
+	msg_in.data.nmea.sentence.rmc.lat_dir = NMEA_NORTH;
+	msg_in.data.nmea.sentence.rmc.lon.d = 1;
+	msg_in.data.nmea.sentence.rmc.lon.m = 30;
+	msg_in.data.nmea.sentence.rmc.lon.s.i = 0;
+	msg_in.data.nmea.sentence.rmc.lon.s.d = 0;
+	msg_in.data.nmea.sentence.rmc.lon_dir = NMEA_WEST;
+	msg_in.data.nmea.sentence.rmc.sog.i = 5;
+	msg_in.data.nmea.sentence.rmc.sog.d = 0;
+	msg_in.data.nmea.sentence.rmc.head.i = 10;
+	msg_in.data.nmea.sentence.rmc.head.d = 0;
+
+	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
+	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	proplist_free(&properties);
 }
 
 void register_suite_filter_lua(void)
