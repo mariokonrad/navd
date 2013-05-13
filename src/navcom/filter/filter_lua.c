@@ -7,6 +7,81 @@
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
 
+static void lua_pushchar(lua_State * lua, char val)
+{
+	char str[2];
+
+	str[0] = val;
+	str[1] = '\0';
+
+	lua_pushstring(lua, str);
+}
+
+static void lua_pushnmeafix(lua_State * lua, const struct nmea_fix_t * a)
+{
+	double t;
+
+	nmea_fix_to_double(&t, a);
+	lua_pushnumber(lua, t);
+}
+
+static void lua_pushnmeatime(lua_State * lua, const struct nmea_time_t * t)
+{
+	lua_newtable(lua);
+
+	lua_pushunsigned(lua, t->h);
+	lua_setfield(lua, -2, "h");
+
+	lua_pushunsigned(lua, t->m);
+	lua_setfield(lua, -2, "m");
+
+	lua_pushunsigned(lua, t->s);
+	lua_setfield(lua, -2, "s");
+
+	lua_pushunsigned(lua, t->ms);
+	lua_setfield(lua, -2, "ms");
+}
+
+static void lua_pushnmeadate(lua_State * lua, const struct nmea_date_t * t)
+{
+	lua_newtable(lua);
+
+	lua_pushunsigned(lua, t->y);
+	lua_setfield(lua, -2, "y");
+
+	lua_pushunsigned(lua, t->m);
+	lua_setfield(lua, -2, "m");
+
+	lua_pushunsigned(lua, t->d);
+	lua_setfield(lua, -2, "d");
+}
+
+static void lua_pushnmeaangle(lua_State * lua, const struct nmea_angle_t * a)
+{
+	double t;
+
+	nmea_angle_to_double(&t, a);
+	lua_pushnumber(lua, t);
+}
+
+static void define_const(lua_State * lua, const char * sym, int val)
+{
+	lua_pushinteger(lua, val);
+	lua_setglobal(lua, sym);
+}
+
+static void define_unsigned_const(lua_State * lua, const char * sym, uint32_t val)
+{
+	lua_pushunsigned(lua, val);
+	lua_setglobal(lua, sym);
+}
+
+static void define_char_const(lua_State * lua, const char * sym, char val)
+{
+	lua_pushchar(lua, val);
+	lua_setglobal(lua, sym);
+}
+
 /**
  * Returns a string to the Lua release.
  */
@@ -101,9 +176,62 @@ static void msg_table_timer(lua_State * lua, const struct message_t * msg)
 	lua_setfield(lua, -2, "timer_id");
 }
 
+static void msg_table_nmea_rmc(lua_State * lua, const struct nmea_t * nmea)
+{
+	const struct nmea_rmc_t * s = &nmea->sentence.rmc;
+
+	lua_pushnmeatime(lua, &s->time);
+	lua_setfield(lua, -2, "time");
+
+	lua_pushchar(lua, s->status);
+	lua_setfield(lua, -2, "status");
+
+	lua_pushnmeaangle(lua, &s->lat);
+	lua_setfield(lua, -2, "lat");
+
+	lua_pushchar(lua, s->lat_dir);
+	lua_setfield(lua, -2, "lat_dir");
+
+	lua_pushnmeaangle(lua, &s->lon);
+	lua_setfield(lua, -2, "lon");
+
+	lua_pushchar(lua, s->lon_dir);
+	lua_setfield(lua, -2, "lon_dir");
+
+	lua_pushnmeafix(lua, &s->sog);
+	lua_setfield(lua, -2, "sog");
+
+	lua_pushnmeafix(lua, &s->head);
+	lua_setfield(lua, -2, "head");
+
+	lua_pushnmeadate(lua, &s->date);
+	lua_setfield(lua, -2, "date");
+
+	lua_pushnmeafix(lua, &s->m);
+	lua_setfield(lua, -2, "m");
+
+	lua_pushchar(lua, s->m_dir);
+	lua_setfield(lua, -2, "m_dir");
+
+	lua_pushchar(lua, s->sig_integrity);
+	lua_setfield(lua, -2, "sig_integrity");
+}
+
 static void msg_table_nmea(lua_State * lua, const struct message_t * msg)
 {
+	struct msg_nmea_t
+	{
+		uint32_t type;
+		void (*func)(lua_State *, const struct nmea_t *);
+	};
+
+	static const struct msg_nmea_t CONV[] =
+	{
+		{ NMEA_RMC, msg_table_nmea_rmc },
+	};
+
 	const struct nmea_t * nmea = &msg->data.nmea;
+	size_t i;
 
 	lua_newtable(lua);
 
@@ -113,7 +241,14 @@ static void msg_table_nmea(lua_State * lua, const struct message_t * msg)
 	lua_pushstring(lua, nmea->raw);
 	lua_setfield(lua, -2, "raw");
 
-	/* TODO: support other fields than raw */
+	lua_newtable(lua);
+	for (i = 0; i < sizeof(CONV) / sizeof(CONV[0]); ++i) {
+		if ((CONV[i].type == nmea->type) && CONV[i].func) {
+			CONV[i].func(lua, nmea);
+			break;
+		}
+	}
+	lua_setfield(lua, -2, "sentence");
 
 	lua_setfield(lua, -2, "nmea");
 }
@@ -178,18 +313,6 @@ static int lua__msg_to_table(lua_State * lua)
 	return 1;
 }
 
-static void define_const(lua_State * lua, const char * sym, int val)
-{
-	lua_pushinteger(lua, val);
-	lua_setglobal(lua, sym);
-}
-
-static void define_unsigned_const(lua_State * lua, const char * sym, uint32_t val)
-{
-	lua_pushunsigned(lua, val);
-	lua_setglobal(lua, sym);
-}
-
 static void setup_filter_results(lua_State * lua)
 {
 	define_const(lua, "FILTER_SUCCESS", FILTER_SUCCESS);
@@ -233,6 +356,16 @@ static void setup_message_handling(lua_State * lua)
 	define_unsigned_const(lua, "NMEA_GARMIN_RMM", NMEA_GARMIN_RMM);
 	define_unsigned_const(lua, "NMEA_GARMIN_RMZ", NMEA_GARMIN_RMZ);
 	define_unsigned_const(lua, "NMEA_HC_HDG",     NMEA_HC_HDG);
+
+	/* nmea directions */
+	define_char_const(lua, "NMEA_EAST",  NMEA_EAST);
+	define_char_const(lua, "NMEA_WEST",  NMEA_WEST);
+	define_char_const(lua, "NMEA_NORTH", NMEA_NORTH);
+	define_char_const(lua, "NEMA_SOUGH", NEMA_SOUGH);
+
+	/* nmea status */
+	define_char_const(lua, "NMEA_STATUS_OK",      NMEA_STATUS_OK);
+	define_char_const(lua, "NMEA_STATUS_WARNING", NMEA_STATUS_WARNING);
 
 	/* message functions */
 	lua_register(lua, "msg_clone", lua__msg_clone);

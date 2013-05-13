@@ -379,7 +379,7 @@ static void test_func_msg_to_table_nmea(void)
 		"		return FILTER_DISCARD\n"
 		"	end\n"
 		"	if t.type == MSG_NMEA then\n"
-		"		if t.data.nmea.type == NMEA_RMC then\n"
+		"		if t.data.nmea.type == NMEA_RMB then\n"
 		"			if t.data.nmea.raw == 'hello world' then\n"
 		"				return FILTER_SUCCESS\n"
 		"			end\n"
@@ -405,7 +405,7 @@ static void test_func_msg_to_table_nmea(void)
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	msg_in.type = MSG_NMEA;
-	msg_in.data.nmea.type = NMEA_RMC;
+	msg_in.data.nmea.type = NMEA_RMB;
 	strncpy(msg_in.data.nmea.raw, "hello world", sizeof(msg_in.data.nmea.raw));
 
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
@@ -413,6 +413,11 @@ static void test_func_msg_to_table_nmea(void)
 
 	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
+}
+
+static void test_func_msg_to_table_nmea_rmc(void)
+{
+	CU_FAIL();
 }
 
 void register_suite_filter_lua(void)
@@ -430,5 +435,6 @@ void register_suite_filter_lua(void)
 	CU_add_test(suite, "func: msg_to_table: system", test_func_msg_to_table_system);
 	CU_add_test(suite, "func: msg_to_table: timer", test_func_msg_to_table_timer);
 	CU_add_test(suite, "func: msg_to_table: nmea", test_func_msg_to_table_nmea);
+	CU_add_test(suite, "func: msg_to_table: nmea: RMC", test_func_msg_to_table_nmea_rmc);
 }
 
