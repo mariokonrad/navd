@@ -4,5 +4,6 @@
 #include <navcom/filter.h>
 
 extern const struct filter_desc_t filter_lua;
+extern const char * filter_lua_release(void);
 
 #endif

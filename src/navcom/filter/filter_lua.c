@@ -8,6 +8,14 @@
 #include <lua/lauxlib.h>
 
 /**
+ * Returns a string to the Lua release.
+ */
+const char * filter_lua_release(void)
+{
+	return LUA_RELEASE;
+}
+
+/**
  * Writes the string by the Lua script to the syslog.
  *
  * Lua example:

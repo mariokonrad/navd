@@ -172,6 +172,22 @@ static void print_version(FILE * file)
 	fprintf(file, "%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
 
+static void print_config(FILE * file)
+{
+#if defined(ENABLE_SOURCE_GPSSIMULATOR)
+	fprintf(file, " gpssimulator ");
+#endif
+
+#if defined(ENABLE_SOURCE_GPSD)
+	fprintf(file, " gpsd ");
+#endif
+
+#if defined(ENABLE_FILTER_LUA)
+	fprintf(file, " filter_lua(%s) ", filter_lua_release());
+#endif
+	fprintf(file, "\n");
+}
+
 static void usage(FILE * file, const char * name) /* {{{ */
 {
 	fprintf(file, "\n");
@@ -179,6 +195,9 @@ static void usage(FILE * file, const char * name) /* {{{ */
 	fprintf(file, "\n");
 	fprintf(file, "Version: ");
 	print_version(file);
+	fprintf(file, "\n");
+	fprintf(file, "Configured: ");
+	print_config(file);
 	fprintf(file, "\n");
 	fprintf(file, "Options:\n");
 	fprintf(file, "  -h      | --help        : help information\n");
