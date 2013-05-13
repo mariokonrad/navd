@@ -27,6 +27,30 @@ static int lua__syslog(lua_State * lua)
 	return 0;
 }
 
+/**
+ * @todo Documentation
+ * @todo Test
+ */
+static int lua__msg_clone(lua_State * lua)
+{
+	UNUSED_ARG(lua);
+
+	/* TODO: IMPLEMENATION */
+	return 0;
+}
+
+/**
+ * @todo Documentation
+ * @todo Test
+ */
+static int lua__msg_type(lua_State * lua)
+{
+	UNUSED_ARG(lua);
+
+	/* TODO: IMPLEMENATION */
+	return 0;
+}
+
 static void define_const(lua_State * lua, const char * sym, int val)
 {
 	lua_pushinteger(lua, val);
@@ -54,6 +78,12 @@ static int setup_lua_state(lua_State * lua)
 	lua_register(lua, "syslog", lua__syslog);
 
 	/* TODO: setup message handling functions */
+	define_const(lua, "MSG_SYSTEM", MSG_SYSTEM);
+	define_const(lua, "MSG_TIMER",  MSG_TIMER);
+	define_const(lua, "MSG_NMEA",   MSG_NMEA);
+	define_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
+	lua_register(lua, "msg_clone", lua__msg_clone);
+	lua_register(lua, "msg_type", lua__msg_type);
 
 	/* TODO: setup error handling */
 
@@ -104,8 +134,7 @@ static int configure(
 	return FILTER_SUCCESS;
 }
 
-int free_context(
-		struct filter_context_t * ctx)
+int free_context(struct filter_context_t * ctx)
 {
 	if (ctx && ctx->data) {
 		lua_State * lua = (lua_State *)ctx->data;
