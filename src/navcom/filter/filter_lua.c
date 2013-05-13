@@ -101,12 +101,30 @@ static void msg_table_timer(lua_State * lua, const struct message_t * msg)
 	lua_setfield(lua, -2, "timer_id");
 }
 
+static void msg_table_nmea(lua_State * lua, const struct message_t * msg)
+{
+	const struct nmea_t * nmea = &msg->data.nmea;
+
+	lua_newtable(lua);
+
+	lua_pushunsigned(lua, nmea->type);
+	lua_setfield(lua, -2, "type");
+
+	lua_pushstring(lua, nmea->raw);
+	lua_setfield(lua, -2, "raw");
+
+	/* TODO: support other fields than raw */
+
+	lua_setfield(lua, -2, "nmea");
+}
+
 /**
  * Converts the speficied message to a table.
  *
  * Currently supported message types:
  * - MSG_SYSTEM
  * - MSG_TIMER
+ * - MSG_NMEA (partially)
  *
  * Lua example:
  * @code
@@ -131,6 +149,7 @@ static int lua__msg_to_table(lua_State * lua)
 	{
 		{ MSG_SYSTEM, msg_table_system },
 		{ MSG_TIMER,  msg_table_timer  },
+		{ MSG_NMEA,   msg_table_nmea   },
 	};
 
 	struct message_t * msg;
@@ -171,6 +190,56 @@ static void define_unsigned_const(lua_State * lua, const char * sym, uint32_t va
 	lua_setglobal(lua, sym);
 }
 
+static void setup_filter_results(lua_State * lua)
+{
+	define_const(lua, "FILTER_SUCCESS", FILTER_SUCCESS);
+	define_const(lua, "FILTER_FAILURE", FILTER_FAILURE);
+	define_const(lua, "FILTER_DISCARD", FILTER_DISCARD);
+}
+
+static void setup_syslog(lua_State * lua)
+{
+	define_const(lua, "LOG_CRIT",    LOG_CRIT);
+	define_const(lua, "LOG_ERR",     LOG_ERR);
+	define_const(lua, "LOG_WARNING", LOG_WARNING);
+	define_const(lua, "LOG_DEBUG",   LOG_DEBUG);
+	define_const(lua, "LOG_NOTICE",  LOG_NOTICE);
+
+	lua_register(lua, "syslog", lua__syslog);
+}
+
+static void setup_message_handling(lua_State * lua)
+{
+	/* message types */
+	define_unsigned_const(lua, "MSG_SYSTEM", MSG_SYSTEM);
+	define_unsigned_const(lua, "MSG_TIMER",  MSG_TIMER);
+	define_unsigned_const(lua, "MSG_NMEA",   MSG_NMEA);
+
+	/* system message types */
+	define_unsigned_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
+
+	/* nmea sentences */
+	define_unsigned_const(lua, "NMEA_NONE",       NMEA_NONE);
+	define_unsigned_const(lua, "NMEA_RMB",        NMEA_RMB);
+	define_unsigned_const(lua, "NMEA_RMC",        NMEA_RMC);
+	define_unsigned_const(lua, "NMEA_GGA",        NMEA_GGA);
+	define_unsigned_const(lua, "NMEA_GSA",        NMEA_GSA);
+	define_unsigned_const(lua, "NMEA_GSV",        NMEA_GSV);
+	define_unsigned_const(lua, "NMEA_GLL",        NMEA_GLL);
+	define_unsigned_const(lua, "NMEA_RTE",        NMEA_RTE);
+	define_unsigned_const(lua, "NMEA_VTG",        NMEA_VTG);
+	define_unsigned_const(lua, "NMEA_BOD",        NMEA_BOD);
+	define_unsigned_const(lua, "NMEA_GARMIN_RME", NMEA_GARMIN_RME);
+	define_unsigned_const(lua, "NMEA_GARMIN_RMM", NMEA_GARMIN_RMM);
+	define_unsigned_const(lua, "NMEA_GARMIN_RMZ", NMEA_GARMIN_RMZ);
+	define_unsigned_const(lua, "NMEA_HC_HDG",     NMEA_HC_HDG);
+
+	/* message functions */
+	lua_register(lua, "msg_clone", lua__msg_clone);
+	lua_register(lua, "msg_type", lua__msg_type);
+	lua_register(lua, "msg_to_table", lua__msg_to_table);
+}
+
 static int setup_lua_state(lua_State * lua)
 {
 	luaopen_base(lua);
@@ -178,27 +247,9 @@ static int setup_lua_state(lua_State * lua)
 	luaopen_string(lua);
 	luaopen_math(lua);
 
-	/* filter result values */
-	define_const(lua, "FILTER_SUCCESS", FILTER_SUCCESS);
-	define_const(lua, "FILTER_FAILURE", FILTER_FAILURE);
-	define_const(lua, "FILTER_DISCARD", FILTER_DISCARD);
-
-	/* setup syslog */
-	define_const(lua, "LOG_CRIT",    LOG_CRIT);
-	define_const(lua, "LOG_ERR",     LOG_ERR);
-	define_const(lua, "LOG_WARNING", LOG_WARNING);
-	define_const(lua, "LOG_DEBUG",   LOG_DEBUG);
-	define_const(lua, "LOG_NOTICE",  LOG_NOTICE);
-	lua_register(lua, "syslog", lua__syslog);
-
-	/* TODO: setup message handling functions */
-	define_unsigned_const(lua, "MSG_SYSTEM", MSG_SYSTEM);
-	define_unsigned_const(lua, "MSG_TIMER",  MSG_TIMER);
-	define_unsigned_const(lua, "MSG_NMEA",   MSG_NMEA);
-	define_unsigned_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
-	lua_register(lua, "msg_clone", lua__msg_clone);
-	lua_register(lua, "msg_type", lua__msg_type);
-	lua_register(lua, "msg_to_table", lua__msg_to_table);
+	setup_filter_results(lua);
+	setup_syslog(lua);
+	setup_message_handling(lua);
 
 	/* TODO: setup error handling */
 

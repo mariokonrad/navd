@@ -364,6 +364,57 @@ static void test_func_msg_to_table_timer(void)
 	proplist_free(&properties);
 }
 
+static void test_func_msg_to_table_nmea(void)
+{
+	int rc;
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+	struct message_t msg_in;
+	struct message_t msg_out;
+
+	const char SCRIPT[] =
+		"function filter(msg_out, msg_in)\n"
+		"	local t = msg_to_table(msg_in)\n"
+		"   if t == nil then\n"
+		"		return FILTER_DISCARD\n"
+		"	end\n"
+		"	if t.type == MSG_NMEA then\n"
+		"		if t.data.nmea.type == NMEA_RMC then\n"
+		"			if t.data.nmea.raw == 'hello world' then\n"
+		"				return FILTER_SUCCESS\n"
+		"			end\n"
+		"		end\n"
+		"	end\n"
+		"	return FILTER_FAILURE\n"
+		"end\n"
+		"\n"
+		;
+
+	memset(&msg_in, 0, sizeof(msg_in));
+	memset(&msg_out, 0, sizeof(msg_out));
+
+	CU_ASSERT_NOT_EQUAL(filter, NULL);
+	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+
+	proplist_init(&properties);
+	proplist_set(&properties, "script", tmpfilename);
+
+	prepare_script(SCRIPT);
+
+	rc = filter->configure(&ctx, &properties);
+	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+
+	msg_in.type = MSG_NMEA;
+	msg_in.data.nmea.type = NMEA_RMC;
+	strncpy(msg_in.data.nmea.raw, "hello world", sizeof(msg_in.data.nmea.raw));
+
+	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
+	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	proplist_free(&properties);
+}
+
 void register_suite_filter_lua(void)
 {
 	CU_Suite * suite;
@@ -378,5 +429,6 @@ void register_suite_filter_lua(void)
 	CU_add_test(suite, "func: msg_to_table", test_func_msg_to_table);
 	CU_add_test(suite, "func: msg_to_table: system", test_func_msg_to_table_system);
 	CU_add_test(suite, "func: msg_to_table: timer", test_func_msg_to_table_timer);
+	CU_add_test(suite, "func: msg_to_table: nmea", test_func_msg_to_table_nmea);
 }
 
