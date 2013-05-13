@@ -83,6 +83,52 @@ static void test_configure_free(void)
 	proplist_free(&properties);
 }
 
+static void test_debug(void)
+{
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+	struct message_t msg_in;
+	struct message_t msg_out;
+	int rc;
+
+	const char SCRIPT[] =
+		"function barfoo()\n"
+		"	return FILTER_DISCARD\n"
+		"end\n"
+		"\n"
+		"function foobar()\n"
+		"	barfoo()\n"
+		"	return FILTER_DISCARD\n"
+		"end\n"
+		"\n"
+		"function filter(mo, mi)\n"
+		"	foobar()\n"
+		"	return FILTER_SUCCESS\n"
+		"end\n"
+		;
+
+	memset(&msg_in, 0, sizeof(msg_in));
+	memset(&msg_out, 0, sizeof(msg_out));
+
+	CU_ASSERT_NOT_EQUAL(filter, NULL);
+	CU_ASSERT_NOT_EQUAL(filter->configure, NULL);
+	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+
+	proplist_init(&properties);
+	prepare_script(SCRIPT);
+	proplist_set(&properties, "script", tmpfilename);
+	proplist_set(&properties, "DEBUG", "crl");
+
+	rc = filter->configure(&ctx, &properties);
+	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+
+	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
+	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	proplist_free(&properties);
+}
+
 static void test_func_syslog(void)
 {
 	int rc;
@@ -435,25 +481,25 @@ static void test_func_msg_to_table_nmea_rmc(void)
 		"	if t.data.nmea.type ~= NMEA_RMC then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
-		"	if t.data.nmea.sentence.rmc.status ~= NMEA_STATUS_OK then\n"
+		"	if t.data.nmea.sentence.status ~= NMEA_STATUS_OK then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
-		"	if t.data.nmea.sentence.rmc.lat ~= 1.5 then\n"
+		"	if t.data.nmea.sentence.lat ~= 1.5 then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
-		"	if t.data.nmea.sentence.rmc.lat_dir ~= NMEA_NORTH then\n"
+		"	if t.data.nmea.sentence.lat_dir ~= NMEA_NORTH then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
-		"	if t.data.nmea.sentence.rmc.lon ~= 1.5 then\n"
+		"	if t.data.nmea.sentence.lon ~= 1.5 then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
-		"	if t.data.nmea.sentence.rmc.lon_dir ~= NMEA_WEST then\n"
+		"	if t.data.nmea.sentence.lon_dir ~= NMEA_WEST then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
-		"	if t.data.nmea.sentence.rmc.sog ~= 5.0 then\n"
+		"	if t.data.nmea.sentence.sog ~= 5.0 then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
-		"	if t.data.nmea.sentence.rmc.head ~= 10.0 then\n"
+		"	if t.data.nmea.sentence.head ~= 10.0 then\n"
 		"		return FILTER_FAILURE\n"
 		"	end\n"
 		"	return FILTER_SUCCESS\n"
@@ -508,6 +554,7 @@ void register_suite_filter_lua(void)
 	CU_add_test(suite, "configure", test_configure);
 	CU_add_test(suite, "free_ctx", test_free_ctx);
 	CU_add_test(suite, "configure / free", test_configure_free);
+	CU_add_test(suite, "debug", test_debug);
 	CU_add_test(suite, "func: syslog", test_func_syslog);
 	CU_add_test(suite, "func: msg_clone", test_func_msg_clone);
 	CU_add_test(suite, "func: msg_type", test_func_msg_type);
