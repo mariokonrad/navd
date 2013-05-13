@@ -164,6 +164,9 @@ static void test_func_msg_clone(void)
 	CU_ASSERT_EQUAL(msg_out.type, msg_in.type);
 	CU_ASSERT_EQUAL(msg_out.data.timer_id, msg_in.data.timer_id);
 
+	CU_ASSERT_EQUAL(msg_in.type, MSG_TIMER);
+	CU_ASSERT_EQUAL(msg_in.data.timer_id, 12345678);
+
 	CU_ASSERT_EQUAL(msg_out.type, MSG_TIMER);
 	CU_ASSERT_EQUAL(msg_out.data.timer_id, 12345678);
 
