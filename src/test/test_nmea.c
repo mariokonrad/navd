@@ -843,6 +843,52 @@ static void test_nmea_fix_endianess_ntoh()
 	}
 }
 
+static void test_nmea_angle_endianess_hton()
+{
+	struct nmea_angle_t angle;
+
+	angle.d = 0x12345678;
+	angle.m = 0x87654321;
+	angle.s.i = 0x12345678;
+	angle.s.d = 0x87654321;
+
+	nmea_angle_hton(&angle);
+	if (endian_is_little()) {
+		CU_ASSERT_EQUAL(angle.d,   0x78563412);
+		CU_ASSERT_EQUAL(angle.m,   0x21436587);
+		CU_ASSERT_EQUAL(angle.s.i, 0x78563412);
+		CU_ASSERT_EQUAL(angle.s.d, 0x21436587);
+	} else {
+		CU_ASSERT_EQUAL(angle.d,   0x12345678);
+		CU_ASSERT_EQUAL(angle.m,   0x87654321);
+		CU_ASSERT_EQUAL(angle.s.i, 0x12345678);
+		CU_ASSERT_EQUAL(angle.s.d, 0x87654321);
+	}
+}
+
+static void test_nmea_angle_endianess_ntoh()
+{
+	struct nmea_angle_t angle;
+
+	angle.d = 0x12345678;
+	angle.m = 0x87654321;
+	angle.s.i = 0x12345678;
+	angle.s.d = 0x87654321;
+
+	nmea_angle_ntoh(&angle);
+	if (endian_is_little()) {
+		CU_ASSERT_EQUAL(angle.d,   0x78563412);
+		CU_ASSERT_EQUAL(angle.m,   0x21436587);
+		CU_ASSERT_EQUAL(angle.s.i, 0x78563412);
+		CU_ASSERT_EQUAL(angle.s.d, 0x21436587);
+	} else {
+		CU_ASSERT_EQUAL(angle.d,   0x12345678);
+		CU_ASSERT_EQUAL(angle.m,   0x87654321);
+		CU_ASSERT_EQUAL(angle.s.i, 0x12345678);
+		CU_ASSERT_EQUAL(angle.s.d, 0x87654321);
+	}
+}
+
 void register_suite_nmea(void)
 {
 	CU_Suite * suite;
@@ -868,6 +914,8 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "endianess", test_endianess);
 	CU_add_test(suite, "endianess: fix hton", test_nmea_fix_endianess_hton);
 	CU_add_test(suite, "endianess: fix ntoh", test_nmea_fix_endianess_ntoh);
+	CU_add_test(suite, "endianess: angle hton", test_nmea_angle_endianess_hton);
+	CU_add_test(suite, "endianess: angle ntoh", test_nmea_angle_endianess_ntoh);
 	CU_add_test(suite, "conversion: fix to float", test_convert_nmea_fix_float);
 	CU_add_test(suite, "conversion: fix to double", test_convert_nmea_fix_double);
 	CU_add_test(suite, "conversion: angle to double", test_convert_nmea_angle_double);
