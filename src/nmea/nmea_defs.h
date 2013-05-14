@@ -250,7 +250,7 @@ struct nema_ii_mwv_t {
 	struct nmea_fix_t speed; /* wind speed */
 	char speed_unit; /* wind speed unit, K:knots, M:mph */
 	char status; /* status, A:valid */
-};
+} __attribute__((packed));
 
 /**
  * This structure contains all data provided by the IIVWR sentence.
@@ -264,7 +264,7 @@ struct nmea_ii_vwr_t {
 	char speed_mph_unit; /* M:mph */
 	struct nmea_fix_t speed_kmh; /* wind speed in kilometers per hour */
 	char speed_kmh_unit; /* K:kmh */
-};
+} __attribute__((packed));
 
 /**
  * This structure contains all data provided by the IIVWT sentence.
@@ -278,7 +278,7 @@ struct nmea_ii_vwt_t {
 	char speed_mph_unit; /* M:mph */
 	struct nmea_fix_t speed_kmh; /* wind speed in kilometers per hour */
 	char speed_kmh_unit; /* K:kmh */
-};
+} __attribute__((packed));
 
 /**
  * This structure contains all data provided by the IIDBT sentence.
@@ -290,7 +290,7 @@ struct nmea_ii_dbt_t {
 	char depth_unit_meter; /* M:meter*/
 	struct nmea_fix_t dpeth_fathom; /* water depth in fathom */
 	char depth_unit_fathom; /* F:fathom*/
-};
+} __attribute__((packed));
 
 /**
  * This structure contains all data provided by the IIVLW sentence.
@@ -300,7 +300,7 @@ struct nmea_ii_vlw_t {
 	char distance_cum_unit; /* N:nautical miles */
 	struct nmea_fix_t distance_reset; /* distance since reset */
 	char distance_reset_unit; /* N:nautical miles */
-};
+} __attribute__((packed));
 
 /**
  * This structure contains all data provided by the IIVHW sentence.
@@ -314,7 +314,7 @@ struct nmea_ii_vhw_t {
 	char speed_knots_unit; /* N:knots */
 	struct nmea_fix_t speed_kmh; /* speed in kilometers per hour */
 	char speed_kmh_unit; /* K:kmh */
-};
+} __attribute__((packed));
 
 /**
  * This structure contains all data provided by the IIMTW sentence.
@@ -322,6 +322,6 @@ struct nmea_ii_vhw_t {
 struct nmea_ii_mtw_t {
 	struct nmea_fix_t temperature; /* water temperature */
 	char unit; /* unit degrees, C:celcius */
-};
+} __attribute__((packed));
 
 #endif
