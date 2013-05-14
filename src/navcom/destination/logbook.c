@@ -199,7 +199,11 @@ static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
 }
 
 /**
- * @todo Add more NMEA sentences (wind, sounder, etc.)
+ * @todo Add NMEA sentence: wind [$IIMWV]
+ * @todo Add NMEA sentence: depth sounder [$IIDBT, $IIDPT]
+ * @todo Add NMEA sentence: speed through water [$IIVHW]
+ * @todo Add NMEA sentence: compass heading [$IIVHW, $IIHDM]
+ * @todo Add NMEA sentence: trip and total milage [$IIVLW]
  */
 static void process_nmea(const struct nmea_t * nmea)
 {

@@ -14,6 +14,7 @@
 #include <nmea/nmea_sentence_pgrmz.h>
 #include <nmea/nmea_sentence_pgrmm.h>
 #include <nmea/nmea_sentence_hchdg.h>
+#include <nmea/nmea_sentence_iimtw.h>
 
 static const struct nmea_sentence_t * SENTENCES[] = {
 	&sentence_gprmb,
@@ -29,6 +30,7 @@ static const struct nmea_sentence_t * SENTENCES[] = {
 	&sentence_pgrmm,
 	&sentence_pgrmz,
 	&sentence_hchdg,
+	&sentence_iimtw,
 };
 
 /**
