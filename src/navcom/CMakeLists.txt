@@ -1,8 +1,11 @@
 
 set(SOURCES
-	source/gps_serial.c
 	source/timer.c
 	)
+
+if (ENABLE_SOURCE_GPSSERIAL)
+	set(SOURCES ${SOURCES} source/gps_serial.c)
+endif()
 
 if (ENABLE_SOURCE_GPSSIMULATOR)
 	set(SOURCES ${SOURCES} source/gps_simulator.c)

@@ -13,6 +13,9 @@ set(VERSION_PATCH "0")
 # options
 ################################################################################
 
+option(ENABLE_SOURCE_GPSSERIAL
+	"Enable source GPS serial" ON)
+
 option(ENABLE_SOURCE_GPSSIMULATOR
 	"Enable source GPS Simulator" ON)
 
@@ -56,6 +59,7 @@ add_subdirectory(src)
 message("!  SYSTEM                     : ${CMAKE_SYSTEM_NAME}")
 message("!  PROCESSOR                  : ${CMAKE_SYSTEM_PROCESSOR}")
 message("!  BUILD_TYPE                 : ${CMAKE_BUILD_TYPE}")
+message("!  ENABLE_SOURCE_GPSSERIAL    : ${ENABLE_SOURCE_GPSSERIAL}")
 message("!  ENABLE_SOURCE_GPSSIMULATOR : ${ENABLE_SOURCE_GPSSIMULATOR}")
 message("!  ENABLE_SOURCE_GPSD         : ${ENABLE_SOURCE_GPSD}")
 message("!  ENABLE_FILTER_LUA          : ${ENABLE_FILTER_LUA}")

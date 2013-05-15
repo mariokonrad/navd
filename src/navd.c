@@ -22,6 +22,10 @@
 	#include <navcom/filter/filter_lua.h>
 #endif
 
+#ifdef ENABLE_SOURCE_GPSSERIAL
+	#include <navcom/source/gps_serial.h>
+#endif
+
 #ifdef ENABLE_SOURCE_GPSSIMULATOR
 	#include <navcom/source/gps_simulator.h>
 #endif
@@ -31,7 +35,6 @@
 #include <navcom/destination/message_log.h>
 #include <navcom/destination/nmea_serial.h>
 #include <navcom/destination/logbook.h>
-#include <navcom/source/gps_serial.h>
 #include <navcom/source/timer.h>
 
 #if !defined(max)
@@ -174,6 +177,10 @@ static void print_version(FILE * file)
 
 static void print_config(FILE * file)
 {
+#if defined(ENABLE_SOURCE_GPSSERIAL)
+	fprintf(file, " gpsserial ");
+#endif
+
 #if defined(ENABLE_SOURCE_GPSSIMULATOR)
 	fprintf(file, " gpssimulator ");
 #endif
@@ -756,8 +763,11 @@ static void register_sources(void) /* {{{ */
 
 	pdlist_init(&desc_sources);
 
-	pdlist_append(&desc_sources, &gps_serial);
 	pdlist_append(&desc_sources, &timer);
+
+#ifdef ENABLE_SOURCE_GPSSERIAL
+	pdlist_append(&desc_sources, &gps_serial);
+#endif
 
 #ifdef ENABLE_SOURCE_GPSSIMULATOR
 	pdlist_append(&desc_sources, &gps_simulator);
