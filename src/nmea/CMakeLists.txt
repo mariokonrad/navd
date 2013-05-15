@@ -1,6 +1,11 @@
 
 file(GLOB SENTENCES nmea_sentence_*.c)
 
+add_executable(nmeasum
+	nmeasum.c
+	nmea_checksum.c
+	)
+
 add_library(nmea
 	nmea.c
 	nmea_base.c

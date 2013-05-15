@@ -30,9 +30,9 @@ struct nmea_t {
 		struct nmea_garmin_rmm_t garmin_rmm;
 		struct nmea_garmin_rmz_t garmin_rmz;
 		struct nmea_hc_hdg_t hc_hdg;
-		struct nema_ii_mwv_t ii_mwv;
+		struct nmea_ii_mwv_t ii_mwv;
 		struct nmea_ii_vwr_t ii_vwr;
-		struct nmea_ii_vwr_t ii_vwt;
+		struct nmea_ii_vwt_t ii_vwt;
 		struct nmea_ii_dbt_t ii_dbt;
 		struct nmea_ii_vlw_t ii_vlw;
 		struct nmea_ii_vhw_t ii_vhw;

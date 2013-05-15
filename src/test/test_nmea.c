@@ -22,6 +22,7 @@
 
 	HC = Heading Compass (magnetic compass)
 	P  = proprietary (PGR : proprietary garmin)
+	II = Integrated Instrumentation
 */
 static const char * SENTENCES[] = {
 	"$GPRMC,201034,A,4702.4040,N,00818.3281,E,0.0,328.4,260807,0.6,E,A*17",
@@ -176,6 +177,14 @@ static const char * SENTENCES[] = {
 	"$PGRMZ,1494,f,*10",
 	"$PGRMM,WGS 84*06",
 	"$HCHDG,50.3,,,0.6,E*19",
+	"$IIMWV,084.0,R,10.4,N,A*04",
+	"$IIMWV,084.0,T,10.4,N,A*02",
+	"$IIVWR,084.0,R,10.4,N,5.4,M,19.3,K*4A",
+	"$IIVWT,084.0,R,10.4,N,5.4,M,19.3,K*4C",
+	"$IIDBT,9.3,f,2.84,M,1.55,F*14",
+	"$IIVLW,7803.2,N,0.00,N*43",
+	"$IIVHW,,T,211.0,M,0.00,N,0.00,K*79",
+	"$IIMTW,9.5,C*2F",
 };
 
 static void test_nmea_fix_check_zero(void)
@@ -385,10 +394,12 @@ static void test_sentence_parsing()
 {
 	struct nmea_t info;
 	unsigned int i;
+	int rc;
 
 	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
 		memset(&info, 0, sizeof(info));
-		CU_ASSERT_EQUAL(nmea_read(&info, SENTENCES[i]), 0);
+		rc = nmea_read(&info, SENTENCES[i]);
+		CU_ASSERT_EQUAL(rc, 0);
 	}
 }
 

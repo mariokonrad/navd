@@ -30,7 +30,9 @@ static char i2hex(int i)
 uint8_t nmea_checksum(const char * s, const char * e)
 {
 	uint8_t chk = 0x00;
-	for (; *s && *e && (s < e); ++s) chk ^= *s;
+	for (; s && e && *s && (s < e); ++s) {
+		chk ^= *s;
+	}
 	return chk;
 }
 
@@ -38,6 +40,7 @@ uint8_t nmea_checksum(const char * s, const char * e)
  * Checks the nmea_checksum of the sentence.
  *
  * @param[in] s sentence to check
+ * @param[in] start_token The start token to check.
  * @retval  0 success
  * @retval -1 failure
  */
@@ -46,7 +49,9 @@ int nmea_checksum_check(const char * s, char start_token)
 	uint8_t chk = 0;
 	if (!s || !(*s) || *s != start_token) return -1;
 	++s; /* skip start token */
-	for (; *s && *s != '*'; ++s) chk ^= *s;
+	for (; *s && *s != '*'; ++s) {
+		chk ^= *s;
+	}
 	++s; /* skip '*' */
 	return chk == hex2i(s[0]) * 16 + hex2i(s[1]) ? 0 : -1;
 }

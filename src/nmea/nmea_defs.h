@@ -37,8 +37,13 @@
 
 #define NMEA_UNIT_METER   'M'
 #define NMEA_UNIT_FEET    'f'
+#define NMEA_UNIT_NM      'N' /* nautical miles */
+#define NMEA_UNIT_FATHOM  'F'
+
 #define NMEA_UNIT_KNOT    'N'
-#define NMEA_UNIT_KMH     'K'
+#define NMEA_UNIT_KMH     'K' /* kilometers per hour */
+#define NMEA_UNIT_MPS     'M' /* meters per second */
+
 #define NMEA_UNIT_CELSIUS 'C'
 
 #define NMEA_TRUE     'T'
@@ -73,8 +78,8 @@
 #define NMEA_II_VWT     0x00003002 /* integrated instrumentation: wind true */
 #define NMEA_II_DBT     0x00003003 /* integrated instrumentation: water depth */
 #define NMEA_II_VLW     0x00003004 /* integrated instrumentation: log distance */
-#define NMEA_II_VHW     0x00003004 /* integrated instrumentation: heading */
-#define NMEA_II_MTW     0x00003004 /* integrated instrumentation: temperature water */
+#define NMEA_II_VHW     0x00003005 /* integrated instrumentation: heading */
+#define NMEA_II_MTW     0x00003006 /* integrated instrumentation: temperature water */
 
 /**
  * This structure contains all data provided by the RMB sentence.
@@ -244,7 +249,7 @@ struct nmea_hc_hdg_t {
 /**
  * This structure contains all data provided by the IIMWV sentence.
  */
-struct nema_ii_mwv_t {
+struct nmea_ii_mwv_t {
 	struct nmea_fix_t angle; /* wind angle, 0..359 */
 	char type; /* R:relative, T:true */
 	struct nmea_fix_t speed; /* wind speed */
@@ -260,8 +265,8 @@ struct nmea_ii_vwr_t {
 	char side; /* side of vessel, R:right, L:left */
 	struct nmea_fix_t speed_knots; /* wind speed in knots */
 	char speed_knots_unit; /* N:knots */
-	struct nmea_fix_t speed_mph; /* wind speed in miles per hour */
-	char speed_mph_unit; /* M:mph */
+	struct nmea_fix_t speed_mps; /* wind speed in miles per second */
+	char speed_mps_unit; /* M:mps */
 	struct nmea_fix_t speed_kmh; /* wind speed in kilometers per hour */
 	char speed_kmh_unit; /* K:kmh */
 } __attribute__((packed));
@@ -274,8 +279,8 @@ struct nmea_ii_vwt_t {
 	char side; /* side of vessel, R:right, L:left */
 	struct nmea_fix_t speed_knots; /* wind speed in knots */
 	char speed_knots_unit; /* N:knots */
-	struct nmea_fix_t speed_mph; /* wind speed in miles per hour */
-	char speed_mph_unit; /* M:mph */
+	struct nmea_fix_t speed_mps; /* wind speed in miles per second */
+	char speed_mps_unit; /* M:mps */
 	struct nmea_fix_t speed_kmh; /* wind speed in kilometers per hour */
 	char speed_kmh_unit; /* K:kmh */
 } __attribute__((packed));
@@ -284,11 +289,11 @@ struct nmea_ii_vwt_t {
  * This structure contains all data provided by the IIDBT sentence.
  */
 struct nmea_ii_dbt_t {
-	struct nmea_fix_t dpeth_feet; /* water depth in feet */
+	struct nmea_fix_t depth_feet; /* water depth in feet */
 	char depth_unit_feet; /* f:feet */
-	struct nmea_fix_t dpeth_meter; /* water depth in meter */
+	struct nmea_fix_t depth_meter; /* water depth in meter */
 	char depth_unit_meter; /* M:meter*/
-	struct nmea_fix_t dpeth_fathom; /* water depth in fathom */
+	struct nmea_fix_t depth_fathom; /* water depth in fathom */
 	char depth_unit_fathom; /* F:fathom*/
 } __attribute__((packed));
 

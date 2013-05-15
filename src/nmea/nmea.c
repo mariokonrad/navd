@@ -15,6 +15,12 @@
 #include <nmea/nmea_sentence_pgrmm.h>
 #include <nmea/nmea_sentence_hchdg.h>
 #include <nmea/nmea_sentence_iimtw.h>
+#include <nmea/nmea_sentence_iimwv.h>
+#include <nmea/nmea_sentence_iivwr.h>
+#include <nmea/nmea_sentence_iivwt.h>
+#include <nmea/nmea_sentence_iidbt.h>
+#include <nmea/nmea_sentence_iivlw.h>
+#include <nmea/nmea_sentence_iivhw.h>
 
 static const struct nmea_sentence_t * SENTENCES[] = {
 	&sentence_gprmb,
@@ -31,6 +37,12 @@ static const struct nmea_sentence_t * SENTENCES[] = {
 	&sentence_pgrmz,
 	&sentence_hchdg,
 	&sentence_iimtw,
+	&sentence_iimwv,
+	&sentence_iivwr,
+	&sentence_iivwt,
+	&sentence_iidbt,
+	&sentence_iivlw,
+	&sentence_iivhw,
 };
 
 /**
@@ -42,6 +54,8 @@ static const struct nmea_sentence_t * SENTENCES[] = {
  * @retval  1 unknown sentence
  * @retval -1 parameter error
  * @retval -2 nmea_checksum error
+ * @retval -3 format error
+ * @retval -4 unknown sentence
  */
 int nmea_read(struct nmea_t * nmea, const char * s)
 {
@@ -58,6 +72,7 @@ int nmea_read(struct nmea_t * nmea, const char * s)
  * @retval >= 0 Success, number of bytes written to buffer.
  * @retval -1 Invalid parameters.
  * @retval -2 Unknown NMEA sentence.
+ * @retval -3 Sentence does not support writing.
  */
 int nmea_write(char * buf, uint32_t size, const struct nmea_t * nmea)
 {
