@@ -1,4 +1,5 @@
 #include <common/property.h>
+#include <common/stringutil.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,9 +45,9 @@ int proplist_append(struct property_list_t * list, const char * key, const char 
 
 	list->num++;
 	list->data = realloc(list->data, list->num * sizeof(struct property_t));
-	list->data[list->num - 1].key = strdup(key);
+	list->data[list->num - 1].key = stringdup(key);
 	if (value) {
-		list->data[list->num - 1].value = strdup(value);
+		list->data[list->num - 1].value = stringdup(value);
 	} else {
 		list->data[list->num - 1].value = NULL;
 	}
@@ -63,7 +64,7 @@ int proplist_set(struct property_list_t * list, const char * key, const char * v
 		if (prop->value) {
 			free(prop->value);
 		}
-		prop->value = strdup(value);
+		prop->value = stringdup(value);
 		return 1;
 	}
 

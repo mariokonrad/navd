@@ -1,5 +1,6 @@
 #include <config/config.h>
 #include <common/macros.h>
+#include <common/stringutil.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
@@ -228,7 +229,7 @@ char * config_strdup(const char * s)
 		return NULL;
 	}
 
-	return strdup(s);
+	return stringdup(s);
 }
 
 char * config_strdup_s(const char * s)

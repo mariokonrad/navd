@@ -5,5 +5,6 @@ add_library(common
 	stringlist.c
 	property.c
 	fileutil.c
+	stringutil.c
 	)
 
