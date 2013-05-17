@@ -71,6 +71,15 @@ function exec_clean()
 	rm -f ${BASE}/cccc
 }
 
+function exec_filelist()
+{
+	cd ${BASE}
+	echo "src/navd.c" > cscope.files
+	for dirname in src/common src/config src/device src/navcom src/nmea ; do
+		find ${dirname} -type f -name "*.c" -o -name "*.h" >> cscope.files
+	done
+}
+
 function exec_tags()
 {
 	cd ${BASE}
@@ -81,10 +90,6 @@ function exec_scope()
 {
 	cd ${BASE}
 	rm -f cscope.out
-	echo "src/navd.c" > cscope.files
-	for dirname in src/common src/config src/device src/navcom src/nmea ; do
-		find ${dirname} -type f -name "*.c" -o -name "*.h" >> cscope.files
-	done
 	cscope -b -i cscope.files
 }
 
@@ -203,7 +208,7 @@ function exec_cppcheck()
 function exec_cccc()
 {
 	if [ ! -r cscope.files ] ; then
-		exec_scope
+		exec_filelist
 	fi
 
 	exec_prepare
@@ -247,13 +252,16 @@ case $1 in
 		exec_package
 		;;
 	index)
+		exec_filelist
 		exec_tags
 		exec_scope
 		;;
 	tags)
+		exec_filelist
 		exec_tags
 		;;
 	scope)
+		exec_filelist
 		exec_scope
 		;;
 	doc)
@@ -285,7 +293,7 @@ case $1 in
 		rm -f buildfiles.txt sourcefiles.txt
 		;;
 	pmccabe)
-		exec_tags
+		exec_filelist
 		exec_pmccabe
 		;;
 	todo)
