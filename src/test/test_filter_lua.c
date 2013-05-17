@@ -303,7 +303,7 @@ static void test_func_msg_to_table(void)
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	rc = filter->func(&msg_out, NULL, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
+	CU_ASSERT_EQUAL(rc, FILTER_FAILURE);
 
 	msg_in.type = MSG_SYSTEM;
 

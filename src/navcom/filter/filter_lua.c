@@ -58,7 +58,7 @@ static int configure(
 	prop_debug = proplist_find(properties, "DEBUG");
 
 	rc = luaH_checkscript_from_prop(prop_script);
-	if (rc != EXIT_SUCCESS) return rc;
+	if (rc != EXIT_SUCCESS) return FILTER_FAILURE;
 
 	/* setup lua state */
 	lua = luaL_newstate();
@@ -103,9 +103,9 @@ static int filter(
 	int rc;
 	lua_State * lua = NULL;
 
-	UNUSED_ARG(out);
-	UNUSED_ARG(in);
 	UNUSED_ARG(properties);
+
+	if (!out || !in)  return FILTER_FAILURE;
 
 	if (!ctx || !ctx->data) return FILTER_FAILURE;
 	lua = (lua_State *)ctx->data;
