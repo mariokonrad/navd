@@ -60,3 +60,36 @@ int luaH_checkscript_from_prop(const struct property_t * property)
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Checks for Lua errors and logs them in the syslog.
+ *
+ * @param[out] lua The Lua state.
+ * @param[in] error The error code to check.
+ */
+void luaH_check_error(lua_State * lua, int error)
+{
+	const char * err_string;
+
+	if (error == LUA_OK) return;
+
+	err_string = lua_tostring(lua, -1);
+	switch (error) {
+		case LUA_ERRRUN:
+			syslog(LOG_ERR, "runtime error: '%s'", err_string);
+			break;
+		case LUA_ERRMEM:
+			syslog(LOG_ERR, "memory allocation error: '%s'", err_string);
+			break;
+		case LUA_ERRERR:
+			syslog(LOG_ERR, "message handler error: '%s'", err_string);
+			break;
+		case LUA_ERRGCMM:
+			syslog(LOG_ERR, "error while calling metamethod: '%s'", err_string);
+			break;
+		case LUA_ERRSYNTAX:
+			syslog(LOG_ERR, "syntax error: '%s'", err_string);
+			break;
+	}
+	lua_pop(lua, 1);
+}
+

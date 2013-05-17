@@ -22,6 +22,19 @@ const char * dst_lua_release(void)
 	return LUA_RELEASE;
 }
 
+static void process_message(lua_State * lua, const struct message_t * msg)
+{
+	int rc;
+
+	if (!lua) return;
+	if (!msg) return;
+
+	lua_getglobal(lua, "handle");
+	lua_pushlightuserdata(lua, (void*)msg);
+	rc = lua_pcall(lua, 1, 0, 0);
+	luaH_check_error(lua, rc);
+}
+
 static int setup_lua_state(lua_State * lua, const struct property_t * debug_property)
 {
 	luaopen_base(lua);
@@ -115,9 +128,10 @@ static int proc(const struct proc_config_t * config)
 					}
 					break;
 
-				/* TODO: handle other system messages */
-				/* TODO: handle timer messages */
-				/* TODO: handle nmea messages */
+				case MSG_TIMER:
+				case MSG_NMEA:
+					process_message((lua_State *)config->data, &msg);
+					break;
 
 				default:
 					syslog(LOG_WARNING, "unknown msg type: %08x\n", msg.type);

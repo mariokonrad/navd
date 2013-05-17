@@ -40,8 +40,6 @@ static int setup_lua_state(lua_State * lua, const struct property_t * debug_prop
 	luaH_setup_message_handling(lua);
 	setup_filter_results(lua);
 
-	/* TODO: setup error handling */
-
 	return EXIT_SUCCESS;
 }
 
@@ -114,27 +112,11 @@ static int filter(
 	lua_pushlightuserdata(lua, (void*)out);
 	lua_pushlightuserdata(lua, (void*)in);
 	rc = lua_pcall(lua, 2, 1, 0);
-	if (rc != LUA_OK) {
-		const char * err_string = lua_tostring(lua, -1);
-		switch (rc) {
-			case LUA_ERRRUN:
-				syslog(LOG_ERR, "runtime error: '%s'", err_string);
-				break;
-			case LUA_ERRMEM:
-				syslog(LOG_ERR, "memory allocation error: '%s'", err_string);
-				break;
-			case LUA_ERRERR:
-				syslog(LOG_ERR, "message handler error: '%s'", err_string);
-				break;
-			case LUA_ERRGCMM:
-				syslog(LOG_ERR, "error while calling metamethod: '%s'", err_string);
-				break;
-		}
-		lua_pop(lua, 1);
-		return FILTER_FAILURE;
-	}
+	luaH_check_error(lua, rc);
 
-	return luaL_checkinteger(lua, -1);
+	return (rc == LUA_OK)
+		? luaL_checkinteger(lua, -1)
+		: FILTER_FAILURE;
 }
 
 const struct filter_desc_t filter_lua = {
