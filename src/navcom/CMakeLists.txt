@@ -1,19 +1,3 @@
-# common
-
-set(COMMON
-	""
-	)
-
-if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA)
-	set(COMMON ${COMMON} common/lua_helper.c)
-	set(COMMON ${COMMON} common/lua_syslog.c)
-	set(COMMON ${COMMON} common/lua_debug.c)
-	set(COMMON ${COMMON} common/lua_nmea.c)
-	include_directories(
-		${CMAKE_CURRENT_SOURCE_DIR}/../lua/include
-		)
-endif()
-
 # sources
 
 set(SOURCES
@@ -53,12 +37,28 @@ endif()
 
 # common
 
-add_library(navcom
+set(COMMON
 	proc.c
 	proc_list.c
 	filter_list.c
 	property_serial.c
 	property_read.c
+	)
+
+if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA)
+	set(COMMON ${COMMON}
+		lua_helper.c
+		lua_syslog.c
+		lua_debug.c
+		lua_nmea.c
+		lua_message.c
+		)
+	include_directories(
+		${CMAKE_CURRENT_SOURCE_DIR}/../lua/include
+		)
+endif()
+
+add_library(navcom
 	${COMMON}
 	${SOURCES}
 	${DESTINATIONS}

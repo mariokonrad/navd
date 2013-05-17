@@ -1,4 +1,4 @@
-#include <navcom/common/lua_nmea.h>
+#include <navcom/lua_nmea.h>
 #include <nmea/nmea_fix.h>
 #include <nmea/nmea_angle.h>
 #include <nmea/nmea_date.h>

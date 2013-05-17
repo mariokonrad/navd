@@ -1,4 +1,4 @@
-#include <navcom/common/lua_debug.h>
+#include <navcom/lua_debug.h>
 #include <syslog.h>
 #include <ctype.h>
 

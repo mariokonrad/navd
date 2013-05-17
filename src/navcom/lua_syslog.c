@@ -1,5 +1,5 @@
-#include <navcom/common/lua_syslog.h>
-#include <navcom/common/lua_helper.h>
+#include <navcom/lua_syslog.h>
+#include <navcom/lua_helper.h>
 #include <syslog.h>
 #include <lua/lauxlib.h>
 

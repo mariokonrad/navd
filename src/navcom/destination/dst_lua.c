@@ -1,7 +1,8 @@
 #include <navcom/destination/dst_lua.h>
-#include <navcom/common/lua_helper.h>
-#include <navcom/common/lua_syslog.h>
-#include <navcom/common/lua_debug.h>
+#include <navcom/lua_helper.h>
+#include <navcom/lua_syslog.h>
+#include <navcom/lua_debug.h>
+#include <navcom/lua_message.h>
 #include <navcom/message.h>
 #include <common/macros.h>
 #include <errno.h>
@@ -28,10 +29,12 @@ static int setup_lua_state(lua_State * lua, const struct property_t * debug_prop
 	luaopen_string(lua);
 	luaopen_math(lua);
 
+	luaH_define_const(lua, "EXIT_SUCCESS", EXIT_SUCCESS);
+	luaH_define_const(lua, "EXIT_FAILURE", EXIT_FAILURE);
+
 	luaH_setup_syslog(lua);
 	luaH_setup_debug(lua, debug_property);
-
-	/* TODO: setup message handling */
+	luaH_setup_message_handling(lua);
 
 	return EXIT_SUCCESS;
 }
@@ -112,6 +115,7 @@ static int proc(const struct proc_config_t * config)
 					}
 					break;
 
+				/* TODO: handle other system messages */
 				/* TODO: handle timer messages */
 				/* TODO: handle nmea messages */
 

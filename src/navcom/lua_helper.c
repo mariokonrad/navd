@@ -1,4 +1,4 @@
-#include <navcom/common/lua_helper.h>
+#include <navcom/lua_helper.h>
 #include <common/fileutil.h>
 #include <lua/lua.h>
 #include <lua/lualib.h>
