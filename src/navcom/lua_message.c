@@ -4,6 +4,9 @@
 #include <navcom/lua_nmea.h>
 #include <stdlib.h>
 #include <string.h>
+#include <lua/lua.h>
+#include <lua/lualib.h>
+#include <lua/lauxlib.h>
 
 /**
  * Clones the message.
@@ -59,13 +62,13 @@ static int lua__msg_type(lua_State * lua)
 	return 1;
 }
 
-static void msg_table_system(lua_State * lua, const struct message_t * msg)
+static void msg_to_table_system(lua_State * lua, const struct message_t * msg)
 {
 	lua_pushunsigned(lua, msg->data.system);
 	lua_setfield(lua, -2, "system");
 }
 
-static void msg_table_timer(lua_State * lua, const struct message_t * msg)
+static void msg_to_table_timer(lua_State * lua, const struct message_t * msg)
 {
 	lua_pushunsigned(lua, msg->data.timer_id);
 	lua_setfield(lua, -2, "timer_id");
@@ -112,7 +115,12 @@ static void msg_table_nmea_rmc(lua_State * lua, const struct nmea_t * nmea)
 	lua_setfield(lua, -2, "sig_integrity");
 }
 
-static void msg_table_nmea(lua_State * lua, const struct message_t * msg)
+/**
+ * Fills the table within the Lua state with the NMEA data.
+ * Supported NMEA sentences are:
+ * - RMC
+ */
+static void msg_to_table_nmea(lua_State * lua, const struct message_t * msg)
 {
 	struct msg_nmea_t
 	{
@@ -177,9 +185,9 @@ static int lua__msg_to_table(lua_State * lua)
 
 	static const struct msg_conversion_t CONV[] =
 	{
-		{ MSG_SYSTEM, msg_table_system },
-		{ MSG_TIMER,  msg_table_timer  },
-		{ MSG_NMEA,   msg_table_nmea   },
+		{ MSG_SYSTEM, msg_to_table_system },
+		{ MSG_TIMER,  msg_to_table_timer  },
+		{ MSG_NMEA,   msg_to_table_nmea   },
 	};
 
 	struct message_t * msg;
@@ -206,6 +214,38 @@ static int lua__msg_to_table(lua_State * lua)
 	lua_setfield(lua, -2, "data");
 
 	return 1;
+}
+
+/**
+ * Converts the table from the Lua state to the specified message.
+ *
+ * Lua example:
+ * @code
+ * function handle(msg_out)
+ *     local t = { ... }
+ *     local rc = msg_from_table(msg_out, t)
+ *     return 1
+ * end
+ * @endcode
+ */
+static int lua__msg_from_table(lua_State * lua)
+{
+	struct message_t * msg;
+
+	msg = lua_touserdata(lua, -2);
+	if (msg == NULL) {
+		lua_pushunsigned(lua, 0);
+		return 1;
+	}
+
+	/* type */
+	lua_getfield(lua, -1, "type");
+	msg->type = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+
+	/* TODO: implementation */
+
+	return 0;
 }
 
 void luaH_setup_message_handling(lua_State * lua)
@@ -248,5 +288,6 @@ void luaH_setup_message_handling(lua_State * lua)
 	lua_register(lua, "msg_clone", lua__msg_clone);
 	lua_register(lua, "msg_type", lua__msg_type);
 	lua_register(lua, "msg_to_table", lua__msg_to_table);
+	lua_register(lua, "msg_from_table", lua__msg_from_table);
 }
 
