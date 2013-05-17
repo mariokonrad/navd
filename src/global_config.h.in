@@ -8,4 +8,4 @@
 #cmakedefine ENABLE_SOURCE_GPSSIMULATOR
 #cmakedefine ENABLE_SOURCE_GPSD
 #cmakedefine ENABLE_FILTER_LUA
-
+#cmakedefine ENABLE_DESTINATION_LUA

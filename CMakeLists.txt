@@ -25,6 +25,9 @@ option(ENABLE_SOURCE_GPSD
 option(ENABLE_FILTER_LUA
 	"Enable filter LUA" ON)
 
+option(ENABLE_DESTINATION_LUA
+	"Enable destination LUA" ON)
+
 ################################################################################
 # build
 ################################################################################
@@ -63,6 +66,7 @@ message("!  ENABLE_SOURCE_GPSSERIAL    : ${ENABLE_SOURCE_GPSSERIAL}")
 message("!  ENABLE_SOURCE_GPSSIMULATOR : ${ENABLE_SOURCE_GPSSIMULATOR}")
 message("!  ENABLE_SOURCE_GPSD         : ${ENABLE_SOURCE_GPSD}")
 message("!  ENABLE_FILTER_LUA          : ${ENABLE_FILTER_LUA}")
+message("!  ENABLE_DESTINATION_LUA     : ${ENABLE_DESTINATION_LUA}")
 
 ################################################################################
 # installation

@@ -30,6 +30,10 @@
 	#include <navcom/source/gps_simulator.h>
 #endif
 
+#ifdef ENABLE_DESTINATION_LUA
+	#include <navcom/destination/dst_lua.h>
+#endif
+
 #include <navcom/filter/filter_null.h>
 #include <navcom/filter/filter_nmea.h>
 #include <navcom/destination/message_log.h>
@@ -192,6 +196,11 @@ static void print_config(FILE * file)
 #if defined(ENABLE_FILTER_LUA)
 	fprintf(file, " filter_lua(%s) ", filter_lua_release());
 #endif
+
+#if defined(ENABLE_DESTINATION_LUA)
+	fprintf(file, " dst_lua(%s) ", dst_lua_release());
+#endif
+
 	fprintf(file, "\n");
 }
 
@@ -787,6 +796,10 @@ static void register_destinations(void) /* {{{ */
 	pdlist_append(&desc_destinations, &message_log);
 	pdlist_append(&desc_destinations, &nmea_serial);
 	pdlist_append(&desc_destinations, &logbook);
+
+#ifdef ENABLE_DESTINATION_LUA
+	pdlist_append(&desc_destinations, &dst_lua);
+#endif
 
 	for (i = 0; i < desc_destinations.num; ++i) {
 		config_register_destination(desc_destinations.data[i].name);

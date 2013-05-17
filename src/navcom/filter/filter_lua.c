@@ -1,87 +1,16 @@
 #include <navcom/filter/filter_lua.h>
+#include <navcom/common/lua_helper.h>
+#include <navcom/common/lua_syslog.h>
+#include <navcom/common/lua_debug.h>
+#include <navcom/common/lua_nmea.h>
 #include <common/macros.h>
 #include <common/fileutil.h>
 #include <string.h>
-#include <ctype.h>
 #include <syslog.h>
+#include <stdlib.h>
 #include <lua/lua.h>
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
-
-static void lua_pushchar(lua_State * lua, char val)
-{
-	char str[2];
-
-	str[0] = val;
-	str[1] = '\0';
-
-	lua_pushstring(lua, str);
-}
-
-static void lua_pushnmeafix(lua_State * lua, const struct nmea_fix_t * a)
-{
-	double t;
-
-	nmea_fix_to_double(&t, a);
-	lua_pushnumber(lua, t);
-}
-
-static void lua_pushnmeatime(lua_State * lua, const struct nmea_time_t * t)
-{
-	lua_newtable(lua);
-
-	lua_pushunsigned(lua, t->h);
-	lua_setfield(lua, -2, "h");
-
-	lua_pushunsigned(lua, t->m);
-	lua_setfield(lua, -2, "m");
-
-	lua_pushunsigned(lua, t->s);
-	lua_setfield(lua, -2, "s");
-
-	lua_pushunsigned(lua, t->ms);
-	lua_setfield(lua, -2, "ms");
-}
-
-static void lua_pushnmeadate(lua_State * lua, const struct nmea_date_t * t)
-{
-	lua_newtable(lua);
-
-	lua_pushunsigned(lua, t->y);
-	lua_setfield(lua, -2, "y");
-
-	lua_pushunsigned(lua, t->m);
-	lua_setfield(lua, -2, "m");
-
-	lua_pushunsigned(lua, t->d);
-	lua_setfield(lua, -2, "d");
-}
-
-static void lua_pushnmeaangle(lua_State * lua, const struct nmea_angle_t * a)
-{
-	double t;
-
-	nmea_angle_to_double(&t, a);
-	lua_pushnumber(lua, t);
-}
-
-static void define_const(lua_State * lua, const char * sym, int val)
-{
-	lua_pushinteger(lua, val);
-	lua_setglobal(lua, sym);
-}
-
-static void define_unsigned_const(lua_State * lua, const char * sym, uint32_t val)
-{
-	lua_pushunsigned(lua, val);
-	lua_setglobal(lua, sym);
-}
-
-static void define_char_const(lua_State * lua, const char * sym, char val)
-{
-	lua_pushchar(lua, val);
-	lua_setglobal(lua, sym);
-}
 
 /**
  * Returns a string to the Lua release.
@@ -89,26 +18,6 @@ static void define_char_const(lua_State * lua, const char * sym, char val)
 const char * filter_lua_release(void)
 {
 	return LUA_RELEASE;
-}
-
-/**
- * Writes the string by the Lua script to the syslog.
- *
- * Lua example:
- * @code
- * syslog(LOG_NOTICE, 'Message')
- * @endcode
- */
-static int lua__syslog(lua_State * lua)
-{
-	int type = -1;
-	const char * str = NULL;
-
-	type = luaL_checkinteger(lua, -2);
-	str = luaL_checkstring(lua, -1);
-
-	syslog(type, "%s", str);
-	return 0;
 }
 
 /**
@@ -181,40 +90,40 @@ static void msg_table_nmea_rmc(lua_State * lua, const struct nmea_t * nmea)
 {
 	const struct nmea_rmc_t * s = &nmea->sentence.rmc;
 
-	lua_pushnmeatime(lua, &s->time);
+	luaH_pushnmeatime(lua, &s->time);
 	lua_setfield(lua, -2, "time");
 
-	lua_pushchar(lua, s->status);
+	luaH_pushchar(lua, s->status);
 	lua_setfield(lua, -2, "status");
 
-	lua_pushnmeaangle(lua, &s->lat);
+	luaH_pushnmeaangle(lua, &s->lat);
 	lua_setfield(lua, -2, "lat");
 
-	lua_pushchar(lua, s->lat_dir);
+	luaH_pushchar(lua, s->lat_dir);
 	lua_setfield(lua, -2, "lat_dir");
 
-	lua_pushnmeaangle(lua, &s->lon);
+	luaH_pushnmeaangle(lua, &s->lon);
 	lua_setfield(lua, -2, "lon");
 
-	lua_pushchar(lua, s->lon_dir);
+	luaH_pushchar(lua, s->lon_dir);
 	lua_setfield(lua, -2, "lon_dir");
 
-	lua_pushnmeafix(lua, &s->sog);
+	luaH_pushnmeafix(lua, &s->sog);
 	lua_setfield(lua, -2, "sog");
 
-	lua_pushnmeafix(lua, &s->head);
+	luaH_pushnmeafix(lua, &s->head);
 	lua_setfield(lua, -2, "head");
 
-	lua_pushnmeadate(lua, &s->date);
+	luaH_pushnmeadate(lua, &s->date);
 	lua_setfield(lua, -2, "date");
 
-	lua_pushnmeafix(lua, &s->m);
+	luaH_pushnmeafix(lua, &s->m);
 	lua_setfield(lua, -2, "m");
 
-	lua_pushchar(lua, s->m_dir);
+	luaH_pushchar(lua, s->m_dir);
 	lua_setfield(lua, -2, "m_dir");
 
-	lua_pushchar(lua, s->sig_integrity);
+	luaH_pushchar(lua, s->sig_integrity);
 	lua_setfield(lua, -2, "sig_integrity");
 }
 
@@ -316,134 +225,51 @@ static int lua__msg_to_table(lua_State * lua)
 
 static void setup_filter_results(lua_State * lua)
 {
-	define_const(lua, "FILTER_SUCCESS", FILTER_SUCCESS);
-	define_const(lua, "FILTER_FAILURE", FILTER_FAILURE);
-	define_const(lua, "FILTER_DISCARD", FILTER_DISCARD);
-}
-
-static void setup_syslog(lua_State * lua)
-{
-	define_const(lua, "LOG_CRIT",    LOG_CRIT);
-	define_const(lua, "LOG_ERR",     LOG_ERR);
-	define_const(lua, "LOG_WARNING", LOG_WARNING);
-	define_const(lua, "LOG_DEBUG",   LOG_DEBUG);
-	define_const(lua, "LOG_NOTICE",  LOG_NOTICE);
-
-	lua_register(lua, "syslog", lua__syslog);
+	luaH_define_const(lua, "FILTER_SUCCESS", FILTER_SUCCESS);
+	luaH_define_const(lua, "FILTER_FAILURE", FILTER_FAILURE);
+	luaH_define_const(lua, "FILTER_DISCARD", FILTER_DISCARD);
 }
 
 static void setup_message_handling(lua_State * lua)
 {
 	/* message types */
-	define_unsigned_const(lua, "MSG_SYSTEM", MSG_SYSTEM);
-	define_unsigned_const(lua, "MSG_TIMER",  MSG_TIMER);
-	define_unsigned_const(lua, "MSG_NMEA",   MSG_NMEA);
+	luaH_define_unsigned_const(lua, "MSG_SYSTEM", MSG_SYSTEM);
+	luaH_define_unsigned_const(lua, "MSG_TIMER",  MSG_TIMER);
+	luaH_define_unsigned_const(lua, "MSG_NMEA",   MSG_NMEA);
 
 	/* system message types */
-	define_unsigned_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
+	luaH_define_unsigned_const(lua, "SYSTEM_TERMINATE", SYSTEM_TERMINATE);
 
 	/* nmea sentences */
-	define_unsigned_const(lua, "NMEA_NONE",       NMEA_NONE);
-	define_unsigned_const(lua, "NMEA_RMB",        NMEA_RMB);
-	define_unsigned_const(lua, "NMEA_RMC",        NMEA_RMC);
-	define_unsigned_const(lua, "NMEA_GGA",        NMEA_GGA);
-	define_unsigned_const(lua, "NMEA_GSA",        NMEA_GSA);
-	define_unsigned_const(lua, "NMEA_GSV",        NMEA_GSV);
-	define_unsigned_const(lua, "NMEA_GLL",        NMEA_GLL);
-	define_unsigned_const(lua, "NMEA_RTE",        NMEA_RTE);
-	define_unsigned_const(lua, "NMEA_VTG",        NMEA_VTG);
-	define_unsigned_const(lua, "NMEA_BOD",        NMEA_BOD);
-	define_unsigned_const(lua, "NMEA_GARMIN_RME", NMEA_GARMIN_RME);
-	define_unsigned_const(lua, "NMEA_GARMIN_RMM", NMEA_GARMIN_RMM);
-	define_unsigned_const(lua, "NMEA_GARMIN_RMZ", NMEA_GARMIN_RMZ);
-	define_unsigned_const(lua, "NMEA_HC_HDG",     NMEA_HC_HDG);
+	luaH_define_unsigned_const(lua, "NMEA_NONE",       NMEA_NONE);
+	luaH_define_unsigned_const(lua, "NMEA_RMB",        NMEA_RMB);
+	luaH_define_unsigned_const(lua, "NMEA_RMC",        NMEA_RMC);
+	luaH_define_unsigned_const(lua, "NMEA_GGA",        NMEA_GGA);
+	luaH_define_unsigned_const(lua, "NMEA_GSA",        NMEA_GSA);
+	luaH_define_unsigned_const(lua, "NMEA_GSV",        NMEA_GSV);
+	luaH_define_unsigned_const(lua, "NMEA_GLL",        NMEA_GLL);
+	luaH_define_unsigned_const(lua, "NMEA_RTE",        NMEA_RTE);
+	luaH_define_unsigned_const(lua, "NMEA_VTG",        NMEA_VTG);
+	luaH_define_unsigned_const(lua, "NMEA_BOD",        NMEA_BOD);
+	luaH_define_unsigned_const(lua, "NMEA_GARMIN_RME", NMEA_GARMIN_RME);
+	luaH_define_unsigned_const(lua, "NMEA_GARMIN_RMM", NMEA_GARMIN_RMM);
+	luaH_define_unsigned_const(lua, "NMEA_GARMIN_RMZ", NMEA_GARMIN_RMZ);
+	luaH_define_unsigned_const(lua, "NMEA_HC_HDG",     NMEA_HC_HDG);
 
 	/* nmea directions */
-	define_char_const(lua, "NMEA_EAST",  NMEA_EAST);
-	define_char_const(lua, "NMEA_WEST",  NMEA_WEST);
-	define_char_const(lua, "NMEA_NORTH", NMEA_NORTH);
-	define_char_const(lua, "NEMA_SOUGH", NEMA_SOUGH);
+	luaH_define_char_const(lua, "NMEA_EAST",  NMEA_EAST);
+	luaH_define_char_const(lua, "NMEA_WEST",  NMEA_WEST);
+	luaH_define_char_const(lua, "NMEA_NORTH", NMEA_NORTH);
+	luaH_define_char_const(lua, "NEMA_SOUGH", NEMA_SOUGH);
 
 	/* nmea status */
-	define_char_const(lua, "NMEA_STATUS_OK",      NMEA_STATUS_OK);
-	define_char_const(lua, "NMEA_STATUS_WARNING", NMEA_STATUS_WARNING);
+	luaH_define_char_const(lua, "NMEA_STATUS_OK",      NMEA_STATUS_OK);
+	luaH_define_char_const(lua, "NMEA_STATUS_WARNING", NMEA_STATUS_WARNING);
 
 	/* message functions */
 	lua_register(lua, "msg_clone", lua__msg_clone);
 	lua_register(lua, "msg_type", lua__msg_type);
 	lua_register(lua, "msg_to_table", lua__msg_to_table);
-}
-
-static void stacktrace(lua_State * lua)
-{
-	lua_Debug entry;
-	int depth = 0;
-
-	while (lua_getstack(lua, depth, &entry)) {
-		lua_getinfo(lua, "Sln", &entry);
-		printf("%s:%d: %s\n",
-			entry.short_src,
-			entry.currentline,
-			entry.name ? entry.name : "?");
-		++depth;
-	}
-}
-
-/**
- * Writes debug information to the syslog.
- */
-static void debug_hook(lua_State * lua, lua_Debug * debug)
-{
-	switch (debug->event) {
-		case LUA_HOOKCALL:
-			lua_getinfo(lua, "Sln", debug);
-			syslog(LOG_DEBUG, "debug: call '%s'",
-				debug->name ? debug->name : "?");
-			break;
-
-		case LUA_HOOKRET:
-			lua_getinfo(lua, "Sln", debug);
-			syslog(LOG_DEBUG, "debug: return '%s' at %d",
-				debug->name ? debug->name : "?",
-				debug->currentline);
-			break;
-
-		case LUA_HOOKLINE:
-			lua_getinfo(lua, "l", debug);
-			syslog(LOG_DEBUG, "debug: line %d",
-				debug->currentline);
-			break;
-	}
-}
-
-/**
- * Sets up the debugging hook according to the property.
- *
- * The properties value may be a string containing the combination
- * of the characters 'c' (call), 'r' (return) and 'l' (line).
- *
- * If none of the flags is set, the debug hook will not be set.
- *
- * It is not possible to remove the debug hook during runtime.
- */
-static void setup_debug(lua_State * lua, const struct property_t * debug_property)
-{
-	int mask = 0;
-	const char * p;
-
-	if (debug_property == NULL) return;
-	for (p = debug_property->value; p && *p; ++p) {
-		switch (tolower(*p)) {
-			case 'c': mask |= LUA_MASKCALL; break;
-			case 'r': mask |= LUA_MASKRET;  break;
-			case 'l': mask |= LUA_MASKLINE; break;
-			default: break;
-		}
-	}
-
-	if (!mask) return;
-
-	lua_sethook(lua, debug_hook, mask, 0);
 }
 
 static int setup_lua_state(lua_State * lua, const struct property_t * debug_property)
@@ -453,14 +279,14 @@ static int setup_lua_state(lua_State * lua, const struct property_t * debug_prop
 	luaopen_string(lua);
 	luaopen_math(lua);
 
+	luaH_setup_syslog(lua);
+	luaH_setup_debug(lua, debug_property);
 	setup_filter_results(lua);
-	setup_syslog(lua);
 	setup_message_handling(lua);
-	setup_debug(lua, debug_property);
 
 	/* TODO: setup error handling */
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static int configure(
@@ -469,21 +295,14 @@ static int configure(
 {
 	int rc;
 	lua_State * lua = NULL;
-	const struct property_t * prop = NULL;
-	const struct property_t * debug_property = NULL;
+	const struct property_t * prop_script = NULL;
+	const struct property_t * prop_debug = NULL;
 
-	prop = proplist_find(properties, "script");
-	if (!prop) {
-		syslog(LOG_ERR, "no script defined");
-		return FILTER_FAILURE;
-	}
+	prop_script = proplist_find(properties, "script");
+	prop_debug = proplist_find(properties, "DEBUG");
 
-	if (!file_is_readable(prop->value)) {
-		syslog(LOG_ERR, "file not readable: '%s'", prop->value);
-		return FILTER_FAILURE;
-	}
-
-	debug_property = proplist_find(properties, "DEBUG");
+	rc = luaH_checkscript_from_prop(prop_script);
+	if (rc != EXIT_SUCCESS) return rc;
 
 	/* setup lua state */
 	lua = luaL_newstate();
@@ -491,15 +310,15 @@ static int configure(
 		syslog(LOG_ERR, "unable to create lua state");
 		return FILTER_FAILURE;
 	}
-	if (setup_lua_state(lua, debug_property)) {
+	if (setup_lua_state(lua, prop_debug)) {
 		syslog(LOG_ERR, "unable to setup lua state");
 		return FILTER_FAILURE;
 	}
 
 	/* load/execute script */
-	rc = luaL_dofile(lua, prop->value);
+	rc = luaL_dofile(lua, prop_script->value);
 	if (rc) {
-		syslog(LOG_ERR, "unable to load and execute script: '%s'", prop->value);
+		syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
 		lua_close(lua);
 		return FILTER_FAILURE;
 	}
