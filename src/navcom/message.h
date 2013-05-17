@@ -28,7 +28,7 @@ enum MessageType {
  */
 enum System {
 	/** Graceful termination of the system */
-	SYSTEM_TERMINATE = 0x00000000
+	SYSTEM_TERMINATE = 0x00000001
 };
 
 /**

@@ -15,8 +15,12 @@
 #include <test_proc.h>
 #include <test_proc_list.h>
 
-#ifdef ENABLE_FILTER_LUA
+#if defined(ENABLE_FILTER_LUA)
 	#include <test_filter_lua.h>
+#endif
+
+#if defined(ENABLE_FILTER_LUA) || defined(ENABLE_DESTINATION_LUA) || defined(ENABLE_SOURCE_LUA)
+	#include <test_lua_message.h>
 #endif
 
 int main()
@@ -35,6 +39,10 @@ int main()
 	register_suite_fileutil();
 	register_suite_proc();
 	register_suite_proc_list();
+
+#if defined(ENABLE_FILTER_LUA) || defined(ENABLE_DESTINATION_LUA) || defined(ENABLE_SOURCE_LUA)
+	register_suite_lua_message();
+#endif
 
 #ifdef ENABLE_FILTER_LUA
 	register_suite_filter_lua();

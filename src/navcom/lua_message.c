@@ -234,7 +234,7 @@ static int lua__msg_from_table(lua_State * lua)
 
 	msg = lua_touserdata(lua, -2);
 	if (msg == NULL) {
-		lua_pushunsigned(lua, 0);
+		lua_pushinteger(lua, 0);
 		return 1;
 	}
 
@@ -243,9 +243,10 @@ static int lua__msg_from_table(lua_State * lua)
 	msg->type = luaL_checkunsigned(lua, -1);
 	lua_pop(lua, 1);
 
-	/* TODO: implementation */
+	/* TODO: implementation: data of messages */
 
-	return 0;
+	lua_pushinteger(lua, 1);
+	return 1;
 }
 
 void luaH_setup_message_handling(lua_State * lua)

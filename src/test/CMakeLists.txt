@@ -82,8 +82,13 @@ set(TEST_SOURCES
 	test_proc_list.c
 	)
 
-if (ENABLE_FILTER_LUA)
+if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA OR ENABLE_SOURCE_LUA)
+	set(TEST_SOURCES ${TEST_SOURCES} test_lua_message.c)
 	set(TEST_SOURCES ${TEST_SOURCES} test_filter_lua.c)
+
+	include_directories(
+		${CMAKE_CURRENT_SOURCE_DIR}/../lua/include
+		)
 endif()
 
 add_executable(testrunner
