@@ -141,7 +141,9 @@ static int proc(const struct proc_config_t * config)
 		}
 	}
 
-	/* TODO: implement Lua cleanup */
+	if (config->data) {
+		lua_close((lua_State *)config->data);
+	}
 
 	return EXIT_SUCCESS;
 }
