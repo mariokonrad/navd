@@ -283,14 +283,7 @@ case $1 in
 		exec_cccc
 		;;
 	check-coverage)
-		rm -f buildfiles.txt sourcefiles.txt
-		find build/src -name "*.gcno" |  while read fn ; do echo $(basename $fn) ; done | sed 's/\.gcno//g' | grep -Ev "parser\.tab\.c|lexer\.yy\.c" | sort > buildfiles.txt
-		find src -name "*.c"  | grep -Ev "/lua/|/cunit/" | while read fn ; do echo $(basename $fn) ; done | sort > sourcefiles.txt
-		echo ""
-		echo "files not covered:"
-		diff sourcefiles.txt buildfiles.txt
-		echo ""
-		rm -f buildfiles.txt sourcefiles.txt
+		exec_unittest_gcov
 		;;
 	pmccabe)
 		exec_filelist
