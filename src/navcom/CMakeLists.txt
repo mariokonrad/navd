@@ -4,6 +4,10 @@ set(SOURCES
 	source/timer.c
 	)
 
+if (ENABLE_SOURCE_LUA)
+	set(SOURCES ${SOURCES} source/src_lua.c)
+endif()
+
 if (ENABLE_SOURCE_GPSSERIAL)
 	set(SOURCES ${SOURCES} source/gps_serial.c)
 endif()
@@ -45,7 +49,7 @@ set(COMMON
 	property_read.c
 	)
 
-if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA)
+if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA OR ENABLE_SOURCE_LUA)
 	set(COMMON ${COMMON}
 		lua_helper.c
 		lua_syslog.c

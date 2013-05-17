@@ -34,6 +34,10 @@
 	#include <navcom/destination/dst_lua.h>
 #endif
 
+#ifdef ENABLE_SOURCE_LUA
+	#include <navcom/source/src_lua.h>
+#endif
+
 #include <navcom/filter/filter_null.h>
 #include <navcom/filter/filter_nmea.h>
 #include <navcom/destination/message_log.h>
@@ -780,6 +784,10 @@ static void register_sources(void) /* {{{ */
 
 #ifdef ENABLE_SOURCE_GPSSIMULATOR
 	pdlist_append(&desc_sources, &gps_simulator);
+#endif
+
+#ifdef ENABLE_SOURCE_LUA
+	pdlist_append(&desc_sources, &src_lua);
 #endif
 
 	for (i = 0; i < desc_sources.num; ++i) {
