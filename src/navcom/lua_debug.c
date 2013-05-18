@@ -4,6 +4,7 @@
 
 void luaH_stacktrace(lua_State * lua)
 {
+/* TODO: cleanup
 	lua_Debug entry;
 	int depth = 0;
 
@@ -15,6 +16,34 @@ void luaH_stacktrace(lua_State * lua)
 			entry.name ? entry.name : "?");
 		++depth;
 	}
+*/
+	int i;
+	int top = lua_gettop(lua);
+	printf("stack trace:\n");
+	for (i = 1; i <= top; ++i) {
+		int t = lua_type(lua, i);
+		printf("%3d: ", i);
+		switch (t) {
+			case LUA_TSTRING:
+				printf("`%s'", lua_tostring(lua, i));
+				break;
+
+			case LUA_TBOOLEAN:
+				printf(lua_toboolean(lua, i) ? "true" : "false");
+				break;
+
+			case LUA_TNUMBER:
+				printf("%g", lua_tonumber(lua, i));
+				break;
+
+			default:
+				printf("%s", lua_typename(lua, t));
+				break;
+
+		}
+		printf("\n");
+	}
+	printf("\n");
 }
 
 /**

@@ -2,6 +2,7 @@
 #include <navcom/message.h>
 #include <navcom/lua_helper.h>
 #include <navcom/lua_nmea.h>
+#include <navcom/lua_debug.h>
 #include <stdlib.h>
 #include <string.h>
 #include <lua/lua.h>
@@ -139,7 +140,7 @@ static void msg_to_table_nmea(lua_State * lua, const struct message_t * msg)
 	lua_newtable(lua);
 
 	lua_pushunsigned(lua, nmea->type);
-	lua_setfield(lua, -2, "type");
+	lua_setfield(lua, -2, "nmea_type");
 
 	lua_pushstring(lua, nmea->raw);
 	lua_setfield(lua, -2, "raw");
@@ -202,7 +203,7 @@ static int lua__msg_to_table(lua_State * lua)
 	lua_newtable(lua);
 
 	lua_pushunsigned(lua, msg->type);
-	lua_setfield(lua, -2, "type");
+	lua_setfield(lua, -2, "msg_type");
 
 	lua_newtable(lua);
 	for (i = 0; i < sizeof(CONV) / sizeof(CONV[0]); ++i) {
@@ -217,6 +218,17 @@ static int lua__msg_to_table(lua_State * lua)
 }
 
 /**
+ * @todo Implement error handling
+ */
+static int msg_from_table_system(lua_State * lua, struct message_t * msg)
+{
+	lua_getfield(lua, -1, "system");
+	msg->data.system = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	return 0;
+}
+
+/**
  * Converts the table from the Lua state to the specified message.
  *
  * Lua example:
@@ -224,28 +236,52 @@ static int lua__msg_to_table(lua_State * lua)
  * function handle(msg_out)
  *     local t = { ... }
  *     local rc = msg_from_table(msg_out, t)
- *     return 1
+ *     return 0
  * end
  * @endcode
  */
 static int lua__msg_from_table(lua_State * lua)
 {
+	struct msg_conversion_t
+	{
+		uint32_t type;
+		int (*func)(lua_State *, struct message_t *);
+	};
+
+	static const struct msg_conversion_t CONV[] =
+	{
+		{ MSG_SYSTEM, msg_from_table_system },
+		/* TODO: { MSG_SYSTEM, msg_from_table_timer  }, */
+		/* TODO: { MSG_SYSTEM, msg_from_table_nmea   }, */
+	};
+
 	struct message_t * msg;
+	size_t i;
+	int rc = 0;
 
 	msg = lua_touserdata(lua, -2);
 	if (msg == NULL) {
-		lua_pushinteger(lua, 0);
+		lua_pushinteger(lua, 1);
 		return 1;
 	}
 
 	/* type */
-	lua_getfield(lua, -1, "type");
+	lua_getfield(lua, -1, "msg_type");
 	msg->type = luaL_checkunsigned(lua, -1);
 	lua_pop(lua, 1);
 
-	/* TODO: implementation: data of messages */
+	/* data */
+	lua_getfield(lua, -1, "data");
+	for (i = 0; i < sizeof(CONV) / sizeof(CONV[0]); ++i) {
+		if (msg->type == CONV[i].type) {
+			rc = CONV[i].func(lua, msg);
+			break;
+		}
+	}
+	lua_pop(lua, 1);
 
-	lua_pushinteger(lua, 1);
+	/* result */
+	lua_pushinteger(lua, rc);
 	return 1;
 }
 

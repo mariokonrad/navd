@@ -22,6 +22,9 @@ const char * dst_lua_release(void)
 	return LUA_RELEASE;
 }
 
+/**
+ * @todo Implement Lua error handling
+ */
 static void process_message(lua_State * lua, const struct message_t * msg)
 {
 	int rc;

@@ -92,6 +92,9 @@ int free_context(struct filter_context_t * ctx)
 	return FILTER_SUCCESS;
 }
 
+/**
+ * @todo Implement Lua error handling
+ */
 static int filter(
 		struct message_t * out,
 		const struct message_t * in,

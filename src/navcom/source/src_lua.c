@@ -52,6 +52,9 @@ static void send_message(const struct proc_config_t * config, const struct messa
 	}
 }
 
+/**
+ * @todo Implement Lua error handling
+ */
 static void handle_script(const struct proc_config_t * config)
 {
 	struct message_t msg;
