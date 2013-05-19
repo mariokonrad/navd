@@ -43,8 +43,8 @@ static int process_message(lua_State * lua, const struct message_t * msg)
 {
 	int rc;
 
-	if (!lua) return;
-	if (!msg) return;
+	if (!lua) return EXIT_FAILURE;
+	if (!msg) return EXIT_FAILURE;
 
 	if (setjmp(env) == 0) {
 		lua_getglobal(lua, "handle");
