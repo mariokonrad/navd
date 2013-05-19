@@ -122,6 +122,23 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	}
 }
 
+/**
+ * Cleans up.
+ *
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
+static int clean(struct proc_config_t * config)
+{
+	if (!config) return EXIT_FAILURE;
+
+	if (config->data) {
+		lua_close((lua_State *)config->data);
+		config->data = NULL;
+	}
+	return EXIT_SUCCESS;
+}
+
 static int proc(const struct proc_config_t * config)
 {
 	int rc;
@@ -177,16 +194,13 @@ static int proc(const struct proc_config_t * config)
 		}
 	}
 
-	if (config->data) {
-		lua_close((lua_State *)config->data);
-	}
-
 	return EXIT_SUCCESS;
 }
 
 const struct proc_desc_t dst_lua = {
 	.name = "dst_lua",
 	.configure = configure,
-	.func = proc
+	.func = proc,
+	.clean = clean
 };
 

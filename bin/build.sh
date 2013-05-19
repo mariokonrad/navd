@@ -158,6 +158,7 @@ function exec_lcov()
 {
 	exec_prepare
 	lcov --zerocounters --directory build/src --output-file build/doc/coverage.info
+	${BASE}/build/src/navd --help
 	${BASE}/build/src/test/testrunner
 	lcov --capture --directory build/src --output-file build/doc/coverage.info
 	lcov --remove build/doc/coverage.info "/usr/*" --output-file build/doc/coverage.info

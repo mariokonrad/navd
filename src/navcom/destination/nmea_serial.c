@@ -130,6 +130,7 @@ static int proc(const struct proc_config_t * config)
 const struct proc_desc_t nmea_serial ={
 	.name = "nmea_serial",
 	.configure = configure,
-	.func = proc
+	.func = proc,
+	.clean = NULL
 };
 

@@ -167,6 +167,7 @@ static int proc(const struct proc_config_t * config)
 const struct proc_desc_t gps_serial = {
 	.name = "gps_serial",
 	.configure = configure,
-	.func = proc
+	.func = proc,
+	.clean = NULL
 };
 

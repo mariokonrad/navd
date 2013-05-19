@@ -129,6 +129,7 @@ static int proc(const struct proc_config_t * config)
 const struct proc_desc_t timer = {
 	.name = "timer",
 	.configure = configure,
-	.func = proc
+	.func = proc,
+	.clean = NULL
 };
 

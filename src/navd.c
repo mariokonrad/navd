@@ -404,6 +404,7 @@ static int proc_close_wait(struct proc_config_t * proc) /* {{{ */
 
 static int proc_start(struct proc_config_t * proc, const struct proc_desc_t const * desc) /* {{{ */
 {
+	int rc_func;
 	int rc;
 	int rfd[2]; /* hub -> proc */
 	int wfd[2]; /* proc -> hub */
@@ -456,9 +457,15 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		}
 
 		/* execute actual procedure */
-		rc = desc->func(proc);
-		syslog(LOG_INFO, "stop proc '%s', rc=%d", proc->cfg->name, rc);
-		exit(rc);
+		rc_func = desc->func(proc);
+		syslog(LOG_INFO, "stop proc '%s', rc=%d", proc->cfg->name, rc_func);
+		if (desc->clean) {
+			rc = desc->clean(proc);
+			if (rc != EXIT_SUCCESS) {
+				syslog(LOG_ERR, "proc clean '%s', rc=%d", proc->cfg->name, rc);
+			}
+		}
+		exit(rc_func);
 	}
 
 	/* parent code */

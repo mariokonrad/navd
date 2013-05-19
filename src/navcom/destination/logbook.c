@@ -600,6 +600,7 @@ static int proc(const struct proc_config_t * config)
 const struct proc_desc_t logbook = {
 	.name = "logbook",
 	.configure = configure,
-	.func = proc
+	.func = proc,
+	.clean = NULL
 };
 

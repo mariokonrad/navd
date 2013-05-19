@@ -206,6 +206,7 @@ static int proc(const struct proc_config_t * config)
 const struct proc_desc_t gps_simulator = {
 	.name = "gps_sim",
 	.configure = configure,
-	.func = proc
+	.func = proc,
+	.clean = NULL
 };
 
