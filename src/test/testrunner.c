@@ -21,6 +21,7 @@
 #include <test_destination_nmea_serial.h>
 #include <test_destination_logbook.h>
 #include <test_destination_dst_lua.h>
+#include <test_destination_message_log.h>
 
 #if defined(ENABLE_FILTER_LUA)
 	#include <test_filter_lua.h>
@@ -57,6 +58,7 @@ int main()
 	register_suite_destination_nmea_serial();
 	register_suite_destination_logbook();
 	register_suite_destination_dst_lua();
+	register_suite_destination_message_log();
 
 #if defined(ENABLE_FILTER_LUA) || defined(ENABLE_DESTINATION_LUA) || defined(ENABLE_SOURCE_LUA)
 	register_suite_lua_message();

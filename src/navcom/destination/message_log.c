@@ -58,8 +58,6 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 {
 	const struct property_t * prop_dst = NULL;
 
-	UNUSED_ARG(config);
-
 	memset(&prop, 0, sizeof(struct msg_log_property_t));
 
 	prop.enable = proplist_contains(properties, "enable");
