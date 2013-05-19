@@ -6,9 +6,20 @@
 #include <common/macros.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <setjmp.h>
 #include <lua/lua.h>
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
+
+static jmp_buf env; /* TODO: this environment must be per filter */
+
+static int panic(lua_State * lua)
+{
+	UNUSED_ARG(lua);
+
+	longjmp(env, -1);
+	return 0;
+}
 
 /**
  * Returns a string to the Lua release.
@@ -64,21 +75,29 @@ static int configure(
 		syslog(LOG_ERR, "unable to create lua state");
 		return FILTER_FAILURE;
 	}
-	if (setup_lua_state(lua, prop_debug)) {
-		syslog(LOG_ERR, "unable to setup lua state");
-		return FILTER_FAILURE;
-	}
+	lua_atpanic(lua, panic);
+	if (setjmp(env) == 0) {
+		if (setup_lua_state(lua, prop_debug)) {
+			syslog(LOG_ERR, "unable to setup lua state");
+			return FILTER_FAILURE;
+		}
 
-	/* load/execute script */
-	rc = luaL_dofile(lua, prop_script->value);
-	if (rc) {
-		syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
+		/* load/execute script */
+		rc = luaL_dofile(lua, prop_script->value);
+		if (rc) {
+			syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
+			lua_close(lua);
+			return FILTER_FAILURE;
+		}
+		ctx->data = lua;
+		return FILTER_SUCCESS;
+	} else {
+		lua_atpanic(lua, NULL);
+		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
+		lua_pop(lua, 1);
 		lua_close(lua);
 		return FILTER_FAILURE;
 	}
-
-	ctx->data = lua;
-	return FILTER_SUCCESS;
 }
 
 int free_context(struct filter_context_t * ctx)
@@ -111,15 +130,28 @@ static int filter(
 	if (!ctx || !ctx->data) return FILTER_FAILURE;
 	lua = (lua_State *)ctx->data;
 
-	lua_getglobal(lua, "filter");
-	lua_pushlightuserdata(lua, (void*)out);
-	lua_pushlightuserdata(lua, (void*)in);
-	rc = lua_pcall(lua, 2, 1, 0);
-	luaH_check_error(lua, rc);
+	if (setjmp(env) == 0) {
+		lua_getglobal(lua, "filter");
+		lua_pushlightuserdata(lua, (void*)out);
+		lua_pushlightuserdata(lua, (void*)in);
+		rc = lua_pcall(lua, 2, 1, 0);
+		luaH_check_error(lua, rc);
 
-	return (rc == LUA_OK)
-		? luaL_checkinteger(lua, -1)
-		: FILTER_FAILURE;
+		if (rc == LUA_OK) {
+			rc = luaL_checkinteger(lua, -1);
+			/* TODO: clear Lua stack */
+			return rc;
+		} else {
+			/* TODO: clear Lua stack */
+			return FILTER_FAILURE;
+		}
+	} else {
+		lua_atpanic(lua, NULL);
+		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
+		lua_pop(lua, 1);
+		lua_close(lua);
+		return FILTER_FAILURE;
+	}
 }
 
 const struct filter_desc_t filter_lua = {
