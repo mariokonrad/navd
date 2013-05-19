@@ -64,9 +64,12 @@ static void send_message(const struct proc_config_t * config, const struct messa
 }
 
 /**
- * @todo Implement Lua error handling
+ * Calls the Lua state to handle the next period.
+ *
+ * @reval EXIT_SUCCESS
+ * @reval EXIT_FAILURE
  */
-static void handle_script(const struct proc_config_t * config)
+static int handle_script(const struct proc_config_t * config)
 {
 	struct message_t msg;
 	lua_State * lua = (lua_State *)config->data;
@@ -85,6 +88,7 @@ static void handle_script(const struct proc_config_t * config)
 				/* TODO: check message integrity */
 				send_message(config, &msg);
 			}
+			return EXIT_SUCCESS;
 		} else {
 			luaH_check_error(lua, rc);
 		}
@@ -93,6 +97,7 @@ static void handle_script(const struct proc_config_t * config)
 		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
 		lua_pop(lua, 1);
 	}
+	return EXIT_FAILURE;
 }
 
 static int setup_period(const struct property_t * property)
@@ -197,8 +202,9 @@ static int proc(const struct proc_config_t * config)
 		}
 
 		if (rc == 0) { /* timerout */
-			/* TODO: implement process termination on failure */
-			handle_script(config);
+			if (handle_script(config) != EXIT_SUCCESS) {
+				return EXIT_FAILURE;
+			}
 			continue;
 		}
 

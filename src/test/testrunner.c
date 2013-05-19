@@ -10,10 +10,17 @@
 #include <test_filter_nmea.h>
 #include <test_filterlist.h>
 #include <test_device.h>
+#include <test_device_simulator.h>
 #include <test_property_serial.h>
 #include <test_fileutil.h>
 #include <test_proc.h>
 #include <test_proc_list.h>
+#include <test_source_timer.h>
+#include <test_source_gps_serial.h>
+#include <test_source_gps_simulator.h>
+#include <test_destination_nmea_serial.h>
+#include <test_destination_logbook.h>
+#include <test_destination_dst_lua.h>
 
 #if defined(ENABLE_FILTER_LUA)
 	#include <test_filter_lua.h>
@@ -21,6 +28,10 @@
 
 #if defined(ENABLE_FILTER_LUA) || defined(ENABLE_DESTINATION_LUA) || defined(ENABLE_SOURCE_LUA)
 	#include <test_lua_message.h>
+#endif
+
+#if defined(ENABLE_SOURCE_LUA)
+	#include <test_source_src_lua.h>
 #endif
 
 int main()
@@ -35,10 +46,17 @@ int main()
 	register_suite_filter_nmea();
 	register_suite_filterlist();
 	register_suite_device();
+	register_suite_device_simulator();
 	register_suite_property_serial();
 	register_suite_fileutil();
 	register_suite_proc();
 	register_suite_proc_list();
+	register_suite_source_timer();
+	register_suite_source_gps_serial();
+	register_suite_source_gps_simulator();
+	register_suite_destination_nmea_serial();
+	register_suite_destination_logbook();
+	register_suite_destination_dst_lua();
 
 #if defined(ENABLE_FILTER_LUA) || defined(ENABLE_DESTINATION_LUA) || defined(ENABLE_SOURCE_LUA)
 	register_suite_lua_message();
@@ -46,6 +64,10 @@ int main()
 
 #ifdef ENABLE_FILTER_LUA
 	register_suite_filter_lua();
+#endif
+
+#if defined(ENABLE_SOURCE_LUA)
+	register_suite_source_src_lua();
 #endif
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);

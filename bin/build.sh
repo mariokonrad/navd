@@ -37,6 +37,8 @@ function usage()
 	echo "    valgrind       : calls valgrind on tests to check for memory problems"
 	echo "    check-coverage : checks if all files are being used for code coverage (debug build only)"
 	echo "    pmccabe        : calculates the cyclomatic complexity of the relevant source (without Lua, tests)"
+	echo "    gcovr          : calculates coverage using gcovr"
+	echo "    lcov           : generates a HTML report on coverage using lcov"
 	echo "    todo           : searches and displays all todos, fixmes and temps"
 	echo ""
 }
@@ -134,10 +136,36 @@ function exec_unittest()
 {
 	if [ -r "${BASE}/build/src/test/testrunner" ] ; then
 		${BASE}/build/src/test/testrunner
-		exec_unittest_gcov
 	else
 		echo "error: unit tests not present"
 	fi
+}
+
+function exec_gcovr()
+{
+	exec_prepare
+	gcovr \
+		-p \
+		--object-directory=build/src \
+		--gcov-exclude=".*lexer.yy.c|.*parser.tab.c|.*lexer.l|.*parser.y" \
+		-o build/doc/gcovr.txt
+
+	# file list with:
+	# cat build/doc/gcovr.txt | grep -E "^/home" | sed 's/\(\w\)\ .*$/\1/' | sort
+}
+
+function exec_lcov()
+{
+	exec_prepare
+	lcov --zerocounters --directory build/src --output-file build/doc/coverage.info
+	${BASE}/build/src/test/testrunner
+	lcov --capture --directory build/src --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "/usr/*" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "lexer.yy.*" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "parser.tab.*" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "lexer.l" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "parser.y" --output-file build/doc/coverage.info
+	genhtml build/doc/coverage.info --output-directory build/doc/coverage
 }
 
 function exec_test()
@@ -284,6 +312,12 @@ case $1 in
 		;;
 	check-coverage)
 		exec_unittest_gcov
+		;;
+	gcovr)
+		exec_gcovr
+		;;
+	lcov)
+		exec_lcov
 		;;
 	pmccabe)
 		exec_filelist

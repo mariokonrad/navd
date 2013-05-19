@@ -34,9 +34,12 @@ const char * dst_lua_release(void)
 }
 
 /**
- * @todo Implement Lua error handling
+ * Processes the specified message.
+ *
+ * @reval EXIT_SUCCESS
+ * @reval EXIT_FAILURE
  */
-static void process_message(lua_State * lua, const struct message_t * msg)
+static int process_message(lua_State * lua, const struct message_t * msg)
 {
 	int rc;
 
@@ -48,10 +51,12 @@ static void process_message(lua_State * lua, const struct message_t * msg)
 		lua_pushlightuserdata(lua, (void*)msg);
 		rc = lua_pcall(lua, 1, 0, 0);
 		luaH_check_error(lua, rc);
+		return EXIT_SUCCESS;
 	} else {
 		lua_atpanic(lua, NULL);
 		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
 		lua_pop(lua, 1);
+		return EXIT_FAILURE;
 	}
 }
 
@@ -159,8 +164,9 @@ static int proc(const struct proc_config_t * config)
 
 				case MSG_TIMER:
 				case MSG_NMEA:
-					/* TODO: implement process termination on failure */
-					process_message((lua_State *)config->data, &msg);
+					if (process_message((lua_State *)config->data, &msg) != EXIT_SUCCESS) {
+						return EXIT_FAILURE;
+					}
 					break;
 
 				default:

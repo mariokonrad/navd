@@ -76,15 +76,24 @@ set(TEST_SOURCES
 	test_filter_nmea.c
 	test_filterlist.c
 	test_device.c
+	test_device_simulator.c
 	test_property_serial.c
 	test_fileutil.c
 	test_proc.c
 	test_proc_list.c
+	test_source_timer.c
+	test_source_gps_serial.c
+	test_source_gps_simulator.c
+	test_destination_nmea_serial.c
+	test_destination_logbook.c
+	test_destination_dst_lua.c
+	test_destination_message_log.c
 	)
 
 if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA OR ENABLE_SOURCE_LUA)
 	set(TEST_SOURCES ${TEST_SOURCES} test_lua_message.c)
 	set(TEST_SOURCES ${TEST_SOURCES} test_filter_lua.c)
+	set(TEST_SOURCES ${TEST_SOURCES} test_source_src_lua.c)
 
 	include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}/../lua/include

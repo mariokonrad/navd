@@ -218,14 +218,29 @@ static int lua__msg_to_table(lua_State * lua)
 }
 
 /**
- * @todo Implement error handling
+ * Reads a system message from lua state.
+ *
+ * @retval EXIT_SUCCESS
  */
 static int msg_from_table_system(lua_State * lua, struct message_t * msg)
 {
 	lua_getfield(lua, -1, "system");
 	msg->data.system = luaL_checkunsigned(lua, -1);
 	lua_pop(lua, 1);
-	return 0;
+	return EXIT_SUCCESS;
+}
+
+/**
+ * Reads a system message from lua state.
+ *
+ * @retval EXIT_SUCCESS
+ */
+static int msg_from_table_timer(lua_State * lua, struct message_t * msg)
+{
+	lua_getfield(lua, -1, "timer_id");
+	msg->data.timer_id = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	return EXIT_SUCCESS;
 }
 
 /**
@@ -236,7 +251,7 @@ static int msg_from_table_system(lua_State * lua, struct message_t * msg)
  * function handle(msg_out)
  *     local t = { ... }
  *     local rc = msg_from_table(msg_out, t)
- *     return 0
+ *     return rc
  * end
  * @endcode
  */
@@ -251,7 +266,7 @@ static int lua__msg_from_table(lua_State * lua)
 	static const struct msg_conversion_t CONV[] =
 	{
 		{ MSG_SYSTEM, msg_from_table_system },
-		/* TODO: { MSG_SYSTEM, msg_from_table_timer  }, */
+		{ MSG_TIMER,  msg_from_table_timer  },
 		/* TODO: { MSG_SYSTEM, msg_from_table_nmea   }, */
 	};
 
