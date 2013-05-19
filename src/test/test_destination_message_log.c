@@ -24,8 +24,8 @@ static void test_configure(void)
 	info.name = "name";
 	info.name = "type";
 	proplist_init(&info.properties);
-	proplist_append(&info.properties, "enable", "true");
-	proplist_append(&info.properties, "dst", "/dev/null");
+	proplist_set(&info.properties, "enable", "true");
+	proplist_set(&info.properties, "dst", "/dev/null");
 
 	proc_config_init(&config);
 	config.cfg = &info;
