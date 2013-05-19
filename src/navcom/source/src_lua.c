@@ -9,12 +9,23 @@
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <setjmp.h>
 #include <lua/lua.h>
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
 
 static int initialized = 0;
 static struct timespec tm_cfg;
+
+static jmp_buf env;
+
+static int panic(lua_State * lua)
+{
+	UNUSED_ARG(lua);
+
+	longjmp(env, -1);
+	return 0;
+}
 
 /**
  * Returns a string to the Lua release.
@@ -63,18 +74,24 @@ static void handle_script(const struct proc_config_t * config)
 
 	memset(&msg, 0, sizeof(msg));
 
-	lua_getglobal(lua, "handle");
-	lua_pushlightuserdata(lua, (void*)&msg);
-	rc = lua_pcall(lua, 1, 0, 0);
-	if (rc == LUA_OK) {
-		rc = luaL_checkinteger(lua, -1);
-		lua_pop(lua, 1);
-		if (rc) {
-			/* TODO: check message integrity */
-			send_message(config, &msg);
+	if (setjmp(env) == 0) {
+		lua_getglobal(lua, "handle");
+		lua_pushlightuserdata(lua, (void*)&msg);
+		rc = lua_pcall(lua, 1, 0, 0);
+		if (rc == LUA_OK) {
+			rc = luaL_checkinteger(lua, -1);
+			lua_pop(lua, 1);
+			if (rc) {
+				/* TODO: check message integrity */
+				send_message(config, &msg);
+			}
+		} else {
+			luaH_check_error(lua, rc);
 		}
 	} else {
-		luaH_check_error(lua, rc);
+		lua_atpanic(lua, NULL);
+		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
+		lua_pop(lua, 1);
 	}
 }
 
@@ -124,21 +141,30 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 		syslog(LOG_ERR, "unable to create lua state");
 		return EXIT_FAILURE;
 	}
-	if (setup_lua_state(lua, prop_debug)) {
-		syslog(LOG_ERR, "unable to setup lua state");
-		return EXIT_FAILURE;
-	}
+	lua_atpanic(lua, panic);
+	if (setjmp(env) == 0) {
+		if (setup_lua_state(lua, prop_debug)) {
+			syslog(LOG_ERR, "unable to setup lua state");
+			return EXIT_FAILURE;
+		}
 
-	/* load/execute script */
-	rc = luaL_dofile(lua, prop_script->value);
-	if (rc) {
-		syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
+		/* load/execute script */
+		rc = luaL_dofile(lua, prop_script->value);
+		if (rc) {
+			syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
+			lua_close(lua);
+			return EXIT_FAILURE;
+		}
+
+		config->data = lua;
+		return EXIT_SUCCESS;
+	} else {
+		lua_atpanic(lua, NULL);
+		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
+		lua_pop(lua, 1);
 		lua_close(lua);
 		return EXIT_FAILURE;
 	}
-
-	config->data = lua;
-	return EXIT_SUCCESS;
 }
 
 static int proc(const struct proc_config_t * config)
@@ -171,6 +197,7 @@ static int proc(const struct proc_config_t * config)
 		}
 
 		if (rc == 0) { /* timerout */
+			/* TODO: implement process termination on failure */
 			handle_script(config);
 			continue;
 		}
