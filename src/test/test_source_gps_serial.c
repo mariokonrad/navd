@@ -12,7 +12,7 @@ static void test_existance(void)
 	CU_ASSERT_PTR_NOT_NULL(proc);
 	CU_ASSERT_PTR_NOT_NULL(proc->configure);
 	CU_ASSERT_PTR_NOT_NULL(proc->func);
-	CU_ASSERT_PTR_NOT_NULL(proc->clean);
+	CU_ASSERT_PTR_NULL(proc->clean);
 }
 
 static void test_configure(void)
@@ -22,19 +22,19 @@ static void test_configure(void)
 	proplist_init(&properties);
 
 	CU_ASSERT_EQUAL(proc->configure(NULL, NULL), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_SUCCESS);
 
 	proplist_set(&properties, "device", "/dev/null");
-	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_SUCCESS);
 
 	proplist_set(&properties, "baud", "9600");
-	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_SUCCESS);
 
 	proplist_set(&properties, "parity", "none");
-	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_SUCCESS);
 
 	proplist_set(&properties, "data", "8");
-	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_SUCCESS);
 
 	proplist_set(&properties, "stop", "1");
 	CU_ASSERT_EQUAL(proc->configure(NULL, &properties), EXIT_SUCCESS);

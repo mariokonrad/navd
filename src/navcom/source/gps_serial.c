@@ -24,6 +24,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 {
 	UNUSED_ARG(config);
 
+	if (properties == NULL) return EXIT_FAILURE;
 	if (prop_serial_read_device(&serial_config, properties, "device") != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (prop_serial_read_baudrate(&serial_config, properties, "baud") != EXIT_SUCCESS) return EXIT_FAILURE;
 	if (prop_serial_read_parity(&serial_config, properties, "parity") != EXIT_SUCCESS) return EXIT_FAILURE;
