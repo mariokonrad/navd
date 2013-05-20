@@ -9,6 +9,13 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+struct nmea_read_buffer_t
+{
+	int index;
+	char data[NMEA_MAX_SENTENCE + 1];
+	struct message_t msg;
+};
+
 static void init_data(struct gps_serial_data_t * data)
 {
 	memset(data, 0, sizeof(struct gps_serial_data_t));
@@ -69,6 +76,60 @@ static int clean(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
+static int process_nmea(
+		struct proc_config_t * config,
+		const struct device_operations_t * ops,
+		struct device_t * device,
+		struct nmea_read_buffer_t * buf)
+{
+	char c;
+	int rc;
+	struct gps_serial_data_t * data = (struct gps_serial_data_t *)config->data;
+
+	rc = ops->read(device, &c, sizeof(c));
+	if (rc < 0) {
+		syslog(LOG_ERR, "unable to read from device '%s': %s", data->serial_config.name, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	if (rc != sizeof(c)) {
+		syslog(LOG_ERR, "invalid size read from device '%s': %s", data->serial_config.name, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	nmea_init(&buf->msg.data.nmea);
+	switch (c) {
+		case '\r':
+			break;
+		case '\n':
+			rc = nmea_read(&buf->msg.data.nmea, buf->data);
+			if (rc == 0) {
+				rc = write(config->wfd, &buf->msg, sizeof(buf->msg));
+				if (rc < 0) {
+					syslog(LOG_ERR, "unable to write NMEA data: %s", strerror(errno));
+				}
+			} else if (rc == 1) {
+				syslog(LOG_ERR, "unknown sentence: '%s'", buf->data);
+			} else if (rc == -2) {
+				syslog(LOG_ERR, "checksum error: '%s'", buf->data);
+			} else {
+				syslog(LOG_ERR, "parameter error");
+				return EXIT_FAILURE;
+			}
+			buf->index = 0;
+			buf->data[buf->index] = 0;
+			break;
+		default:
+			if (buf->index < NMEA_MAX_SENTENCE) {
+				buf->data[buf->index++] = c;
+			} else {
+				syslog(LOG_ERR, "sentence too long, discarding");
+				buf->index = 0;
+			}
+			buf->data[buf->index] = 0;
+			break;
+	}
+	return EXIT_SUCCESS;
+}
+
 static int proc(struct proc_config_t * config)
 {
 	int rc;
@@ -81,12 +142,7 @@ static int proc(struct proc_config_t * config)
 	struct device_t device;
 	const struct device_operations_t * ops = NULL;
 
-	struct message_t msg_nmea;
-	struct nmea_t * nmea = &msg_nmea.data.nmea;
-	char buf[NMEA_MAX_SENTENCE + 1];
-	int buf_index;
-	char c;
-
+	struct nmea_read_buffer_t readbuf;
 	struct gps_serial_data_t * data;
 
 	if (!config)
@@ -103,10 +159,8 @@ static int proc(struct proc_config_t * config)
 
 	ops = &serial_device_operations;
 	device_init(&device);
-	memset(buf, 0, sizeof(buf));
-	buf_index = 0;
-
-	msg_nmea.type = MSG_NMEA;
+	memset(&readbuf, 0, sizeof(readbuf));
+	readbuf.msg.type = MSG_NMEA;
 
 	rc = ops->open(&device, (const struct device_config_t *)&data->serial_config);
 	if (rc < 0) {
@@ -133,49 +187,9 @@ static int proc(struct proc_config_t * config)
 			break;
 		}
 
-		if (FD_ISSET(device.fd, &rfds)) {
-			rc = ops->read(&device, &c, sizeof(c));
-			if (rc < 0) {
-				syslog(LOG_ERR, "unable to read from device '%s': %s", data->serial_config.name, strerror(errno));
+		if (FD_ISSET(device.fd, &rfds))
+			if (process_nmea(config, ops, &device, &readbuf) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
-			}
-			if (rc != sizeof(c)) {
-				syslog(LOG_ERR, "invalid size read from device '%s': %s", data->serial_config.name, strerror(errno));
-				return EXIT_FAILURE;
-			}
-			nmea_init(nmea);
-			switch (c) {
-				case '\r':
-					break;
-				case '\n':
-					rc = nmea_read(nmea, buf);
-					if (rc == 0) {
-						rc = write(config->wfd, &msg_nmea, sizeof(msg_nmea));
-						if (rc < 0) {
-							syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
-						}
-					} else if (rc == 1) {
-						syslog(LOG_ERR, "unknown sentence: '%s'", buf);
-					} else if (rc == -2) {
-						syslog(LOG_ERR, "checksum error: '%s'", buf);
-					} else {
-						syslog(LOG_ERR, "parameter error");
-						return EXIT_FAILURE;
-					}
-					buf_index = 0;
-					buf[buf_index] = 0;
-					break;
-				default:
-					if (buf_index < NMEA_MAX_SENTENCE) {
-						buf[buf_index++] = c;
-					} else {
-						syslog(LOG_ERR, "sentence too long, discarding");
-						buf_index = 0;
-					}
-					buf[buf_index] = 0;
-					break;
-			}
-		}
 
 		if (FD_ISSET(config->rfd, &rfds)) {
 			rc = read(config->rfd, &msg, sizeof(msg));
