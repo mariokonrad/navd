@@ -35,7 +35,9 @@ const char * src_lua_release(void)
 	return LUA_RELEASE;
 }
 
-static int setup_lua_state(lua_State * lua, const struct property_t * debug_property)
+static int setup_lua_state(
+		lua_State * lua,
+		const struct property_t * debug_property)
 {
 	luaopen_base(lua);
 	luaopen_table(lua);
@@ -53,7 +55,9 @@ static int setup_lua_state(lua_State * lua, const struct property_t * debug_prop
 	return EXIT_SUCCESS;
 }
 
-static void send_message(const struct proc_config_t * config, const struct message_t * msg)
+static void send_message(
+		const struct proc_config_t * config,
+		const struct message_t * msg)
 {
 	int rc;
 
@@ -122,7 +126,9 @@ static int setup_period(const struct property_t * property)
 	return EXIT_SUCCESS;
 }
 
-static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+static int configure(
+		struct proc_config_t * config,
+		const struct property_list_t * properties)
 {
 	int rc;
 	lua_State * lua = NULL;
@@ -135,10 +141,12 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	prop_debug = proplist_find(properties, "DEBUG");
 
 	rc = setup_period(prop_period);
-	if (rc != EXIT_SUCCESS) return rc;
+	if (rc != EXIT_SUCCESS)
+		return rc;
 
 	rc = luaH_checkscript_from_prop(prop_script);
-	if (rc != EXIT_SUCCESS) return rc;
+	if (rc != EXIT_SUCCESS)
+		return rc;
 
 	/* setup lua state */
 	lua = luaL_newstate();
@@ -180,7 +188,8 @@ static int configure(struct proc_config_t * config, const struct property_list_t
  */
 static int clean(struct proc_config_t * config)
 {
-	if (!config) return EXIT_FAILURE;
+	if (!config)
+		return EXIT_FAILURE;
 
 	if (config->data) {
 		lua_close((lua_State *)config->data);
@@ -206,7 +215,8 @@ static int proc(struct proc_config_t * config)
 		fd_max = -1;
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
-		if (config->rfd > fd_max) fd_max = config->rfd;
+		if (config->rfd > fd_max)
+			fd_max = config->rfd;
 
 		tm = tm_cfg;
 
@@ -219,9 +229,8 @@ static int proc(struct proc_config_t * config)
 		}
 
 		if (rc == 0) { /* timerout */
-			if (handle_script(config) != EXIT_SUCCESS) {
+			if (handle_script(config) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
-			}
 			continue;
 		}
 

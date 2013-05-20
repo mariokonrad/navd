@@ -18,43 +18,45 @@ struct msg_log_property_t {
 
 static struct msg_log_property_t prop;
 
-static int log_message(const struct message_t * msg, const struct msg_log_property_t * prop)
+static int log_message(
+		const struct message_t * msg,
+		const struct msg_log_property_t * prop)
 {
 	int rc;
 	char buf[NMEA_MAX_SENTENCE];
 	FILE * file;
 
-	if (msg == NULL) {
-		return -1;
-	}
-	if (prop == NULL) {
-		return -1;
-	}
+	if (msg == NULL)
+		return EXIT_FAILURE;
+	if (prop == NULL)
+		return EXIT_FAILURE;
 
 	memset(buf, 0, sizeof(buf));
 	rc = nmea_write(buf, sizeof(buf), &msg->data.nmea);
 	if (rc < 0) {
 		syslog(LOG_ERR, "unable to write NMEA data to buffer");
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	if (prop->dst == NULL) {
 		syslog(LOG_DEBUG, "%s", buf);
-		return 0;
+		return EXIT_SUCCESS;
 	}
 
 	file = fopen(prop->dst, "at");
 	if (file == NULL) {
 		syslog(LOG_ERR, "unable to open destination '%s': %s", prop->dst, strerror(errno));
-		return -1;
+		return EXIT_FAILURE;
 	}
 	fprintf(file, "%s\n", buf);
 	fclose(file);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
-static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+static int configure(
+		struct proc_config_t * config,
+		const struct property_list_t * properties)
 {
 	const struct property_t * prop_dst = NULL;
 
@@ -63,7 +65,8 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	prop.enable = proplist_contains(properties, "enable");
 
 	prop.max_errors = 10; /* default value */
-	if (property_read_uint32(properties, "max_errors",  &prop.max_errors) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (property_read_uint32(properties, "max_errors",  &prop.max_errors) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
 	prop_dst = proplist_find(properties, "dst");
 	if (prop_dst) {

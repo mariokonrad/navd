@@ -62,12 +62,16 @@ static bool time_valid(const struct timeval * t)
 		;
 }
 
-static long diff_msec(const struct timeval * ts, const struct timeval * te)
+static long diff_msec(
+		const struct timeval * ts,
+		const struct timeval * te)
 {
 	long dt = 0;
 
-	if (ts == NULL) return -1;
-	if (te == NULL) return -1;
+	if (ts == NULL)
+		return -1;
+	if (te == NULL)
+		return -1;
 
 	dt = (te->tv_sec - ts->tv_sec) * 1000;
 	dt += (te->tv_usec - ts->tv_usec) / 1000;
@@ -89,8 +93,10 @@ static long elapsed_ms_time(const struct timeval * tm)
 	int rc;
 	struct timeval t;
 
-	if (tm == NULL) return -1;
-	if (!time_valid(tm)) return -1;
+	if (tm == NULL)
+		return -1;
+	if (!time_valid(tm))
+		return -1;
 
 	rc = gettimeofday(&t, NULL);
 	if (rc < 0) {
@@ -99,7 +105,8 @@ static long elapsed_ms_time(const struct timeval * tm)
 	}
 
 	dt = diff_msec(tm, &t);
-	if (dt < 0) return -2;
+	if (dt < 0)
+		return -2;
 
 	return dt;
 }
@@ -130,10 +137,14 @@ static long diff_position(void)
 	nmea_angle_to_double(&lat_1, &current.lat);
 	nmea_angle_to_double(&lon_1, &current.lon);
 
-	if (last_written_data.lat_dir != 'N') lat_0 = -lat_0;
-	if (last_written_data.lon_dir != 'W') lon_0 = -lon_0;
-	if (current.lat_dir != 'N') lat_1 = -lat_1;
-	if (current.lon_dir != 'W') lon_1 = -lon_1;
+	if (last_written_data.lat_dir != 'N')
+		lat_0 = -lat_0;
+	if (last_written_data.lon_dir != 'W')
+		lon_0 = -lon_0;
+	if (current.lat_dir != 'N')
+		lat_1 = -lat_1;
+	if (current.lon_dir != 'W')
+		lon_1 = -lon_1;
 
 	/* calculate distance in meters on sphere, precise enough approximation */
 
@@ -177,7 +188,8 @@ static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
 	int rc;
 	struct timeval last_update;
 
-	if (!accept_signal_integrity(rmc->sig_integrity)) return;
+	if (!accept_signal_integrity(rmc->sig_integrity))
+		return;
 
 	/* timestamp of last update */
 	rc = gettimeofday(&last_update, NULL);
@@ -425,8 +437,10 @@ static void write_log(void)
 
 static void process_timer(uint32_t id)
 {
-	if (!configuration.save_timer_defined) return;
-	if (id != configuration.save_timer_id) return;
+	if (!configuration.save_timer_defined)
+		return;
+	if (id != configuration.save_timer_id)
+		return;
 	write_log();
 }
 
@@ -455,7 +469,8 @@ static int read_filename(const struct property_list_t * properties)
 	size_t len;
 
 	prop = proplist_find(properties, "filename");
-	if (!prop) return EXIT_FAILURE;
+	if (!prop)
+		return EXIT_FAILURE;
 
 	len = strlen(prop->value);
 	if (len > sizeof(configuration.filename) - 1) {
@@ -525,10 +540,14 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	memset(&current, 0, sizeof(current));
 	memset(&last_written_data, 0, sizeof(last_written_data));
 
-	if (read_save_timer(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (read_filename(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (read_timeout(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (read_min_position_change(properties) != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (read_save_timer(properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (read_filename(properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (read_timeout(properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (read_min_position_change(properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
 	initialized = true;
 	return EXIT_SUCCESS;

@@ -10,9 +10,6 @@
 #include <string.h>
 #include <unistd.h>
 
-/* TODO: move static data into config->data */
-static struct message_t sim_message;
-
 struct option_t {
 	uint32_t period; /* seconds */
 	uint32_t sog; /* tenth of degrees */
@@ -25,6 +22,7 @@ struct option_t {
 	uint32_t simulated; /* simulation or not */
 };
 
+/* TODO: move static data into config->data */
 static struct option_t option = {
 	.period = 1,
 	.sog = 0,
@@ -37,13 +35,13 @@ static struct option_t option = {
 	.simulated = 1,
 };
 
-static void init_message(void)
+static void init_message(struct message_t * msg)
 {
 	struct nmea_rmc_t * rmc;
 
-	sim_message.type = MSG_NMEA;
-	sim_message.data.nmea.type = NMEA_RMC;
-	rmc = &sim_message.data.nmea.sentence.rmc;
+	msg->type = MSG_NMEA;
+	msg->data.nmea.type = NMEA_RMC;
+	rmc = &msg->data.nmea.sentence.rmc;
 	rmc->time = option.time;
 	rmc->status = NMEA_STATUS_OK;
 	rmc->lat = option.lat;
@@ -61,7 +59,9 @@ static void init_message(void)
 	rmc->sig_integrity = option.simulated ? NMEA_SIG_INT_SIMULATED : NMEA_SIG_INT_AUTONOMOUS;
 }
 
-static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+static int configure(
+		struct proc_config_t * config,
+		const struct property_list_t * properties)
 {
 	const struct property_t * prop = NULL;
 	uint32_t min_dec;
@@ -69,10 +69,14 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 
 	UNUSED_ARG(config);
 
-	if (property_read_uint32(properties, "period",  &option.period)  != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (property_read_uint32(properties, "sog",     &option.sog)     != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (property_read_uint32(properties, "heading", &option.heading) != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (property_read_uint32(properties, "mag",     &option.mag)     != EXIT_SUCCESS) return EXIT_FAILURE;
+	if (property_read_uint32(properties, "period",  &option.period)  != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (property_read_uint32(properties, "sog",     &option.sog)     != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (property_read_uint32(properties, "heading", &option.heading) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (property_read_uint32(properties, "mag",     &option.mag)     != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
 	prop = proplist_find(properties, "date");
 	if (prop) {
@@ -142,10 +146,11 @@ static int proc(struct proc_config_t * config)
 	struct message_t msg;
 	int rc;
 	struct timespec tm;
+	struct message_t sim_message;
 
 	char buf[NMEA_MAX_SENTENCE];
 
-	init_message();
+	init_message(&sim_message);
 
 	/* prepare send buffer */
 	rc = nmea_write(buf, sizeof(buf), &sim_message.data.nmea);

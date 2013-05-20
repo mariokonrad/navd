@@ -13,21 +13,18 @@ static int filter(
 
 	UNUSED_ARG(ctx);
 
-	if (out == NULL) {
+	if (out == NULL)
 		return FILTER_FAILURE;
-	}
-	if (in == NULL) {
+	if (in == NULL)
 		return FILTER_FAILURE;
-	}
 
 	if (in->type != MSG_NMEA) {
 		syslog(LOG_WARNING, "no NMEA message: %08x", in->type);
 		return FILTER_DISCARD;
 	}
 
-	if (properties == NULL) {
+	if (properties == NULL)
 		return FILTER_DISCARD;
-	}
 
 	nmea = nmea_sentence(in->data.nmea.type);
 	if (nmea == NULL) {
@@ -35,9 +32,8 @@ static int filter(
 		return FILTER_DISCARD;
 	}
 
-	if (!proplist_contains(properties, nmea->tag)) {
+	if (!proplist_contains(properties, nmea->tag))
 		return FILTER_DISCARD;
-	}
 
 	memcpy(out, in, sizeof(struct message_t));
 	return FILTER_SUCCESS;

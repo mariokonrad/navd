@@ -36,7 +36,9 @@ static void setup_filter_results(lua_State * lua)
 	luaH_define_const(lua, "FILTER_DISCARD", FILTER_DISCARD);
 }
 
-static int setup_lua_state(lua_State * lua, const struct property_t * debug_property)
+static int setup_lua_state(
+		lua_State * lua,
+		const struct property_t * debug_property)
 {
 	luaopen_base(lua);
 	luaopen_table(lua);
@@ -67,7 +69,8 @@ static int configure(
 	prop_debug = proplist_find(properties, "DEBUG");
 
 	rc = luaH_checkscript_from_prop(prop_script);
-	if (rc != EXIT_SUCCESS) return FILTER_FAILURE;
+	if (rc != EXIT_SUCCESS)
+		return FILTER_FAILURE;
 
 	/* setup lua state */
 	lua = luaL_newstate();
@@ -125,9 +128,11 @@ static int filter(
 
 	UNUSED_ARG(properties);
 
-	if (!out || !in)  return FILTER_FAILURE;
+	if (!out || !in)
+		return FILTER_FAILURE;
 
-	if (!ctx || !ctx->data) return FILTER_FAILURE;
+	if (!ctx || !ctx->data)
+		return FILTER_FAILURE;
 	lua = (lua_State *)ctx->data;
 
 	if (setjmp(env) == 0) {

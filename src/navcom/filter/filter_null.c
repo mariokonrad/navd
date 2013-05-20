@@ -22,12 +22,10 @@ static int filter(
 	UNUSED_ARG(ctx);
 	UNUSED_ARG(properties);
 
-	if (out == NULL) {
+	if (out == NULL)
 		return FILTER_FAILURE;
-	}
-	if (in == NULL) {
+	if (in == NULL)
 		return FILTER_FAILURE;
-	}
 
 	memcpy(out, in, sizeof(struct message_t));
 	return FILTER_SUCCESS;

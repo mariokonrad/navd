@@ -43,8 +43,10 @@ static int process_message(lua_State * lua, const struct message_t * msg)
 {
 	int rc;
 
-	if (!lua) return EXIT_FAILURE;
-	if (!msg) return EXIT_FAILURE;
+	if (!lua)
+		return EXIT_FAILURE;
+	if (!msg)
+		return EXIT_FAILURE;
 
 	if (setjmp(env) == 0) {
 		lua_getglobal(lua, "handle");
@@ -77,7 +79,9 @@ static int setup_lua_state(lua_State * lua, const struct property_t * debug_prop
 	return EXIT_SUCCESS;
 }
 
-static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+static int configure(
+		struct proc_config_t * config,
+		const struct property_list_t * properties)
 {
 	int rc;
 	lua_State * lua = NULL;
@@ -88,7 +92,8 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	prop_debug = proplist_find(properties, "DEBUG");
 
 	rc = luaH_checkscript_from_prop(prop_script);
-	if (rc != EXIT_SUCCESS) return rc;
+	if (rc != EXIT_SUCCESS)
+		return rc;
 
 	/* setup lua state */
 	lua = luaL_newstate();
@@ -130,7 +135,8 @@ static int configure(struct proc_config_t * config, const struct property_list_t
  */
 static int clean(struct proc_config_t * config)
 {
-	if (!config) return EXIT_FAILURE;
+	if (!config)
+		return EXIT_FAILURE;
 
 	if (config->data) {
 		lua_close((lua_State *)config->data);
