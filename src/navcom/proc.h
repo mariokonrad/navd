@@ -29,6 +29,6 @@ struct proc_desc_t {
 void proc_set_request_terminate(int);
 int proc_request_terminate(void);
 
-extern sigset_t signal_mask;
+sigset_t * proc_get_signal_mask(void);
 
 #endif

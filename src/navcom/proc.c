@@ -2,7 +2,12 @@
 
 static volatile int request_terminate = 0;
 
-sigset_t signal_mask;
+static sigset_t signal_mask;
+
+sigset_t * proc_get_signal_mask(void)
+{
+	return &signal_mask;
+}
 
 void proc_set_request_terminate(int value)
 {

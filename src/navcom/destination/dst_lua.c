@@ -155,7 +155,7 @@ static int proc(struct proc_config_t * config)
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
 
-		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, NULL, &signal_mask);
+		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, NULL, proc_get_signal_mask());
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;

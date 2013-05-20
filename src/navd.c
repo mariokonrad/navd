@@ -907,7 +907,7 @@ int main(int argc, char ** argv) /* {{{ */
 	}
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGTERM);
-	if (sigprocmask(SIG_BLOCK, &mask, &signal_mask) < 0) {
+	if (sigprocmask(SIG_BLOCK, &mask, proc_get_signal_mask()) < 0) {
 		syslog(LOG_CRIT, "unable to signal action for SIGTERM");
 		return EXIT_FAILURE;
 	}
@@ -941,7 +941,7 @@ int main(int argc, char ** argv) /* {{{ */
 			}
 		}
 
-		rc = pselect(fd_max + 1, &rfds, NULL, NULL, NULL, &signal_mask);
+		rc = pselect(fd_max + 1, &rfds, NULL, NULL, NULL, proc_get_signal_mask());
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_CRIT, "error in pselect: %s", strerror(errno));
 			return EXIT_FAILURE;

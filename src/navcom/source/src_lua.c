@@ -220,7 +220,7 @@ static int proc(struct proc_config_t * config)
 
 		tm = tm_cfg;
 
-		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, &signal_mask);
+		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, proc_get_signal_mask());
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
