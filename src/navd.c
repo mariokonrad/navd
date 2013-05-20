@@ -364,7 +364,7 @@ static void prepare_msg_routes(const struct config_t * config) /* {{{ */
 static void handle_signal(int sig) /* {{{ */
 {
 	syslog(LOG_NOTICE, "pid:%d sig:%d\n", getpid(), sig);
-	request_terminate = 1;
+	proc_set_request_terminate(1);
 } /* }}} */
 
 static void daemonize(void) /* {{{ */
@@ -894,6 +894,7 @@ int main(int argc, char ** argv) /* {{{ */
 	}
 
 	/* set up signal handling (active also for all subprocesses, if masks are global) */
+	proc_set_request_terminate(0);
 	memset(&act, 0, sizeof(act));
 	act.sa_handler = handle_signal;
 	if (sigaction(SIGTERM, &act, NULL) < 0) {
@@ -928,7 +929,7 @@ int main(int argc, char ** argv) /* {{{ */
 	}
 
 	/* main / hub process */
-	for (; !request_terminate && !graceful_termination;) {
+	for (; !proc_request_terminate() && !graceful_termination;) {
 		FD_ZERO(&rfds);
 		fd_max = 0;
 		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
@@ -944,7 +945,7 @@ int main(int argc, char ** argv) /* {{{ */
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_CRIT, "error in pselect: %s", strerror(errno));
 			return EXIT_FAILURE;
-		} else if (request_terminate) {
+		} else if (proc_request_terminate()) {
 			break;
 		} else if (rc == 0) {
 			continue;

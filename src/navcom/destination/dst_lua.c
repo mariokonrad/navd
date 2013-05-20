@@ -151,7 +151,7 @@ static int proc(struct proc_config_t * config)
 	fd_set rfds;
 	struct message_t msg;
 
-	while (!request_terminate) {
+	while (!proc_request_terminate()) {
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
 

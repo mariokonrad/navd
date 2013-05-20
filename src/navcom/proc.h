@@ -26,7 +26,9 @@ struct proc_desc_t {
 	proc_function clean;
 };
 
-extern volatile int request_terminate;
+void proc_set_request_terminate(int);
+int proc_request_terminate(void);
+
 extern sigset_t signal_mask;
 
 #endif

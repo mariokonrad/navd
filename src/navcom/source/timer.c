@@ -121,7 +121,7 @@ static int proc(struct proc_config_t * config)
 	timer_message.type = MSG_TIMER;
 	timer_message.data.timer_id = data->timer_id;
 
-	while (!request_terminate) {
+	while (!proc_request_terminate()) {
 		fd_max = -1;
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);

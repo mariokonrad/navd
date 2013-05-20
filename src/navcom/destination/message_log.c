@@ -90,7 +90,7 @@ static int proc(struct proc_config_t * config)
 	struct message_t msg;
 	uint32_t cnt_error = 0;
 
-	while (!request_terminate) {
+	while (!proc_request_terminate()) {
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
 
