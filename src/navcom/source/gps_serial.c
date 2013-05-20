@@ -10,28 +10,63 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-/* TODO: move static data into config->data */
-static int initialized = 0;
-static struct serial_config_t serial_config = {
-	"/dev/ttyUSB0",
-	BAUD_4800,
-	DATA_BIT_8,
-	STOP_BIT_1,
-	PARITY_NONE
-};
-
-static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+static void init_data(struct gps_serial_data_t * data)
 {
-	UNUSED_ARG(config);
+	memset(data, 0, sizeof(struct gps_serial_data_t));
 
-	if (properties == NULL) return EXIT_FAILURE;
-	if (prop_serial_read_device(&serial_config, properties, "device") != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (prop_serial_read_baudrate(&serial_config, properties, "baud") != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (prop_serial_read_parity(&serial_config, properties, "parity") != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (prop_serial_read_databits(&serial_config, properties, "data") != EXIT_SUCCESS) return EXIT_FAILURE;
-	if (prop_serial_read_stopbits(&serial_config, properties, "stop") != EXIT_SUCCESS) return EXIT_FAILURE;
+	strncpy(data->serial_config.name, "/dev/ttyUSB0", sizeof(data->serial_config));
+	data->serial_config.baud_rate = BAUD_4800;
+	data->serial_config.data_bits = DATA_BIT_8;
+	data->serial_config.stop_bits = STOP_BIT_1;
+	data->serial_config.parity = PARITY_NONE;
+}
 
-	initialized = 1;
+static int configure(
+		struct proc_config_t * config,
+		const struct property_list_t * properties)
+{
+	struct gps_serial_data_t * data = NULL;
+
+	if (config == NULL)
+		return EXIT_FAILURE;
+	if (properties == NULL)
+		return EXIT_FAILURE;
+	if (config->data != NULL)
+		return EXIT_FAILURE;
+
+	config->data = malloc(sizeof(struct gps_serial_data_t));
+	data = (struct gps_serial_data_t *)config->data;
+	init_data(data);
+
+	if (prop_serial_read_device(&data->serial_config, properties, "device") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_baudrate(&data->serial_config, properties, "baud") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_parity(&data->serial_config, properties, "parity") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_databits(&data->serial_config, properties, "data") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_stopbits(&data->serial_config, properties, "stop") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+
+	data->initialized = 1;
+	return EXIT_SUCCESS;
+}
+
+/**
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
+static int clean(struct proc_config_t * config)
+{
+	if (config == NULL)
+		return EXIT_FAILURE;
+
+	if (config->data) {
+		free(config->data);
+		config->data = NULL;
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -53,7 +88,16 @@ static int proc(struct proc_config_t * config)
 	int buf_index;
 	char c;
 
-	if (!initialized) {
+	struct gps_serial_data_t * data;
+
+	if (!config)
+		return EXIT_FAILURE;
+
+	data = (struct gps_serial_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
+
+	if (!data->initialized) {
 		syslog(LOG_ERR, "uninitialized");
 		return EXIT_FAILURE;
 	}
@@ -65,9 +109,9 @@ static int proc(struct proc_config_t * config)
 
 	msg_nmea.type = MSG_NMEA;
 
-	rc = ops->open(&device, (const struct device_config_t *)&serial_config);
+	rc = ops->open(&device, (const struct device_config_t *)&data->serial_config);
 	if (rc < 0) {
-		syslog(LOG_ERR, "unable to open device '%s'", serial_config.name);
+		syslog(LOG_ERR, "unable to open device '%s'", data->serial_config.name);
 		return EXIT_FAILURE;
 	}
 
@@ -93,11 +137,11 @@ static int proc(struct proc_config_t * config)
 		if (FD_ISSET(device.fd, &rfds)) {
 			rc = ops->read(&device, &c, sizeof(c));
 			if (rc < 0) {
-				syslog(LOG_ERR, "unable to read from device '%s': %s", serial_config.name, strerror(errno));
+				syslog(LOG_ERR, "unable to read from device '%s': %s", data->serial_config.name, strerror(errno));
 				return EXIT_FAILURE;
 			}
 			if (rc != sizeof(c)) {
-				syslog(LOG_ERR, "invalid size read from device '%s': %s", serial_config.name, strerror(errno));
+				syslog(LOG_ERR, "invalid size read from device '%s': %s", data->serial_config.name, strerror(errno));
 				return EXIT_FAILURE;
 			}
 			nmea_init(nmea);
@@ -150,7 +194,7 @@ static int proc(struct proc_config_t * config)
 						case SYSTEM_TERMINATE:
 							rc = ops->close(&device);
 							if (rc < 0) {
-								syslog(LOG_ERR, "unable to close device '%s': %s", serial_config.name, strerror(errno));
+								syslog(LOG_ERR, "unable to close device '%s': %s", data->serial_config.name, strerror(errno));
 								return EXIT_FAILURE;
 							}
 							return EXIT_SUCCESS;
@@ -170,6 +214,6 @@ const struct proc_desc_t gps_serial = {
 	.name = "gps_serial",
 	.configure = configure,
 	.func = proc,
-	.clean = NULL
+	.clean = clean
 };
 
