@@ -161,7 +161,7 @@ function exec_lcov()
 	${BASE}/build/src/navd --help
 	${BASE}/build/src/navd --list
 	${BASE}/build/src/navd --version
-	${BASE}/build/src/navd --config-file ${BASE}/src/test/testconfig --dump-config --log 7
+	${BASE}/build/src/navd --config ${BASE}/src/test/testconfig --dump-config --log 7
 	${BASE}/build/src/test/testrunner
 	lcov --capture --directory build/src --output-file build/doc/coverage.info
 	lcov --remove build/doc/coverage.info "/usr/*" --output-file build/doc/coverage.info
