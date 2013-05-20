@@ -2,21 +2,13 @@
 #include <syslog.h>
 #include <ctype.h>
 
+/**
+ * Dumps the contents of the stack.
+ *
+ * @todo Dump top of stack first
+ */
 void luaH_stacktrace(lua_State * lua)
 {
-/* TODO: cleanup
-	lua_Debug entry;
-	int depth = 0;
-
-	while (lua_getstack(lua, depth, &entry)) {
-		lua_getinfo(lua, "Sln", &entry);
-		printf("%s:%d: %s\n",
-			entry.short_src,
-			entry.currentline,
-			entry.name ? entry.name : "?");
-		++depth;
-	}
-*/
 	int i;
 	int top = lua_gettop(lua);
 	printf("stack trace:\n");
@@ -25,7 +17,7 @@ void luaH_stacktrace(lua_State * lua)
 		printf("%3d: ", i);
 		switch (t) {
 			case LUA_TSTRING:
-				printf("`%s'", lua_tostring(lua, i));
+				printf("'%s'", lua_tostring(lua, i));
 				break;
 
 			case LUA_TBOOLEAN:
