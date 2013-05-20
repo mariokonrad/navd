@@ -1,7 +1,6 @@
 #include <navcom/source/gps_serial.h>
 #include <navcom/property_serial.h>
 #include <navcom/message.h>
-#include <device/serial.h>
 #include <common/macros.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -34,8 +33,8 @@ static int configure(
 	if (config->data != NULL)
 		return EXIT_FAILURE;
 
-	config->data = malloc(sizeof(struct gps_serial_data_t));
-	data = (struct gps_serial_data_t *)config->data;
+	data = (struct gps_serial_data_t *)malloc(sizeof(struct gps_serial_data_t));
+	config->data = data;
 	init_data(data);
 
 	if (prop_serial_read_device(&data->serial_config, properties, "device") != EXIT_SUCCESS)

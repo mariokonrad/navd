@@ -8,19 +8,29 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-/* TODO: move static data into config->data */
-static int initialized = 0;
-static struct timespec tm_cfg;
-static struct message_t timer_message;
+static void init_data(struct timer_data_t * data)
+{
+	memset(data, 0, sizeof(struct timer_data_t));
+}
 
 static int configure(struct proc_config_t * config, const struct property_list_t * properties)
 {
+	struct timer_data_t * data = NULL;
 	uint32_t t;
 	const struct property_t * prop_id = NULL;
 	const struct property_t * prop_period = NULL;
 	char * endptr = NULL;
 
-	UNUSED_ARG(config);
+	if (config == NULL)
+		return EXIT_FAILURE;
+	if (properties == NULL)
+		return EXIT_FAILURE;
+	if (config->data != NULL)
+		return EXIT_FAILURE;
+
+	data = (struct timer_data_t *)malloc(sizeof(struct timer_data_t));
+	config->data = data;
+	init_data(data);
 
 	prop_id = proplist_find(properties, "id");
 	prop_period = proplist_find(properties, "period");
@@ -35,7 +45,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 		return EXIT_FAILURE;
 	}
 
-	timer_message.data.timer_id = strtoul(prop_id->value, &endptr, 0);
+	data->timer_id = strtoul(prop_id->value, &endptr, 0);
 	if (*endptr != '\0') {
 		syslog(LOG_ERR, "invalid value in id: '%s'", prop_id->value);
 		return EXIT_FAILURE;
@@ -46,21 +56,41 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 		syslog(LOG_ERR, "invalid value in period: '%s'", prop_period->value);
 		return EXIT_FAILURE;
 	}
-	tm_cfg.tv_sec = t / 1000;
-	tm_cfg.tv_nsec = (t % 1000);
-	tm_cfg.tv_nsec *= 1000000;
+	data->tm_cfg.tv_sec = t / 1000;
+	data->tm_cfg.tv_nsec = (t % 1000);
+	data->tm_cfg.tv_nsec *= 1000000;
 
-	timer_message.type = MSG_TIMER;
-
-	initialized = 1;
+	data->initialized = 1;
 	return EXIT_SUCCESS;
 }
 
-static void send_message(const struct proc_config_t * config)
+/**
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
+static int clean(struct proc_config_t * config)
+{
+	if (config == NULL)
+		return EXIT_FAILURE;
+
+	if (config->data) {
+		free(config->data);
+		config->data = NULL;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+/**
+ * @todo Error handling: what if 'write' fails?
+ */
+static void send_message(
+		const struct proc_config_t * config,
+		struct message_t * msg)
 {
 	int rc;
 
-	rc = write(config->wfd, &timer_message, sizeof(timer_message));
+	rc = write(config->wfd, msg, sizeof(struct message_t));
 	if (rc < 0) {
 		syslog(LOG_DEBUG, "unable to write to pipe: %s", strerror(errno));
 	}
@@ -73,11 +103,23 @@ static int proc(struct proc_config_t * config)
 	int fd_max;
 	struct message_t msg;
 	struct timespec tm;
+	struct timer_data_t * data;
+	struct message_t timer_message;
 
-	if (!initialized) {
+	if (!config)
+		return EXIT_FAILURE;
+
+	data = (struct timer_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
+
+	if (!data->initialized) {
 		syslog(LOG_ERR, "uninitialized");
 		return EXIT_FAILURE;
 	}
+
+	timer_message.type = MSG_TIMER;
+	timer_message.data.timer_id = data->timer_id;
 
 	while (!request_terminate) {
 		fd_max = -1;
@@ -85,7 +127,7 @@ static int proc(struct proc_config_t * config)
 		FD_SET(config->rfd, &rfds);
 		if (config->rfd > fd_max) fd_max = config->rfd;
 
-		tm = tm_cfg;
+		tm = data->tm_cfg;
 
 		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, &signal_mask);
 		if (rc < 0 && errno != EINTR) {
@@ -95,8 +137,8 @@ static int proc(struct proc_config_t * config)
 			break;
 		}
 
-		if (rc == 0) { /* timerout */
-			send_message(config);
+		if (rc == 0) { /* timeout */
+			send_message(config, &timer_message);
 			continue;
 		}
 
@@ -131,6 +173,6 @@ const struct proc_desc_t timer = {
 	.name = "timer",
 	.configure = configure,
 	.func = proc,
-	.clean = NULL
+	.clean = clean
 };
 
