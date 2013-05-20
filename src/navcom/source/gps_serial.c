@@ -35,7 +35,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
 	return EXIT_SUCCESS;
 }
 
-static int proc(const struct proc_config_t * config)
+static int proc(struct proc_config_t * config)
 {
 	int rc;
 

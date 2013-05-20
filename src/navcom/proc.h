@@ -17,14 +17,13 @@ struct proc_config_t {
 void proc_config_init(struct proc_config_t *);
 
 typedef int (*prop_function)(struct proc_config_t *, const struct property_list_t *);
-typedef int (*proc_function)(const struct proc_config_t *);
-typedef int (*clean_function)(struct proc_config_t *);
+typedef int (*proc_function)(struct proc_config_t *);
 
 struct proc_desc_t {
 	const char * name;
 	prop_function configure;
 	proc_function func;
-	clean_function clean;
+	proc_function clean;
 };
 
 extern volatile int request_terminate;

@@ -139,7 +139,7 @@ static int clean(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
-static int proc(const struct proc_config_t * config)
+static int proc(struct proc_config_t * config)
 {
 	int rc;
 	fd_set rfds;
