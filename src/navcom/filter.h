@@ -88,7 +88,7 @@ struct filter_desc_t {
 	 * Frees the specific data, possibly allocated by the
 	 * configure function.
 	 */
-	filter_free_context_function free_ctx;
+	filter_free_context_function free_ctx; /* TODO: consolidate name with proc_desc_t */
 
 	/**
 	 * The filters function to be called every time the filter
