@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+/* TODO: move static data into config->data */
 static int initialized = 0;
 static struct timespec tm_cfg;
 static struct message_t timer_message;

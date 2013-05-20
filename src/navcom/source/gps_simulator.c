@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 
+/* TODO: move static data into config->data */
 static struct message_t sim_message;
 
 struct option_t {

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+/* TODO: move static data into config->data */
 static int initialized = 0;
 static struct serial_config_t serial_config = {
 	"/dev/ttyUSB0",

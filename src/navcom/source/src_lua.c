@@ -14,9 +14,9 @@
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
 
+/* TODO: move static data into config->data */
 static int initialized = 0;
 static struct timespec tm_cfg;
-
 static jmp_buf env;
 
 static int panic(lua_State * lua)
