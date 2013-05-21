@@ -6,14 +6,14 @@
 
 static const struct filter_desc_t * filter = &filter_null;
 
-static void test_configure(void)
+static void test_init(void)
 {
-	CU_ASSERT_EQUAL(filter->configure, NULL);
+	CU_ASSERT_EQUAL(filter->init, NULL);
 }
 
-static void test_free_ctx(void)
+static void test_exit(void)
 {
-	CU_ASSERT_EQUAL(filter->free_ctx, NULL);
+	CU_ASSERT_EQUAL(filter->exit, NULL);
 }
 
 static void test_func(void)
@@ -44,8 +44,8 @@ void register_suite_filter_null(void)
 {
 	CU_Suite * suite;
 	suite = CU_add_suite(filter->name, NULL, NULL);
-	CU_add_test(suite, "configure", test_configure);
-	CU_add_test(suite, "free_ctx", test_free_ctx);
+	CU_add_test(suite, "init", test_init);
+	CU_add_test(suite, "exit", test_exit);
 	CU_add_test(suite, "func", test_func);
 }
 

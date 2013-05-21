@@ -337,8 +337,8 @@ static void destroy_msg_routes(const struct config_t * config) /* {{{ */
 
 	for (i = 0; i < config->num_routes; ++i) {
 		route = &msg_routes[i];
-		if (route->filter && route->filter->free_ctx) {
-			route->filter->free_ctx(&route->filter_ctx);
+		if (route->filter && route->filter->exit) {
+			route->filter->exit(&route->filter_ctx);
 		}
 	}
 	free(msg_routes);
@@ -682,8 +682,8 @@ static int setup_routes(const struct config_t * config)
 			route->filter = filterlist_find(&desc_filters, config->routes[i].filter->type);
 			if (route->filter) {
 				route->filter_cfg = &config->routes[i].filter->properties;
-				if (route->filter->configure) {
-					if (route->filter->configure(&route->filter_ctx, route->filter_cfg)) {
+				if (route->filter->init) {
+					if (route->filter->init(&route->filter_ctx, route->filter_cfg)) {
 						syslog(LOG_ERR, "%s:filter configuration failure: '%s'",
 							__FUNCTION__, config->routes[i].name_filter);
 						return -1;

@@ -56,7 +56,7 @@ static int setup_lua_state(
 	return EXIT_SUCCESS;
 }
 
-static int configure(
+static int init_filter(
 		struct filter_context_t * ctx,
 		const struct property_list_t * properties)
 {
@@ -103,7 +103,7 @@ static int configure(
 	}
 }
 
-int free_context(struct filter_context_t * ctx)
+int exit_filter(struct filter_context_t * ctx)
 {
 	if (ctx && ctx->data) {
 		lua_State * lua = (lua_State *)ctx->data;
@@ -161,8 +161,8 @@ static int filter(
 
 const struct filter_desc_t filter_lua = {
 	.name = "filter_lua",
-	.configure = configure,
-	.free_ctx = free_context,
+	.init = init_filter,
+	.exit = exit_filter,
 	.func = filter
 };
 

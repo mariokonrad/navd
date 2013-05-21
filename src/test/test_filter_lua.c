@@ -38,19 +38,19 @@ static int cleanup(void)
 	return 0;
 }
 
-static void test_configure(void)
+static void test_init(void)
 {
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->configure, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
 }
 
-static void test_free_ctx(void)
+static void test_exit(void)
 {
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->free_ctx, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 }
 
-static void test_configure_free(void)
+static void test_init_exit(void)
 {
 	struct filter_context_t ctx;
 	struct property_list_t properties;
@@ -58,28 +58,29 @@ static void test_configure_free(void)
 
 	const char SCRIPT[] = "\n";
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->configure, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 
-	CU_ASSERT_EQUAL(filter->configure(NULL, NULL), FILTER_FAILURE);
-	CU_ASSERT_EQUAL(filter->configure(NULL, &properties), FILTER_FAILURE);
-	CU_ASSERT_EQUAL(filter->configure(&ctx, NULL), FILTER_FAILURE);
-	CU_ASSERT_EQUAL(filter->configure(&ctx, &properties), FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(NULL, NULL), FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(NULL, &properties), FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(&ctx, NULL), FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), FILTER_FAILURE);
 
 	proplist_set(&properties, "script", "");
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_FAILURE);
 
 	prepare_script(SCRIPT);
 
 	proplist_set(&properties, "script", tmpfilename);
-	CU_ASSERT_EQUAL(filter->configure(&ctx, &properties), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), FILTER_SUCCESS);
 	CU_ASSERT_NOT_EQUAL(ctx.data, NULL);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -110,22 +111,23 @@ static void test_debug(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->configure, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	prepare_script(SCRIPT);
 	proplist_set(&properties, "script", tmpfilename);
 	proplist_set(&properties, "DEBUG", "crl");
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -148,21 +150,23 @@ static void test_func_syslog(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -184,15 +188,17 @@ static void test_func_msg_clone(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	msg_in.type = MSG_TIMER;
@@ -216,7 +222,7 @@ static void test_func_msg_clone(void)
 	CU_ASSERT_EQUAL(msg_out.type, MSG_TIMER);
 	CU_ASSERT_EQUAL(msg_out.data.timer_id, 12345678);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -241,15 +247,17 @@ static void test_func_msg_type(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	rc = filter->func(&msg_out, NULL, &ctx, &properties);
@@ -265,7 +273,7 @@ static void test_func_msg_type(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -291,15 +299,17 @@ static void test_func_msg_to_table(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	rc = filter->func(&msg_out, NULL, &ctx, &properties);
@@ -310,7 +320,7 @@ static void test_func_msg_to_table(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -341,15 +351,17 @@ static void test_func_msg_to_table_system(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	msg_in.type = MSG_SYSTEM;
@@ -358,7 +370,7 @@ static void test_func_msg_to_table_system(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -389,15 +401,17 @@ static void test_func_msg_to_table_timer(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	msg_in.type = MSG_TIMER;
@@ -406,7 +420,7 @@ static void test_func_msg_to_table_timer(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -439,15 +453,17 @@ static void test_func_msg_to_table_nmea(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	msg_in.type = MSG_NMEA;
@@ -457,7 +473,7 @@ static void test_func_msg_to_table_nmea(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -510,15 +526,17 @@ static void test_func_msg_to_table_nmea_rmc(void)
 	memset(&msg_in, 0, sizeof(msg_in));
 	memset(&msg_out, 0, sizeof(msg_out));
 
-	CU_ASSERT_NOT_EQUAL(filter, NULL);
-	CU_ASSERT_NOT_EQUAL(filter->func, NULL);
+	CU_ASSERT_PTR_NOT_NULL(filter);
+	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", tmpfilename);
 
 	prepare_script(SCRIPT);
 
-	rc = filter->configure(&ctx, &properties);
+	rc = filter->init(&ctx, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
 
 	msg_in.type = MSG_NMEA;
@@ -542,7 +560,7 @@ static void test_func_msg_to_table_nmea_rmc(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->free_ctx(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -551,9 +569,9 @@ void register_suite_filter_lua(void)
 	CU_Suite * suite;
 	suite = CU_add_suite(filter->name, setup, cleanup);
 
-	CU_add_test(suite, "configure", test_configure);
-	CU_add_test(suite, "free_ctx", test_free_ctx);
-	CU_add_test(suite, "configure / free", test_configure_free);
+	CU_add_test(suite, "init", test_init);
+	CU_add_test(suite, "exit", test_exit);
+	CU_add_test(suite, "init / exit", test_init_exit);
 	CU_add_test(suite, "debug", test_debug);
 	CU_add_test(suite, "func: syslog", test_func_syslog);
 	CU_add_test(suite, "func: msg_clone", test_func_msg_clone);

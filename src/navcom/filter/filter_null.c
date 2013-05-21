@@ -33,8 +33,8 @@ static int filter(
 
 const struct filter_desc_t filter_null = {
 	.name = "filter_null",
-	.configure = NULL,
-	.free_ctx = NULL,
+	.init = NULL,
+	.exit = NULL,
 	.func = filter
 };
 

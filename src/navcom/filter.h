@@ -49,7 +49,7 @@ typedef int (*filter_function)(
  * @retval  0 Success
  * @retval -1 Failure
  */
-typedef int (*filter_config_function)(
+typedef int (*filter_init_function)(
 		struct filter_context_t *,
 		const struct property_list_t *);
 
@@ -59,7 +59,7 @@ typedef int (*filter_config_function)(
  * @retval  0 Success
  * @retval -1 Failure
  */
-typedef int (*filter_free_context_function)(
+typedef int (*filter_exit_function)(
 		struct filter_context_t *);
 
 /**
@@ -80,15 +80,15 @@ struct filter_desc_t {
 	const char * name;
 
 	/**
-	 * The filters configuration function.
+	 * The filters initialization function.
 	 */
-	filter_config_function configure;
+	filter_init_function init;
 
 	/**
 	 * Frees the specific data, possibly allocated by the
-	 * configure function.
+	 * initialization function.
 	 */
-	filter_free_context_function free_ctx; /* TODO: consolidate name with proc_desc_t */
+	filter_exit_function exit;
 
 	/**
 	 * The filters function to be called every time the filter
