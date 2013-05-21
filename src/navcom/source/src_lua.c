@@ -126,7 +126,7 @@ static int setup_period(const struct property_t * property)
 	return EXIT_SUCCESS;
 }
 
-static int configure(
+static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
 {
@@ -186,7 +186,7 @@ static int configure(
  * @retval EXIT_SUCCESS
  * @retval EXIT_FAILURE
  */
-static int clean(struct proc_config_t * config)
+static int exit_proc(struct proc_config_t * config)
 {
 	if (!config)
 		return EXIT_FAILURE;
@@ -264,8 +264,8 @@ static int proc(struct proc_config_t * config)
 
 const struct proc_desc_t src_lua = {
 	.name = "src_lua",
-	.configure = configure,
+	.init = init_proc,
+	.exit = exit_proc,
 	.func = proc,
-	.clean = clean
 };
 

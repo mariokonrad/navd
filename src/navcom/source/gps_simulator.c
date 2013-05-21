@@ -59,7 +59,7 @@ static void init_message(struct message_t * msg)
 	rmc->sig_integrity = option.simulated ? NMEA_SIG_INT_SIMULATED : NMEA_SIG_INT_AUTONOMOUS;
 }
 
-static int configure(
+static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
 {
@@ -211,8 +211,8 @@ static int proc(struct proc_config_t * config)
 
 const struct proc_desc_t gps_simulator = {
 	.name = "gps_sim",
-	.configure = configure,
+	.init = init_proc,
+	.exit = NULL,
 	.func = proc,
-	.clean = NULL
 };
 

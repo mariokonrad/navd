@@ -10,11 +10,12 @@ static const struct proc_desc_t * proc = &message_log;
 static void test_existance(void)
 {
 	CU_ASSERT_PTR_NOT_NULL(proc);
-	CU_ASSERT_PTR_NOT_NULL(proc->configure);
+	CU_ASSERT_PTR_NOT_NULL(proc->init);
 	CU_ASSERT_PTR_NOT_NULL(proc->func);
+	CU_ASSERT_PTR_NULL(proc->exit);
 }
 
-static void test_configure(void)
+static void test_init(void)
 {
 	struct proc_t info;
 	struct proc_config_t config;
@@ -30,7 +31,7 @@ static void test_configure(void)
 	proc_config_init(&config);
 	config.cfg = &info;
 
-	rc = proc->configure(&config, &info.properties);
+	rc = proc->init(&config, &info.properties);
 	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
 
 	proplist_free(&info.properties);
@@ -42,6 +43,6 @@ void register_suite_destination_message_log(void)
 	suite = CU_add_suite("destination/message_log", NULL, NULL);
 
 	CU_add_test(suite, "existance", test_existance);
-	CU_add_test(suite, "configure", test_configure);
+	CU_add_test(suite, "init", test_init);
 }
 

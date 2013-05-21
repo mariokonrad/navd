@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <syslog.h>
 
+/* TODO: static data must be part of config */
 struct msg_log_property_t {
 	int enable;
 	const char * dst;
@@ -54,7 +55,7 @@ static int log_message(
 	return EXIT_SUCCESS;
 }
 
-static int configure(
+static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
 {
@@ -149,8 +150,8 @@ static int proc(struct proc_config_t * config)
 
 const struct proc_desc_t message_log = {
 	.name = "message_log",
-	.configure = configure,
+	.init = init_proc,
+	.exit = NULL,
 	.func = proc,
-	.clean = NULL
 };
 

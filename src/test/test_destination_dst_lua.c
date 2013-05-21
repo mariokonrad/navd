@@ -43,12 +43,12 @@ static void prepare_script(const char * code)
 static void test_existance(void)
 {
 	CU_ASSERT_PTR_NOT_NULL(proc);
-	CU_ASSERT_PTR_NOT_NULL(proc->configure);
+	CU_ASSERT_PTR_NOT_NULL(proc->init);
 	CU_ASSERT_PTR_NOT_NULL(proc->func);
-	CU_ASSERT_PTR_NOT_NULL(proc->clean);
+	CU_ASSERT_PTR_NOT_NULL(proc->exit);
 }
 
-static void test_configure_noscript(void)
+static void test_init_noscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
@@ -59,16 +59,16 @@ static void test_configure_noscript(void)
 	proplist_init(&properties);
 	proplist_set(&properties, "script", "/dev/null");
 
-	rc = proc->configure(&config, &properties);
+	rc = proc->init(&config, &properties);
 	CU_ASSERT_EQUAL(rc, EXIT_FAILURE);
 
-	rc = proc->clean(&config);
+	rc = proc->exit(&config);
 	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
-static void test_configure_emptyscript(void)
+static void test_init_emptyscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
@@ -83,16 +83,16 @@ static void test_configure_emptyscript(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->configure(&config, &properties);
+	rc = proc->init(&config, &properties);
 	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
 
-	rc = proc->clean(&config);
+	rc = proc->exit(&config);
 	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
-static void test_configure_invalidscript(void)
+static void test_init_invalidscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
@@ -110,16 +110,16 @@ static void test_configure_invalidscript(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->configure(&config, &properties);
+	rc = proc->init(&config, &properties);
 	CU_ASSERT_EQUAL(rc, EXIT_FAILURE);
 
-	rc = proc->clean(&config);
+	rc = proc->exit(&config);
 	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
-static void test_configure_scripterror(void)
+static void test_init_scripterror(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
@@ -141,7 +141,7 @@ static void test_configure_scripterror(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->configure(&config, &properties);
+	rc = proc->init(&config, &properties);
 	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 
@@ -149,7 +149,7 @@ static void test_configure_scripterror(void)
 	lua_getglobal(lua, "def");
 	lua_pcall(lua, 0, 0, 0);
 
-	rc = proc->clean(&config);
+	rc = proc->exit(&config);
 	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
 
 	proplist_free(&properties);
@@ -161,9 +161,9 @@ void register_suite_destination_dst_lua(void)
 	suite = CU_add_suite("destination/dst_lua", setup, cleanup);
 
 	CU_add_test(suite, "existance", test_existance);
-	CU_add_test(suite, "configure: no script", test_configure_noscript);
-	CU_add_test(suite, "configure: empty script", test_configure_emptyscript);
-	CU_add_test(suite, "configure: invalid script", test_configure_invalidscript);
-	CU_add_test(suite, "configure: script error", test_configure_scripterror);
+	CU_add_test(suite, "init: no script", test_init_noscript);
+	CU_add_test(suite, "init: empty script", test_init_emptyscript);
+	CU_add_test(suite, "init: invalid script", test_init_invalidscript);
+	CU_add_test(suite, "init: script error", test_init_scripterror);
 }
 

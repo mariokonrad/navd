@@ -21,9 +21,9 @@ typedef int (*proc_function)(struct proc_config_t *);
 
 struct proc_desc_t {
 	const char * name;
-	prop_function configure;
+	prop_function init;
+	proc_function exit;
 	proc_function func;
-	proc_function clean;
 };
 
 void proc_set_request_terminate(int);

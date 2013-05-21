@@ -13,7 +13,7 @@ static void init_data(struct timer_data_t * data)
 	memset(data, 0, sizeof(struct timer_data_t));
 }
 
-static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+static int init_proc(struct proc_config_t * config, const struct property_list_t * properties)
 {
 	struct timer_data_t * data = NULL;
 	uint32_t t;
@@ -68,7 +68,7 @@ static int configure(struct proc_config_t * config, const struct property_list_t
  * @retval EXIT_SUCCESS
  * @retval EXIT_FAILURE
  */
-static int clean(struct proc_config_t * config)
+static int exit_proc(struct proc_config_t * config)
 {
 	if (config == NULL)
 		return EXIT_FAILURE;
@@ -171,8 +171,8 @@ static int proc(struct proc_config_t * config)
 
 const struct proc_desc_t timer = {
 	.name = "timer",
-	.configure = configure,
+	.init = init_proc,
+	.exit = exit_proc,
 	.func = proc,
-	.clean = clean
 };
 

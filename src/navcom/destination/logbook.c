@@ -14,6 +14,7 @@
 
 #include <nmea/nmea.h>
 
+/* TODO: static data must be part of config */
 static bool initialized = false;
 
 static struct logbook_config_t {
@@ -532,7 +533,9 @@ static int read_min_position_change(const struct property_list_t * properties)
 	return EXIT_SUCCESS;
 }
 
-static int configure(struct proc_config_t * config, const struct property_list_t * properties)
+static int init_proc(
+		struct proc_config_t * config,
+		const struct property_list_t * properties)
 {
 	UNUSED_ARG(config);
 
@@ -618,8 +621,8 @@ static int proc(struct proc_config_t * config)
 
 const struct proc_desc_t logbook = {
 	.name = "logbook",
-	.configure = configure,
+	.init = init_proc,
+	.exit = NULL,
 	.func = proc,
-	.clean = NULL
 };
 
