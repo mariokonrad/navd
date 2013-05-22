@@ -65,7 +65,7 @@ typedef int (*filter_exit_function)(
 /**
  * Prototype for a function to print a specific help.
  */
-typedef void (*filter_help_function)(int);
+typedef void (*filter_help_function)(void);
 
 /**
  * Structure representing the description of a filter, holding all

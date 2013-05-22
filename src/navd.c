@@ -176,92 +176,92 @@ static struct proc_desc_list_t desc_destinations;
  */
 static struct filter_desc_list_t desc_filters;
 
-static void print_version(FILE * file)
+static void print_version(void)
 {
-	fprintf(file, "%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+	printf("%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
 
-static void print_config(FILE * file)
+static void print_config(void)
 {
 #if defined(ENABLE_SOURCE_GPSSERIAL)
-	fprintf(file, " gpsserial ");
+	printf(" gpsserial ");
 #endif
 
 #if defined(ENABLE_SOURCE_GPSSIMULATOR)
-	fprintf(file, " gpssimulator ");
+	printf(" gpssimulator ");
 #endif
 
 #if defined(ENABLE_SOURCE_GPSD)
-	fprintf(file, " gpsd ");
+	printf(" gpsd ");
 #endif
 
 #if defined(ENABLE_FILTER_LUA)
-	fprintf(file, " filter_lua(%s) ", filter_lua_release());
+	printf(" filter_lua(%s) ", filter_lua_release());
 #endif
 
 #if defined(ENABLE_DESTINATION_LUA)
-	fprintf(file, " dst_lua(%s) ", dst_lua_release());
+	printf(" dst_lua(%s) ", dst_lua_release());
 #endif
 
-	fprintf(file, "\n");
+	printf("\n");
 }
 
-static void usage(FILE * file, const char * name) /* {{{ */
+static void usage(const char * name)
 {
-	fprintf(file, "\n");
-	fprintf(file, "usage: %s [options]\n", name);
-	fprintf(file, "\n");
-	fprintf(file, "Version: ");
-	print_version(file);
-	fprintf(file, "\n");
-	fprintf(file, "Configured: ");
-	print_config(file);
-	fprintf(file, "\n");
-	fprintf(file, "Options:\n");
-	fprintf(file, "  --help [=what]  : help information, optional on a source, filter or destination\n");
-	fprintf(file, "  --version       : version information\n");
-	fprintf(file, "  --daemon        : daemonize process\n");
-	fprintf(file, "  --config file   : configuration file\n");
-	fprintf(file, "  --list          : lists all sources, destinations and filters\n");
-	fprintf(file, "  --dump-config   : dumps the configuration and exit\n");
-	fprintf(file, "  --max-msg n     : routes n number of messages before terminating\n");
-	fprintf(file, "  --log n         : defines log level on syslog (0..7)\n");
-	fprintf(file, "\n");
-} /* }}} */
+	printf("\n");
+	printf("usage: %s [options]\n", name);
+	printf("\n");
+	printf("Version: ");
+	print_version();
+	printf("\n");
+	printf("Configured: ");
+	print_config();
+	printf("\n");
+	printf("Options:\n");
+	printf("  --help [=what]  : help information, optional on a source, filter or destination\n");
+	printf("  --version       : version information\n");
+	printf("  --daemon        : daemonize process\n");
+	printf("  --config file   : configuration file\n");
+	printf("  --list          : lists all sources, destinations and filters\n");
+	printf("  --dump-config   : dumps the configuration and exit\n");
+	printf("  --max-msg n     : routes n number of messages before terminating\n");
+	printf("  --log n         : defines log level on syslog (0..7)\n");
+	printf("\n");
+}
 
-static void print_specific_help(FILE * file, void (*help)(int), const char * name)
+static void print_specific_help(void (*help)(void), const char * name)
 {
 	if (!help) {
-		fprintf(file, "No help available for '%s'\n", name);
+		printf("No help available for '%s'\n", name);
 		return;
 	}
 
-	/* TODO: print specific help */
+	help();
 }
 
-static void print_help_for(FILE * file, const char * name)
+static void print_help_for(const char * name)
 {
 	size_t i;
 
 	for (i = 0; i < desc_sources.num; ++i) {
 		if (strcmp(name, desc_sources.data[i].name) == 0) {
-			print_specific_help(file, desc_sources.data[i].help, name);
+			print_specific_help(desc_sources.data[i].help, name);
 			return;
 		}
 	}
 	for (i = 0; i < desc_destinations.num; ++i) {
 		if (strcmp(name, desc_destinations.data[i].name) == 0) {
-			print_specific_help(file, desc_destinations.data[i].help, name);
+			print_specific_help(desc_destinations.data[i].help, name);
 			return;
 		}
 	}
 	for (i = 0; i < desc_filters.num; ++i) {
 		if (strcmp(name, desc_filters.data[i].name) == 0) {
-			print_specific_help(file, desc_filters.data[i].help, name);
+			print_specific_help(desc_filters.data[i].help, name);
 			return;
 		}
 	}
-	fprintf(file, "Nothing registered with name '%s'\n", name);
+	printf("Nothing registered with name '%s'\n", name);
 }
 
 static int parse_options(int argc, char ** argv) /* {{{ */
@@ -282,13 +282,13 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 		switch (rc) {
 			case OPTION_HELP:
 				if (optarg) {
-					print_help_for(stdout, optarg);
+					print_help_for(optarg);
 				} else {
-					usage(stdout, argv[0]);
+					usage(argv[0]);
 				}
 				return -1;
 			case OPTION_VERSION:
-				print_version(stdout);
+				print_version();
 				return -1;
 			case OPTION_DEAMON:
 				option.daemonize = 1;
@@ -325,7 +325,7 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 	}
 	if (optind < argc) {
 		syslog(LOG_ERR, "unknown parameters");
-		usage(stdout, argv[0]);
+		usage(argv[0]);
 		return -1;
 	}
 	return 0;
@@ -517,82 +517,80 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 /**
  * Dumps the registered objects (sources, destinations, filters) to the
  * specified stream.
- *
- * @param[in] out The stream to write the lists to.
  */
-static void dump_registered(FILE * out)
+static void dump_registered(void)
 {
 	size_t i;
 
-	fprintf(out, "Sources:");
+	printf("Sources:");
 	for (i = 0; i < desc_sources.num; ++i) {
-		fprintf(out, " %s", desc_sources.data[i].name);
+		printf(" %s", desc_sources.data[i].name);
 	}
-	fprintf(out, "\n");
-	fprintf(out, "Destinations:");
+	printf("\n");
+	printf("Destinations:");
 	for (i = 0; i < desc_destinations.num; ++i) {
-		fprintf(out, " %s", desc_destinations.data[i].name);
+		printf(" %s", desc_destinations.data[i].name);
 	}
-	fprintf(out, "\n");
-	fprintf(out, "Filters:");
+	printf("\n");
+	printf("Filters:");
 	for (i = 0; i < desc_filters.num; ++i) {
-		fprintf(out, " %s", desc_filters.data[i].name);
+		printf(" %s", desc_filters.data[i].name);
 	}
-	fprintf(out, "\n");
+	printf("\n");
 }
 
-static void config_dump_properties(FILE * file, const struct property_list_t const * properties) /* {{{ */
+static void config_dump_properties(const struct property_list_t const * properties)
 {
 	size_t i;
 
-	fprintf(file, "{");
+	printf("{");
 	for (i = 0; i < properties->num; ++i) {
 		const struct property_t const * prop = &properties->data[i];
 		if (prop->value) {
-			fprintf(file, " %s : %s", prop->key, prop->value);
+			printf(" %s : %s", prop->key, prop->value);
 		} else {
-			fprintf(file, " %s", prop->key);
+			printf(" %s", prop->key);
 		}
 		if (i < properties->num - 1) {
-			fprintf(file, ", ");
+			printf(", ");
 		}
 	}
-	fprintf(file, " }");
-} /* }}} */
+	printf(" }");
+}
 
-static void config_dump(FILE * file, const struct config_t const * config) /* {{{ */
+static void config_dump(const struct config_t const * config)
 {
 	size_t i;
 
 	if (config == NULL) return;
 
-	fprintf(file, "SOURCES\n");
+	printf("SOURCES\n");
 	for (i = 0; i < config->num_sources; ++i) {
 		struct proc_t * p = &config->sources[i];
-		fprintf(file, " %s : %s ", p->name, p->type);
-		config_dump_properties(file, &p->properties);
-		fprintf(file, "\n");
+		printf(" %s : %s ", p->name, p->type);
+		config_dump_properties(&p->properties);
+		printf("\n");
 	}
-	fprintf(file, "DESTINATIONS\n");
+	printf("DESTINATIONS\n");
 	for (i = 0; i < config->num_destinations; ++i) {
 		struct proc_t * p = &config->destinations[i];
-		fprintf(file, " %s : %s ", p->name, p->type);
-		config_dump_properties(file, &p->properties);
-		fprintf(file, "\n");
+		printf(" %s : %s ", p->name, p->type);
+		config_dump_properties(&p->properties);
+		printf("\n");
 	}
-	fprintf(file, "FILTERS\n");
+	printf("FILTERS\n");
 	for (i = 0; i < config->num_filters; ++i) {
 		struct filter_t * p = &config->filters[i];
-		fprintf(file, " %s : %s ", p->name, p->type);
-		config_dump_properties(file, &p->properties);
-		fprintf(file, "\n");
+		printf(" %s : %s ", p->name, p->type);
+		config_dump_properties(&p->properties);
+		printf("\n");
 	}
-	fprintf(file, "ROUTES\n");
+	printf("ROUTES\n");
 	for (i = 0; i < config->num_routes; ++i) {
 		struct route_t * p = &config->routes[i];
-		fprintf(file, " %s --[%s]--> %s\n", p->name_source, p->name_filter, p->name_destination);
+		printf(" %s --[%s]--> %s\n", p->name_source, p->name_filter, p->name_destination);
 	}
-} /* }}} */
+}
 
 /**
  * Reads the configuration and stores the valid information in the specified
@@ -912,7 +910,7 @@ int main(int argc, char ** argv) /* {{{ */
 
 	/* list registered objects */
 	if (option.list) {
-		dump_registered(stdout);
+		dump_registered();
 		return EXIT_SUCCESS;
 	}
 
@@ -923,7 +921,7 @@ int main(int argc, char ** argv) /* {{{ */
 
 	/* dump information */
 	if (option.dump_config) {
-		config_dump(stdout, &config);
+		config_dump(&config);
 		config_free(&config);
 		return EXIT_SUCCESS;
 	}

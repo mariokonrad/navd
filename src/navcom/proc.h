@@ -18,7 +18,7 @@ void proc_config_init(struct proc_config_t *);
 
 typedef int (*prop_function)(struct proc_config_t *, const struct property_list_t *);
 typedef int (*proc_function)(struct proc_config_t *);
-typedef void (*help_function)(int);
+typedef void (*help_function)(void);
 
 struct proc_desc_t {
 	const char * name;
