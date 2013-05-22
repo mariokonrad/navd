@@ -13,7 +13,7 @@
 
 struct option_t {
 	uint32_t period; /* seconds */
-	uint32_t sog; /* tenth of degrees */
+	uint32_t sog; /* tenth of knots */
 	uint32_t heading; /* tenth of degrees */
 	uint32_t mag; /* tenth of degrees */
 	struct nmea_date_t date;
@@ -50,12 +50,12 @@ static void init_message(struct message_t * msg)
 	rmc->lon = option.lon;
 	rmc->lon_dir = NMEA_EAST;
 	rmc->sog.i = option.sog / 10;
-	rmc->sog.d = option.sog % 10;
+	rmc->sog.d = (option.sog % 10) * NMEA_FIX_DECIMALS;
 	rmc->head.i = option.heading / 10;
-	rmc->head.d = option.heading % 10;
+	rmc->head.d = (option.heading % 10) * NMEA_FIX_DECIMALS;
 	rmc->date = option.date;
 	rmc->m.i = option.mag / 10;
-	rmc->m.d = option.mag % 10;
+	rmc->m.d = (option.mag % 10) * NMEA_FIX_DECIMALS;
 	rmc->m_dir = NMEA_WEST;
 	rmc->sig_integrity = option.simulated ? NMEA_SIG_INT_SIMULATED : NMEA_SIG_INT_AUTONOMOUS;
 }
@@ -141,6 +141,12 @@ static int init_proc(
 	return EXIT_SUCCESS;
 }
 
+static int exit_proc(struct proc_config_t * config)
+{
+	UNUSED_ARG(config);
+	return EXIT_SUCCESS;
+}
+
 static int proc(struct proc_config_t * config)
 {
 	fd_set rfds;
@@ -202,7 +208,7 @@ static int proc(struct proc_config_t * config)
 const struct proc_desc_t gps_simulator = {
 	.name = "gps_sim",
 	.init = init_proc,
-	.exit = NULL,
+	.exit = exit_proc,
 	.func = proc,
 };
 

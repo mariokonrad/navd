@@ -12,13 +12,9 @@
 #include <limits.h>
 #include <math.h>
 #include <stdbool.h>
-
 #include <nmea/nmea.h>
 
-/* TODO: static data must be part of config */
-static bool initialized = false;
-
-static struct logbook_config_t {
+struct logbook_config_t {
 	uint32_t save_timer_id;
 	int save_timer_defined;
 	char filename[PATH_MAX+1];
@@ -29,9 +25,9 @@ static struct logbook_config_t {
 
 	/* minimal distance change to write log entry in meters */
 	long min_meter_position_change;
-} configuration;
+};
 
-static struct information_t {
+struct information_t {
 	/* bookkeeping information */
 	struct timeval last_update;
 
@@ -50,7 +46,13 @@ static struct information_t {
 	struct nmea_fix_t wind_direction;
 	uint32_t pressure; /* units of 0.1 mbar */
 	int32_t air_temperature; /* units of degree celcius */
-} current, last_written_data;
+};
+
+/* TODO: static data must be part of config */
+static bool initialized = false;
+static struct logbook_config_t configuration;
+static struct information_t current;
+static struct information_t last_written_data;
 
 /**
  * Returns true if the specified time is not zero.
@@ -257,32 +259,32 @@ static int prepare_longitude(char * ptr, int len)
 
 static int prepare_course_over_ground(char * ptr, int len)
 {
-	return snprintf(ptr, len, "%u,%02u;",
-		current.course_over_ground.i, current.course_over_ground.d);
+	return snprintf(ptr, len, "%u,%1u;",
+		current.course_over_ground.i, current.course_over_ground.d / NMEA_FIX_DECIMALS);
 }
 
 static int prepare_speed_over_ground(char * ptr, int len)
 {
-	return snprintf(ptr, len, "%u,%02u;",
-		current.speed_over_ground.i, current.speed_over_ground.d);
+	return snprintf(ptr, len, "%u,%1u;",
+		current.speed_over_ground.i, current.speed_over_ground.d / NMEA_FIX_DECIMALS);
 }
 
 static int prepare_course_magnetic(char * ptr, int len)
 {
-	return snprintf(ptr, len, "%u,%02u;",
-		current.course_magnetic.i, current.course_magnetic.d);
+	return snprintf(ptr, len, "%u,%1u;",
+		current.course_magnetic.i, current.course_magnetic.d / NMEA_FIX_DECIMALS);
 }
 
 static int prepare_speed_through_water(char * ptr, int len)
 {
-	return snprintf(ptr, len, "%u,%02u;",
-		current.speed_through_water.i, current.speed_through_water.d);
+	return snprintf(ptr, len, "%u,%1u;",
+		current.speed_through_water.i, current.speed_through_water.d / NMEA_FIX_DECIMALS);
 }
 
 static int prepare_wind_speed(char * ptr, int len)
 {
-	return snprintf(ptr, len, "%u,%02u;",
-		current.wind_speed.i, current.wind_speed.d);
+	return snprintf(ptr, len, "%u,%1u;",
+		current.wind_speed.i, current.wind_speed.d / NMEA_FIX_DECIMALS);
 }
 
 static int prepare_wind_direction(char * ptr, int len)
@@ -454,6 +456,10 @@ static int read_save_timer(const struct property_list_t * properties)
 	prop = proplist_find(properties, "save_timer_id");
 	if (prop) {
 		configuration.save_timer_id = strtoul(prop->value, &endptr, 0);
+		if (strlen(prop->value) <= 0) {
+			syslog(LOG_ERR, "invalid value in save_timer_id: '%s'", prop->value);
+			return EXIT_FAILURE;
+		}
 		if (*endptr != '\0') {
 			syslog(LOG_ERR, "invalid save_timer_id: '%s'", prop->key);
 			return EXIT_FAILURE;
@@ -521,6 +527,10 @@ static int read_min_position_change(const struct property_list_t * properties)
 	configuration.min_meter_position_change = 0; /* default value */
 	if (prop != NULL) {
 		long tmp = strtol(prop->value, &endptr, 0);
+		if (strlen(prop->value) <= 0) {
+			syslog(LOG_ERR, "invalid value in timeout: '%s'", prop->value);
+			return EXIT_FAILURE;
+		}
 		if (*endptr != '\0') {
 			syslog(LOG_ERR, "invalid value in timeout: '%s'", prop->value);
 			return EXIT_FAILURE;
