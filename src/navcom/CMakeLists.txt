@@ -47,6 +47,7 @@ set(COMMON
 	filter_list.c
 	property_serial.c
 	property_read.c
+	message_comm.c
 	)
 
 if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA OR ENABLE_SOURCE_LUA)

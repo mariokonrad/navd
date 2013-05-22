@@ -1,5 +1,6 @@
 #include <navcom/destination/logbook.h>
 #include <navcom/message.h>
+#include <navcom/message_comm.h>
 #include <common/macros.h>
 #include <sys/select.h>
 #include <sys/time.h>
@@ -588,15 +589,8 @@ static int proc(struct proc_config_t * config)
 		}
 
 		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
+			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
-				return EXIT_FAILURE;
-			}
 			switch (msg.type) {
 				case MSG_SYSTEM:
 					switch (msg.data.system) {

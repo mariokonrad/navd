@@ -1,5 +1,6 @@
 #include <navcom/source/timer.h>
 #include <navcom/message.h>
+#include <navcom/message_comm.h>
 #include <common/macros.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -13,7 +14,9 @@ static void init_data(struct timer_data_t * data)
 	memset(data, 0, sizeof(struct timer_data_t));
 }
 
-static int init_proc(struct proc_config_t * config, const struct property_list_t * properties)
+static int init_proc(
+		struct proc_config_t * config,
+		const struct property_list_t * properties)
 {
 	struct timer_data_t * data = NULL;
 	uint32_t t;
@@ -81,21 +84,6 @@ static int exit_proc(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
-/**
- * @todo Error handling: what if 'write' fails?
- */
-static void send_message(
-		const struct proc_config_t * config,
-		struct message_t * msg)
-{
-	int rc;
-
-	rc = write(config->wfd, msg, sizeof(struct message_t));
-	if (rc < 0) {
-		syslog(LOG_DEBUG, "unable to write to pipe: %s", strerror(errno));
-	}
-}
-
 static int proc(struct proc_config_t * config)
 {
 	int rc;
@@ -137,21 +125,13 @@ static int proc(struct proc_config_t * config)
 			break;
 		}
 
-		if (rc == 0) { /* timeout */
-			send_message(config, &timer_message);
-			continue;
-		}
+		if (rc == 0) /* timeout */
+			if (message_write(config->wfd, &timer_message) != EXIT_SUCCESS)
+				return EXIT_FAILURE;
 
 		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
-				continue;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
+			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
-			}
 			switch (msg.type) {
 				case MSG_SYSTEM:
 					switch (msg.data.system) {

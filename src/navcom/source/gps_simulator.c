@@ -1,6 +1,7 @@
 #include <navcom/source/gps_simulator.h>
 #include <navcom/property_read.h>
 #include <navcom/message.h>
+#include <navcom/message_comm.h>
 #include <common/macros.h>
 #include <nmea/nmea_sentence_gprmc.h>
 #include <errno.h>
@@ -174,24 +175,13 @@ static int proc(struct proc_config_t * config)
 			break;
 		}
 
-		if (rc == 0) { /* timeout */
-			rc = write(config->wfd, &sim_message, sizeof(sim_message));
-			if (rc < 0) {
-				syslog(LOG_DEBUG, "unable to write to pipe: %s", strerror(errno));
-			}
-			continue;
-		}
+		if (rc == 0) /* timeout */
+			if (message_write(config->wfd, &sim_message) != EXIT_SUCCESS)
+				return EXIT_FAILURE;
 
 		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
-				continue;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
+			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
-			}
 			switch (msg.type) {
 				case MSG_SYSTEM:
 					switch (msg.data.system) {

@@ -3,6 +3,7 @@
 #include <navcom/lua_syslog.h>
 #include <navcom/lua_debug.h>
 #include <navcom/message.h>
+#include <navcom/message_comm.h>
 #include <common/macros.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -55,18 +56,6 @@ static int setup_lua_state(
 	return EXIT_SUCCESS;
 }
 
-static void send_message(
-		const struct proc_config_t * config,
-		const struct message_t * msg)
-{
-	int rc;
-
-	rc = write(config->wfd, msg, sizeof(struct message_t));
-	if (rc < 0) {
-		syslog(LOG_DEBUG, "unable to write to pipe: %s", strerror(errno));
-	}
-}
-
 /**
  * Calls the Lua state to handle the next period.
  *
@@ -90,7 +79,8 @@ static int handle_script(const struct proc_config_t * config)
 			lua_pop(lua, 1);
 			if (rc) {
 				/* TODO: check message integrity */
-				send_message(config, &msg);
+				if (message_write(config->wfd, &msg) != EXIT_SUCCESS)
+					return EXIT_FAILURE;
 			}
 			return EXIT_SUCCESS;
 		} else {
@@ -235,15 +225,8 @@ static int proc(struct proc_config_t * config)
 		}
 
 		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
-				continue;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
+			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
-			}
 			switch (msg.type) {
 				case MSG_SYSTEM:
 					switch (msg.data.system) {

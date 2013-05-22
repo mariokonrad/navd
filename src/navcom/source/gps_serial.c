@@ -1,6 +1,7 @@
 #include <navcom/source/gps_serial.h>
 #include <navcom/property_serial.h>
 #include <navcom/message.h>
+#include <navcom/message_comm.h>
 #include <common/macros.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -102,8 +103,8 @@ static int process_nmea(
 		case '\n':
 			rc = nmea_read(&buf->msg.data.nmea, buf->data);
 			if (rc == 0) {
-				rc = write(config->wfd, &buf->msg, sizeof(buf->msg));
-				if (rc < 0) {
+				rc = message_write(config->wfd, &buf->msg);
+				if (rc != EXIT_SUCCESS) {
 					syslog(LOG_ERR, "unable to write NMEA data: %s", strerror(errno));
 				}
 			} else if (rc == 1) {
@@ -192,15 +193,8 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 
 		if (FD_ISSET(config->rfd, &rfds)) {
-			rc = read(config->rfd, &msg, sizeof(msg));
-			if (rc < 0) {
-				syslog(LOG_ERR, "unable to read from pipe: %s", strerror(errno));
-				continue;
-			}
-			if (rc != (int)sizeof(msg) || rc == 0) {
-				syslog(LOG_ERR, "cannot read message, rc=%d", rc);
+			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
-			}
 			switch (msg.type) {
 				case MSG_SYSTEM:
 					switch (msg.data.system) {
