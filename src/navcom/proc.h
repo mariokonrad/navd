@@ -18,12 +18,14 @@ void proc_config_init(struct proc_config_t *);
 
 typedef int (*prop_function)(struct proc_config_t *, const struct property_list_t *);
 typedef int (*proc_function)(struct proc_config_t *);
+typedef void (*help_function)(int);
 
 struct proc_desc_t {
 	const char * name;
 	prop_function init;
 	proc_function exit;
 	proc_function func;
+	help_function help;
 };
 
 void proc_set_request_terminate(int);

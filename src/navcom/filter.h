@@ -63,6 +63,11 @@ typedef int (*filter_exit_function)(
 		struct filter_context_t *);
 
 /**
+ * Prototype for a function to print a specific help.
+ */
+typedef void (*filter_help_function)(int);
+
+/**
  * Structure representing the description of a filter, holding all
  * necessary information.
  *
@@ -95,6 +100,11 @@ struct filter_desc_t {
 	 * has to process a message.
 	 */
 	filter_function func;
+
+	/**
+	 * Prints specific help information about the filter.
+	 */
+	filter_help_function help;
 };
 
 #endif

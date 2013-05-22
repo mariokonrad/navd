@@ -57,21 +57,19 @@
  * @todo Documentation
  */
 enum options_t {
-	 OPTION_HELP        = 'h'
-	,OPTION_VERSION     = 'v'
-	,OPTION_DEAMON      = 'd'
-	,OPTION_CONFIG      = 'c'
-	,OPTION_LIST        = 1000
+	 OPTION_HELP        = 1000
+	,OPTION_VERSION
+	,OPTION_DEAMON
+	,OPTION_CONFIG
+	,OPTION_LIST
 	,OPTION_DUMP_CONFIG
 	,OPTION_MAX_MSG
 	,OPTION_LOG
 };
 
-static const char * OPTIONS_SHORT = "hvdc:";
-
 static const struct option OPTIONS_LONG[] =
 {
-	{ "help",        no_argument,       0, OPTION_HELP        },
+	{ "help",        optional_argument, 0, OPTION_HELP        },
 	{ "version",     no_argument,       0, OPTION_VERSION     },
 	{ "daemon",      no_argument,       0, OPTION_DEAMON      },
 	{ "config",      required_argument, 0, OPTION_CONFIG      },
@@ -220,16 +218,51 @@ static void usage(FILE * file, const char * name) /* {{{ */
 	print_config(file);
 	fprintf(file, "\n");
 	fprintf(file, "Options:\n");
-	fprintf(file, "  -h      | --help        : help information\n");
-	fprintf(file, "  -v      | --version     : version information\n");
-	fprintf(file, "  -d      | --daemon      : daemonize process\n");
-	fprintf(file, "  -c file | --config file : configuration file\n");
-	fprintf(file, "  --list                  : lists all sources, destinations and filters\n");
-	fprintf(file, "  --dump-config           : dumps the configuration and exit\n");
-	fprintf(file, "  --max-msg n             : routes n number of messages before terminating\n");
-	fprintf(file, "  --log n                 : defines log level on syslog (0..7)\n");
+	fprintf(file, "  --help [=what]  : help information, optional on a source, filter or destination\n");
+	fprintf(file, "  --version       : version information\n");
+	fprintf(file, "  --daemon        : daemonize process\n");
+	fprintf(file, "  --config file   : configuration file\n");
+	fprintf(file, "  --list          : lists all sources, destinations and filters\n");
+	fprintf(file, "  --dump-config   : dumps the configuration and exit\n");
+	fprintf(file, "  --max-msg n     : routes n number of messages before terminating\n");
+	fprintf(file, "  --log n         : defines log level on syslog (0..7)\n");
 	fprintf(file, "\n");
 } /* }}} */
+
+static void print_specific_help(FILE * file, void (*help)(int), const char * name)
+{
+	if (!help) {
+		fprintf(file, "No help available for '%s'\n", name);
+		return;
+	}
+
+	/* TODO: print specific help */
+}
+
+static void print_help_for(FILE * file, const char * name)
+{
+	size_t i;
+
+	for (i = 0; i < desc_sources.num; ++i) {
+		if (strcmp(name, desc_sources.data[i].name) == 0) {
+			print_specific_help(file, desc_sources.data[i].help, name);
+			return;
+		}
+	}
+	for (i = 0; i < desc_destinations.num; ++i) {
+		if (strcmp(name, desc_destinations.data[i].name) == 0) {
+			print_specific_help(file, desc_destinations.data[i].help, name);
+			return;
+		}
+	}
+	for (i = 0; i < desc_filters.num; ++i) {
+		if (strcmp(name, desc_filters.data[i].name) == 0) {
+			print_specific_help(file, desc_filters.data[i].help, name);
+			return;
+		}
+	}
+	fprintf(file, "Nothing registered with name '%s'\n", name);
+}
 
 static int parse_options(int argc, char ** argv) /* {{{ */
 {
@@ -242,13 +275,17 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 	option.log_mask = LOG_DEBUG;
 
 	while (1) {
-		rc = getopt_long(argc, argv, OPTIONS_SHORT, OPTIONS_LONG, &index);
+		rc = getopt_long(argc, argv, "", OPTIONS_LONG, &index);
 		if (rc == -1) {
 			break;
 		}
 		switch (rc) {
 			case OPTION_HELP:
-				usage(stdout, argv[0]);
+				if (optarg) {
+					print_help_for(stdout, optarg);
+				} else {
+					usage(stdout, argv[0]);
+				}
 				return -1;
 			case OPTION_VERSION:
 				print_version(stdout);
@@ -487,18 +524,21 @@ static void dump_registered(FILE * out)
 {
 	size_t i;
 
-	fprintf(out, "Sources:\n");
+	fprintf(out, "Sources:");
 	for (i = 0; i < desc_sources.num; ++i) {
-		fprintf(out, " - %s\n", desc_sources.data[i].name);
+		fprintf(out, " %s", desc_sources.data[i].name);
 	}
-	fprintf(out, "Destinations:\n");
+	fprintf(out, "\n");
+	fprintf(out, "Destinations:");
 	for (i = 0; i < desc_destinations.num; ++i) {
-		fprintf(out, " - %s\n", desc_destinations.data[i].name);
+		fprintf(out, " %s", desc_destinations.data[i].name);
 	}
-	fprintf(out, "Filters:\n");
+	fprintf(out, "\n");
+	fprintf(out, "Filters:");
 	for (i = 0; i < desc_filters.num; ++i) {
-		fprintf(out, " - %s\n", desc_filters.data[i].name);
+		fprintf(out, " %s", desc_filters.data[i].name);
 	}
+	fprintf(out, "\n");
 }
 
 static void config_dump_properties(FILE * file, const struct property_list_t const * properties) /* {{{ */
