@@ -64,6 +64,12 @@ static int init_proc(
 	return EXIT_SUCCESS;
 }
 
+static int exit_proc(struct proc_config_t * config)
+{
+	UNUSED_ARG(config);
+	return EXIT_SUCCESS;
+}
+
 static int proc(struct proc_config_t * config)
 {
 	int rc;
@@ -138,7 +144,7 @@ static int proc(struct proc_config_t * config)
 const struct proc_desc_t nmea_serial ={
 	.name = "nmea_serial",
 	.init = init_proc,
-	.exit = NULL,
+	.exit = exit_proc,
 	.func = proc,
 };
 
