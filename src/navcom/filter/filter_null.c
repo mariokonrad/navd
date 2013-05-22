@@ -31,10 +31,21 @@ static int filter(
 	return FILTER_SUCCESS;
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("filter_null\n");
+	printf("\n");
+	printf("Dummy filter that forwards any incoming message.\n");
+	printf("Does not support any configuration.\n");
+	printf("\n");
+}
+
 const struct filter_desc_t filter_null = {
 	.name = "filter_null",
 	.init = NULL,
 	.exit = NULL,
-	.func = filter
+	.func = filter,
+	.help = help,
 };
 
