@@ -11,7 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 
-struct option_t {
+struct gps_simulator_data_t {
 	uint32_t period; /* seconds */
 	uint32_t sog; /* tenth of knots */
 	uint32_t heading; /* tenth of degrees */
@@ -23,127 +23,147 @@ struct option_t {
 	uint32_t simulated; /* simulation or not */
 };
 
-/* TODO: move static data into config->data */
-static struct option_t option = {
-	.period = 1,
-	.sog = 0,
-	.heading = 0,
-	.mag = 0,
-	.date = { 2000, 1, 1 },
-	.time = { 0, 0, 0, 0 },
-	.lat = { 0, 0, { 0, 0 } },
-	.lon = { 0, 0, { 0, 0 } },
-	.simulated = 1,
-};
+static void init_data(struct gps_simulator_data_t * data)
+{
+	memset(data, 0, sizeof(struct gps_simulator_data_t));
+	data->period = 1;
+	data->date.y = 2000;
+	data->date.m = 1;
+	data->date.d = 1;
+	data->simulated = 1;
+}
 
-static void init_message(struct message_t * msg)
+static void init_message(
+		struct message_t * msg,
+		const struct gps_simulator_data_t * data)
 {
 	struct nmea_rmc_t * rmc;
 
 	msg->type = MSG_NMEA;
 	msg->data.nmea.type = NMEA_RMC;
 	rmc = &msg->data.nmea.sentence.rmc;
-	rmc->time = option.time;
+	rmc->time = data->time;
 	rmc->status = NMEA_STATUS_OK;
-	rmc->lat = option.lat;
+	rmc->lat = data->lat;
 	rmc->lat_dir = NMEA_NORTH;
-	rmc->lon = option.lon;
+	rmc->lon = data->lon;
 	rmc->lon_dir = NMEA_EAST;
-	rmc->sog.i = option.sog / 10;
-	rmc->sog.d = (option.sog % 10) * NMEA_FIX_DECIMALS;
-	rmc->head.i = option.heading / 10;
-	rmc->head.d = (option.heading % 10) * NMEA_FIX_DECIMALS;
-	rmc->date = option.date;
-	rmc->m.i = option.mag / 10;
-	rmc->m.d = (option.mag % 10) * NMEA_FIX_DECIMALS;
+	rmc->sog.i = data->sog / 10;
+	rmc->sog.d = (data->sog % 10) * NMEA_FIX_DECIMALS;
+	rmc->head.i = data->heading / 10;
+	rmc->head.d = (data->heading % 10) * NMEA_FIX_DECIMALS;
+	rmc->date = data->date;
+	rmc->m.i = data->mag / 10;
+	rmc->m.d = (data->mag % 10) * NMEA_FIX_DECIMALS;
 	rmc->m_dir = NMEA_WEST;
-	rmc->sig_integrity = option.simulated ? NMEA_SIG_INT_SIMULATED : NMEA_SIG_INT_AUTONOMOUS;
+	rmc->sig_integrity = data->simulated ? NMEA_SIG_INT_SIMULATED : NMEA_SIG_INT_AUTONOMOUS;
 }
 
 static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
 {
+	struct gps_simulator_data_t * data;
 	const struct property_t * prop = NULL;
 	uint32_t min_dec;
 	int rc;
 
-	UNUSED_ARG(config);
+	if (config == NULL)
+		return EXIT_FAILURE;
+	if (properties == NULL)
+		return EXIT_FAILURE;
+	if (config->data != NULL)
+		return EXIT_FAILURE;
 
-	if (property_read_uint32(properties, "period",  &option.period)  != EXIT_SUCCESS)
+	data = (struct gps_simulator_data_t *)malloc(sizeof(struct gps_simulator_data_t));
+	config->data = data;
+	init_data(data);
+
+	if (property_read_uint32(properties, "period",  &data->period)  != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (property_read_uint32(properties, "sog",     &option.sog)     != EXIT_SUCCESS)
+	if (property_read_uint32(properties, "sog",     &data->sog)     != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (property_read_uint32(properties, "heading", &option.heading) != EXIT_SUCCESS)
+	if (property_read_uint32(properties, "heading", &data->heading) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (property_read_uint32(properties, "mag",     &option.mag)     != EXIT_SUCCESS)
+	if (property_read_uint32(properties, "mag",     &data->mag)     != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 
 	prop = proplist_find(properties, "date");
 	if (prop) {
-		rc = sscanf(prop->value, "%04u-%02u-%02u", &option.date.y, &option.date.m, &option.date.d);
+		rc = sscanf(prop->value, "%04u-%02u-%02u", &data->date.y, &data->date.m, &data->date.d);
 		if (rc != 3) {
 			syslog(LOG_WARNING, "invalid date '%s', using default", prop->value);
-			option.date.y = 2000;
-			option.date.m = 1;
-			option.date.d = 1;
+			data->date.y = 2000;
+			data->date.m = 1;
+			data->date.d = 1;
 		}
 	}
 
 	prop = proplist_find(properties, "time");
 	if (prop) {
-		rc = sscanf(prop->value, "%02u-%02u-%02u", &option.time.h, &option.time.m, &option.time.s);
+		rc = sscanf(prop->value, "%02u-%02u-%02u", &data->time.h, &data->time.m, &data->time.s);
 		if (rc != 3) {
 			syslog(LOG_WARNING, "invalid time '%s', using default", prop->value);
-			option.time.h = 0;
-			option.time.m = 0;
-			option.time.s = 0;
+			data->time.h = 0;
+			data->time.m = 0;
+			data->time.s = 0;
 		}
-		option.time.ms = 0;
+		data->time.ms = 0;
 	}
 
 	prop = proplist_find(properties, "lat");
 	if (prop) {
-		rc = sscanf(prop->value, "%02u-%02u,%3u", &option.lat.d, &option.lat.m, &min_dec);
+		rc = sscanf(prop->value, "%02u-%02u,%3u", &data->lat.d, &data->lat.m, &min_dec);
 		if (rc != 3) {
 			syslog(LOG_INFO, "invalid latitude: '%s', using default", prop->value);
-			option.lat.d = 0;
-			option.lat.m = 0;
-			option.lat.s.i = 0;
-			option.lat.s.d = 0;
+			data->lat.d = 0;
+			data->lat.m = 0;
+			data->lat.s.i = 0;
+			data->lat.s.d = 0;
 		} else {
-			option.lat.s.i = (min_dec * 60) / 100;
-			option.lat.s.d = 0;
+			data->lat.s.i = (min_dec * 60) / 100;
+			data->lat.s.d = 0;
 		}
 	}
 
 	prop = proplist_find(properties, "lon");
 	if (prop) {
-		rc = sscanf(prop->value, "%03u-%02u,%3u", &option.lon.d, &option.lon.m, &min_dec);
+		rc = sscanf(prop->value, "%03u-%02u,%3u", &data->lon.d, &data->lon.m, &min_dec);
 		if (rc != 3) {
 			syslog(LOG_INFO, "invalid latitude: '%s', using default", prop->value);
-			option.lon.d = 0;
-			option.lon.m = 0;
-			option.lon.s.i = 0;
-			option.lon.s.d = 0;
+			data->lon.d = 0;
+			data->lon.m = 0;
+			data->lon.s.i = 0;
+			data->lon.s.d = 0;
 		} else {
-			option.lon.s.i = (min_dec * 60) / 100;
-			option.lon.s.d = 0;
+			data->lon.s.i = (min_dec * 60) / 100;
+			data->lon.s.d = 0;
 		}
 	}
 
 	/* turn off simulation, ATTENTION: this is for experts use only */
 	prop = proplist_find(properties, "__not_simulated__");
 	if (prop) {
-		option.simulated = 0;
+		data->simulated = 0;
 	}
 
 	return EXIT_SUCCESS;
 }
 
+/**
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
 static int exit_proc(struct proc_config_t * config)
 {
-	UNUSED_ARG(config);
+	if (config == NULL)
+		return EXIT_FAILURE;
+
+	if (config->data) {
+		free(config->data);
+		config->data = NULL;
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -154,10 +174,18 @@ static int proc(struct proc_config_t * config)
 	int rc;
 	struct timespec tm;
 	struct message_t sim_message;
+	struct gps_simulator_data_t * data;
 
 	char buf[NMEA_MAX_SENTENCE];
 
-	init_message(&sim_message);
+	if (!config)
+		return EXIT_FAILURE;
+
+	data = (struct gps_simulator_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
+
+	init_message(&sim_message, data);
 
 	/* prepare send buffer */
 	rc = nmea_write(buf, sizeof(buf), &sim_message.data.nmea);
@@ -170,7 +198,7 @@ static int proc(struct proc_config_t * config)
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
 
-		tm.tv_sec = option.period;
+		tm.tv_sec = data->period;
 		tm.tv_nsec = 0;
 
 		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, &tm, proc_get_signal_mask());
@@ -210,5 +238,6 @@ const struct proc_desc_t gps_simulator = {
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
+	.help = NULL,
 };
 
