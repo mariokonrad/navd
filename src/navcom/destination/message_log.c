@@ -6,23 +6,21 @@
 #include <common/fileutil.h>
 #include <sys/select.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
 
-/* TODO: static data must be part of config */
-struct msg_log_property_t {
+struct message_log_data_t {
 	int enable;
-	const char * dst;
+	char dst[PATH_MAX];
 	uint32_t max_errors;
 };
 
-static struct msg_log_property_t prop;
-
 static int log_message(
 		const struct message_t * msg,
-		const struct msg_log_property_t * prop)
+		const struct message_log_data_t * data)
 {
 	int rc;
 	char buf[NMEA_MAX_SENTENCE];
@@ -30,7 +28,7 @@ static int log_message(
 
 	if (msg == NULL)
 		return EXIT_FAILURE;
-	if (prop == NULL)
+	if (data == NULL)
 		return EXIT_FAILURE;
 
 	memset(buf, 0, sizeof(buf));
@@ -40,14 +38,15 @@ static int log_message(
 		return EXIT_FAILURE;
 	}
 
-	if (prop->dst == NULL) {
+	/* only to syslog if no destination is configured */
+	if (strlen(data->dst) == 0) {
 		syslog(LOG_DEBUG, "%s", buf);
 		return EXIT_SUCCESS;
 	}
 
-	file = fopen(prop->dst, "at");
+	file = fopen(data->dst, "at");
 	if (file == NULL) {
-		syslog(LOG_ERR, "unable to open destination '%s': %s", prop->dst, strerror(errno));
+		syslog(LOG_ERR, "unable to open destination '%s': %s", data->dst, strerror(errno));
 		return EXIT_FAILURE;
 	}
 	fprintf(file, "%s\n", buf);
@@ -56,24 +55,39 @@ static int log_message(
 	return EXIT_SUCCESS;
 }
 
+static void init_data(struct message_log_data_t * data)
+{
+	memset(data, 0, sizeof(struct message_log_data_t));
+}
+
 static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
 {
 	const struct property_t * prop_dst = NULL;
+	struct message_log_data_t * data = NULL;
 
-	memset(&prop, 0, sizeof(struct msg_log_property_t));
+	if (config == NULL)
+		return EXIT_FAILURE;
+	if (properties == NULL)
+		return EXIT_FAILURE;
+	if (config->data != NULL)
+		return EXIT_FAILURE;
 
-	prop.enable = proplist_contains(properties, "enable");
+	data = (struct message_log_data_t *)malloc(sizeof(struct message_log_data_t));
+	config->data = data;
+	init_data(data);
 
-	prop.max_errors = 10; /* default value */
-	if (property_read_uint32(properties, "max_errors",  &prop.max_errors) != EXIT_SUCCESS)
+	data->enable = proplist_contains(properties, "enable");
+
+	data->max_errors = 10; /* default value */
+	if (property_read_uint32(properties, "max_errors",  &data->max_errors) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 
 	prop_dst = proplist_find(properties, "dst");
 	if (prop_dst) {
 		if (file_is_writable(prop_dst->value)) {
-			prop.dst = prop_dst->value;
+			strncpy(data->dst, prop_dst->value, sizeof(data->dst));
 		} else {
 			syslog(LOG_ERR, "%s:destination not writable, logging to syslog only", config->cfg->name);
 		}
@@ -81,7 +95,24 @@ static int init_proc(
 		syslog(LOG_ERR, "%s:no destination specified, logging to syslog only", config->cfg->name);
 	}
 
-	syslog(LOG_DEBUG, "%s:enable:%d dst:'%s'", config->cfg->name, prop.enable, prop.dst);
+	syslog(LOG_DEBUG, "%s:enable:%d dst:'%s'", config->cfg->name, data->enable, data->dst);
+	return EXIT_SUCCESS;
+}
+
+/**
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
+static int exit_proc(struct proc_config_t * config)
+{
+	if (config == NULL)
+		return EXIT_FAILURE;
+
+	if (config->data) {
+		free(config->data);
+		config->data = NULL;
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -91,6 +122,14 @@ static int proc(struct proc_config_t * config)
 	fd_set rfds;
 	struct message_t msg;
 	uint32_t cnt_error = 0;
+	struct message_log_data_t * data;
+
+	if (!config)
+		return EXIT_FAILURE;
+
+	data = (struct message_log_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
 
 	while (!proc_request_terminate()) {
 		FD_ZERO(&rfds);
@@ -120,13 +159,13 @@ static int proc(struct proc_config_t * config)
 					break;
 
 				case MSG_NMEA:
-					if (prop.enable) {
-						rc = log_message(&msg, &prop);
+					if (data->enable) {
+						rc = log_message(&msg, data);
 						if (rc < 0) {
 							++cnt_error;
-							if (cnt_error >= prop.max_errors) {
-								syslog(LOG_ERR, "max_errors (%u) reached, disable logging", prop.max_errors);
-								prop.enable = 0;
+							if (cnt_error >= data->max_errors) {
+								syslog(LOG_ERR, "max_errors (%u) reached, disable logging", data->max_errors);
+								data->enable = 0;
 							}
 						}
 					}
@@ -145,7 +184,8 @@ static int proc(struct proc_config_t * config)
 const struct proc_desc_t message_log = {
 	.name = "message_log",
 	.init = init_proc,
-	.exit = NULL,
+	.exit = exit_proc,
 	.func = proc,
+	.help = NULL,
 };
 

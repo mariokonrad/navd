@@ -13,6 +13,7 @@ static void test_existance(void)
 	CU_ASSERT_PTR_NOT_NULL(proc->init);
 	CU_ASSERT_PTR_NOT_NULL(proc->func);
 	CU_ASSERT_PTR_NOT_NULL(proc->exit);
+	CU_ASSERT_PTR_NOT_NULL(proc->help);
 }
 
 /**
