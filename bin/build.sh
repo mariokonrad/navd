@@ -156,14 +156,27 @@ function exec_gcovr()
 
 function exec_lcov()
 {
+	binary=${BASE}/build/src/navd
+
 	exec_prepare
 	lcov --zerocounters --directory build/src --output-file build/doc/coverage.info
-	${BASE}/build/src/navd --help
-	${BASE}/build/src/navd --list
-	${BASE}/build/src/navd --version
-	${BASE}/build/src/navd foobar
-	${BASE}/build/src/navd --config ${BASE}/src/test/testconfig --dump-config --log 7 --max-msg 5
+	echo "---"
+	${binary} --help
+	echo "---"
+	${binary} --list
+	echo "---"
+	${binary} --version
+	for i in `${binary} --list-compact` ; do
+		echo "---"
+		${binary} --help=$i
+	done
+	echo "---"
+	${binary} foobar
+	echo "---"
+	${binary} --config ${BASE}/src/test/testconfig --dump-config --log 7 --max-msg 5
+	echo "---"
 	${BASE}/build/src/test/testrunner
+	echo "---"
 	lcov --capture --directory build/src --output-file build/doc/coverage.info
 	lcov --remove build/doc/coverage.info "/usr/*" --output-file build/doc/coverage.info
 	lcov --remove build/doc/coverage.info "lexer.yy.*" --output-file build/doc/coverage.info

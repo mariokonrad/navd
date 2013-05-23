@@ -62,6 +62,7 @@ enum options_t {
 	,OPTION_DEAMON
 	,OPTION_CONFIG
 	,OPTION_LIST
+	,OPTION_LIST_COMPACT
 	,OPTION_DUMP_CONFIG
 	,OPTION_MAX_MSG
 	,OPTION_LOG
@@ -69,14 +70,15 @@ enum options_t {
 
 static const struct option OPTIONS_LONG[] =
 {
-	{ "help",        optional_argument, 0, OPTION_HELP        },
-	{ "version",     no_argument,       0, OPTION_VERSION     },
-	{ "daemon",      no_argument,       0, OPTION_DEAMON      },
-	{ "config",      required_argument, 0, OPTION_CONFIG      },
-	{ "list",        no_argument,       0, OPTION_LIST        },
-	{ "dump-config", no_argument,       0, OPTION_DUMP_CONFIG },
-	{ "max-msg",     required_argument, 0, OPTION_MAX_MSG     },
-	{ "log",         required_argument, 0, OPTION_LOG         },
+	{ "help",         optional_argument, 0, OPTION_HELP         },
+	{ "version",      no_argument,       0, OPTION_VERSION      },
+	{ "daemon",       no_argument,       0, OPTION_DEAMON       },
+	{ "config",       required_argument, 0, OPTION_CONFIG       },
+	{ "list",         no_argument,       0, OPTION_LIST         },
+	{ "list-compact", no_argument,       0, OPTION_LIST_COMPACT },
+	{ "dump-config",  no_argument,       0, OPTION_DUMP_CONFIG  },
+	{ "max-msg",      required_argument, 0, OPTION_MAX_MSG      },
+	{ "log",          required_argument, 0, OPTION_LOG          },
 };
 
 /**
@@ -87,6 +89,7 @@ static struct {
 	int config;
 	int dump_config;
 	int list;
+	int list_compact;
 	unsigned int max_msg;
 	int log_mask;
 	char config_filename[PATH_MAX+1];
@@ -223,6 +226,7 @@ static void usage(const char * name)
 	printf("  --daemon        : daemonize process\n");
 	printf("  --config file   : configuration file\n");
 	printf("  --list          : lists all sources, destinations and filters\n");
+	printf("  --list-compact  : lists all sources, destinations and filters on one compact line\n");
 	printf("  --dump-config   : dumps the configuration and exit\n");
 	printf("  --max-msg n     : routes n number of messages before terminating\n");
 	printf("  --log n         : defines log level on syslog (0..7)\n");
@@ -299,6 +303,9 @@ static int parse_options(int argc, char ** argv) /* {{{ */
 				break;
 			case OPTION_LIST:
 				option.list = 1;
+				break;
+			case OPTION_LIST_COMPACT:
+				option.list_compact = 1;
 				break;
 			case OPTION_DUMP_CONFIG:
 				option.dump_config = 1;
@@ -517,22 +524,29 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 /**
  * Dumps the registered objects (sources, destinations, filters) to the
  * specified stream.
+ *
+ * @param[in] compact Switch to turn on compact mode, everything on one line.
  */
-static void dump_registered(void)
+static void dump_registered(int compact)
 {
 	size_t i;
 
-	printf("Sources:");
+	if (!compact)
+		printf("Sources:");
 	for (i = 0; i < desc_sources.num; ++i) {
 		printf(" %s", desc_sources.data[i].name);
 	}
-	printf("\n");
-	printf("Destinations:");
+	if (!compact) {
+		printf("\n");
+		printf("Destinations:");
+	}
 	for (i = 0; i < desc_destinations.num; ++i) {
 		printf(" %s", desc_destinations.data[i].name);
 	}
-	printf("\n");
-	printf("Filters:");
+	if (!compact) {
+		printf("\n");
+		printf("Filters:");
+	}
 	for (i = 0; i < desc_filters.num; ++i) {
 		printf(" %s", desc_filters.data[i].name);
 	}
@@ -909,8 +923,8 @@ int main(int argc, char ** argv) /* {{{ */
 	}
 
 	/* list registered objects */
-	if (option.list) {
-		dump_registered();
+	if (option.list || option.list_compact) {
+		dump_registered(option.list_compact);
 		return EXIT_SUCCESS;
 	}
 
