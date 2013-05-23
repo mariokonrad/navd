@@ -11,6 +11,7 @@
 #include <test_filterlist.h>
 #include <test_device.h>
 #include <test_device_simulator.h>
+#include <test_device_serial.h>
 #include <test_property_serial.h>
 #include <test_fileutil.h>
 #include <test_proc.h>
@@ -48,6 +49,7 @@ int main()
 	register_suite_filterlist();
 	register_suite_device();
 	register_suite_device_simulator();
+	register_suite_device_serial();
 	register_suite_property_serial();
 	register_suite_fileutil();
 	register_suite_proc();

@@ -6,12 +6,15 @@
 /**
  * Structure to hand simulation data.
  */
-static struct simulator_data_t
+struct simulator_data_t
 {
 	const char * s;
 	int i;
 	int len;
-} simulator_data;
+};
+
+/* TODO: Simulator specific data must not be static */
+static struct simulator_data_t simulator_data;
 
 /**
  * Opens the simulator device.
@@ -21,12 +24,16 @@ static struct simulator_data_t
  * @retval -1 Parameter failure.
  * @retval  0 Success.
  */
-static int simulator_open(struct device_t * device, const struct device_config_t * cfg)
+static int simulator_open(
+		struct device_t * device,
+		const struct device_config_t * cfg)
 {
 	UNUSED_ARG(cfg);
 
-	if (device == NULL) return -1;
-	if (device->fd >= 0) return 0;
+	if (device == NULL)
+		return -1;
+	if (device->fd >= 0)
+		return 0;
 	device->fd = 0;
 	device->data = &simulator_data;
 	simulator_data.i = 0;
@@ -49,9 +56,11 @@ static int simulator_open(struct device_t * device, const struct device_config_t
  */
 static int simulator_close(struct device_t * device)
 {
-	if (device == NULL) return -1;
-	if (device->fd < 0) return 0;
-	device->fd = 0;
+	if (device == NULL)
+		return -1;
+	if (device->fd < 0)
+		return 0;
+	device->fd = -1;
 	return 0;
 }
 
@@ -64,14 +73,20 @@ static int simulator_close(struct device_t * device)
  * @retval -1 Parameter failure.
  * @return Number of read bytes.
  */
-static int simulator_read(struct device_t * device, char * buf, uint32_t size)
+static int simulator_read(
+		struct device_t * device,
+		char * buf,
+		uint32_t size)
 {
 	struct simulator_data_t * data = NULL;
 	uint32_t i;
 
-	if (device == NULL) return -1;
-	if (buf == NULL) return -1;
-	if (device->fd < 0) return -1;
+	if (device == NULL)
+		return -1;
+	if (buf == NULL)
+		return -1;
+	if (device->fd < 0)
+		return -1;
 
 	data = (struct simulator_data_t *)device->data;
 	for (i = 0; i < size; ++i) {
@@ -84,7 +99,10 @@ static int simulator_read(struct device_t * device, char * buf, uint32_t size)
 /**
  * Does nothing. Returns always -1.
  */
-static int simulator_write(struct device_t * device, const char * buf, uint32_t size)
+static int simulator_write(
+		struct device_t * device,
+		const char * buf,
+		uint32_t size)
 {
 	UNUSED_ARG(device);
 	UNUSED_ARG(buf);

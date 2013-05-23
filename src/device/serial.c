@@ -13,20 +13,26 @@
  * @retval  0 Success or file descriptor already valid.
  * @retval -1 Parameter failure.
  */
-static int serial_open(struct device_t * device, const struct device_config_t * cfg)
+static int serial_open(
+		struct device_t * device,
+		const struct device_config_t * cfg)
 {
 	struct termios old_tio;
 	struct termios new_tio;
 	const struct serial_config_t * config = NULL;
 
-	if (device == NULL) return -1;
-	if (cfg == NULL) return -1;
-	if (device->fd >= 0) return 0;
+	if (device == NULL)
+		return -1;
+	if (cfg == NULL)
+		return -1;
+	if (device->fd >= 0)
+		return 0;
 
 	config = (const struct serial_config_t *)cfg;
 
 	device->fd = open(config->name, O_RDWR | O_NOCTTY);
-	if (device->fd < 0) return -1;
+	if (device->fd < 0)
+		return -1;
 
 	tcgetattr(device->fd, &old_tio);
 	memset(&new_tio, 0, sizeof(new_tio));
@@ -61,8 +67,10 @@ static int serial_open(struct device_t * device, const struct device_config_t * 
  */
 static int serial_close(struct device_t * device)
 {
-	if (device == NULL) return -1;
-	if (device->fd < 0) return 0;
+	if (device == NULL)
+		return -1;
+	if (device->fd < 0)
+		return 0;
 	close(device->fd);
 	device->fd = -1;
 	return 0;
@@ -78,11 +86,17 @@ static int serial_close(struct device_t * device)
  * @retval -1 Parameter failure.
  * @return Number of read bytes (might be 0).
  */
-static int serial_read(struct device_t * device, char * buf, uint32_t size)
+static int serial_read(
+		struct device_t * device,
+		char * buf,
+		uint32_t size)
 {
-	if (device == NULL) return -1;
-	if (buf == NULL) return -1;
-	if (device->fd < 0) return -1;
+	if (device == NULL)
+		return -1;
+	if (buf == NULL)
+		return -1;
+	if (device->fd < 0)
+		return -1;
 	return read(device->fd, buf, size);
 }
 
@@ -95,11 +109,17 @@ static int serial_read(struct device_t * device, char * buf, uint32_t size)
  * @retval -1 Parameter failure.
  * @return Number of written bytes.
  */
-static int serial_write(struct device_t * device, const char * buf, uint32_t size)
+static int serial_write(
+		struct device_t * device,
+		const char * buf,
+		uint32_t size)
 {
-	if (device == NULL) return -1;
-	if (buf == NULL) return -1;
-	if (device->fd < 0) return -1;
+	if (device == NULL)
+		return -1;
+	if (buf == NULL)
+		return -1;
+	if (device->fd < 0)
+		return -1;
 	return write(device->fd, buf, size);
 }
 
