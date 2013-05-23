@@ -149,10 +149,24 @@ static int proc(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("timer\n");
+	printf("\n");
+	printf("Sends timer messages periodically.\n");
+	printf("\n");
+	printf("Configuration options:\n");
+	printf("  id     : unsigned numerical identifier\n");
+	printf("  period : time period in msec in which the message will be sent.\n");
+	printf("\n");
+}
+
 const struct proc_desc_t timer = {
 	.name = "timer",
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
+	.help = help,
 };
 
