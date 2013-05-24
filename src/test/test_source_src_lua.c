@@ -62,18 +62,19 @@ static void test_init(void)
 	struct proc_config_t config;
 
 	proc_config_init(&config);
-	proplist_init(&properties);
 
 	CU_ASSERT_EQUAL(proc->init(NULL, NULL), EXIT_FAILURE);
 
+	proplist_init(&properties);
+	proplist_set(&properties, "period", "zzz");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
+	proplist_free(&properties);
+
+	proplist_init(&properties);
 	proplist_set(&properties, "period", "1000");
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
-
-	proplist_set(&properties, "period", "xyz");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
-
 	proplist_free(&properties);
 }
 

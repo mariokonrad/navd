@@ -120,23 +120,25 @@ static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
 {
-	int rc;
 	lua_State * lua = NULL;
 	const struct property_t * prop_script = NULL;
 	const struct property_t * prop_period = NULL;
 	const struct property_t * prop_debug = NULL;
 
+	if (!config)
+		return EXIT_FAILURE;
+	if (!properties)
+		return EXIT_FAILURE;
+
 	prop_script = proplist_find(properties, "script");
 	prop_period = proplist_find(properties, "period");
 	prop_debug = proplist_find(properties, "DEBUG");
 
-	rc = setup_period(prop_period);
-	if (rc != EXIT_SUCCESS)
-		return rc;
+	if (setup_period(prop_period) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
-	rc = luaH_checkscript_from_prop(prop_script);
-	if (rc != EXIT_SUCCESS)
-		return rc;
+	if (luaH_checkscript_from_prop(prop_script) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
 	/* setup lua state */
 	lua = luaL_newstate();
@@ -152,8 +154,7 @@ static int init_proc(
 		}
 
 		/* load/execute script */
-		rc = luaL_dofile(lua, prop_script->value);
-		if (rc) {
+		if (luaL_dofile(lua, prop_script->value) != LUA_OK) {
 			syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
 			lua_close(lua);
 			return EXIT_FAILURE;

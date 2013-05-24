@@ -37,32 +37,32 @@ static void test_init(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
-	proplist_set(&properties, "baud", "xyz");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	proplist_set(&properties, "baud", "zzz");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "baud", "9600");
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
-	proplist_set(&properties, "parity", "xyz");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	proplist_set(&properties, "parity", "zzz");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "parity", "none");
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
-	proplist_set(&properties, "data", "x");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	proplist_set(&properties, "data", "z");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "data", "8");
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
-	proplist_set(&properties, "stop", "x");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	proplist_set(&properties, "stop", "z");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "stop", "1");
@@ -74,7 +74,7 @@ static void test_init(void)
 
 static void test_exit(void)
 {
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
 }
 
 void register_suite_destination_nmea_serial(void)

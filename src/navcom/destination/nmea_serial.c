@@ -50,6 +50,11 @@ static int init_proc(
 {
 	UNUSED_ARG(config);
 
+	if (!config)
+		return EXIT_FAILURE;
+	if (!properties)
+		return EXIT_FAILURE;
+
 	if (prop_serial_read_device(&serial_config, properties, "device") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (prop_serial_read_baudrate(&serial_config, properties, "baud") != EXIT_SUCCESS)

@@ -28,7 +28,7 @@ static void test_open(void)
 	CU_ASSERT_EQUAL(dev.fd, 0);
 
 	dev.fd = 1;
-	CU_ASSERT_EQUAL(device->open(&dev, NULL), -1);
+	CU_ASSERT_EQUAL(device->open(&dev, NULL), 0);
 }
 
 static void test_close(void)
@@ -68,7 +68,7 @@ static void test_read(void)
 
 	CU_ASSERT_EQUAL(device->read(&dev, NULL, 0), -1);
 	CU_ASSERT_EQUAL(device->read(&dev, NULL, sizeof(buf)), -1);
-	CU_ASSERT_EQUAL(device->read(&dev, buf, 0), -1);
+	CU_ASSERT_EQUAL(device->read(&dev, buf, 0), 0);
 
 	CU_ASSERT_EQUAL(device->read(&dev, buf, sizeof(buf)), sizeof(buf));
 
