@@ -39,10 +39,26 @@ static int filter(
 	return FILTER_SUCCESS;
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("filter_nmea\n");
+	printf("\n");
+	printf("Forwards all configured NMEA messages, all others are dropped.\n");
+	printf("\n");
+	printf("Configuration options:\n");
+	printf("  x : list of tags of NMEA sentences to forward.\n");
+	printf("\n");
+	printf("Example:\n");
+	printf("  rmx_only : filter_nmea { GPRMC GPRMB };\n");
+	printf("\n");
+}
+
 const struct filter_desc_t filter_nmea = {
 	.name = "filter_nmea",
 	.init = NULL,
 	.exit = NULL,
-	.func = filter
+	.func = filter,
+	.help = help,
 };
 

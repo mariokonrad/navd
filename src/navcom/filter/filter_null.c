@@ -39,6 +39,9 @@ static void help(void)
 	printf("Dummy filter that forwards any incoming message.\n");
 	printf("Does not support any configuration.\n");
 	printf("\n");
+	printf("Example:\n");
+	printf("  forwarder : filter_null {};\n");
+	printf("\n");
 }
 
 const struct filter_desc_t filter_null = {

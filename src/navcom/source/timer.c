@@ -160,6 +160,9 @@ static void help(void)
 	printf("  id     : unsigned numerical identifier\n");
 	printf("  period : time period in msec in which the message will be sent.\n");
 	printf("\n");
+	printf("Example:\n");
+	printf("  logtimer : timer { id:1, period:5000 };\n");
+	printf("\n");
 }
 
 const struct proc_desc_t timer = {
