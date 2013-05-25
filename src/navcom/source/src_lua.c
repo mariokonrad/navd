@@ -246,10 +246,41 @@ static int proc(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("src_lua\n");
+	printf("\n");
+	printf("Executes a Lua script periodically which can work as a source.\n");
+	printf("\n");
+	printf("Configuration options:\n");
+	printf("  script : filename of the Lua script to execute.\n");
+	printf("  period : time period in msec in which the scripts 'handle' function\n");
+	printf("           will be executed.\n");
+	printf("  DEBUG  : [optional] a combination of 'c', 'r' and 'l' for debugging purposes.\n");
+	printf("           c : call, traces function calls\n");
+	printf("           r : return, traces function returns\n");
+	printf("           l : line, traces executed lines\n");
+	printf("\n");
+	printf("Example:\n");
+	printf("  sim : src_lua { script='sim.lua', period:1000 };\n");
+	printf("\n");
+	printf("  sim : src_lua { script='sim.lua', period:1000, DEBUG:'cr' };\n");
+	printf("\n");
+	printf("Example of Lua script:\n");
+	printf("\n");
+	printf("  function handle(msg_out)\n");
+	printf("     msg = { ... }\n");
+	printf("     msg_from_table(msg_out, t)\n");
+	printf("  end\n");
+	printf("\n");
+}
+
 const struct proc_desc_t src_lua = {
 	.name = "src_lua",
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
+	.help = help,
 };
 
