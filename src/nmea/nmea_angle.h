@@ -27,4 +27,6 @@ void nmea_angle_ntoh(struct nmea_angle_t * v);
 
 int nmea_angle_to_double(double *, const struct nmea_angle_t *);
 
+int nmea_double_to_angle(struct nmea_angle_t *, double);
+
 #endif

@@ -37,6 +37,14 @@ void luaH_pushchar(lua_State * lua, char val)
 	lua_pushstring(lua, str);
 }
 
+char luaH_checkchar(lua_State * lua, int index)
+{
+	const char * s;
+
+	s = luaL_checkstring(lua, index);
+	return s[0];
+}
+
 /**
  * Checks according to the specified property if the Lua script
  * is readable.
@@ -70,7 +78,8 @@ void luaH_check_error(lua_State * lua, int error)
 {
 	const char * err_string;
 
-	if (error == LUA_OK) return;
+	if (error == LUA_OK)
+		return;
 
 	err_string = lua_tostring(lua, -1);
 	switch (error) {

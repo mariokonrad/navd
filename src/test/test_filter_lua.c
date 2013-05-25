@@ -324,7 +324,7 @@ static void test_func_msg_to_table(void)
 	proplist_free(&properties);
 }
 
-static void test_func_msg_to_table_system(void)
+static void test_func_msg_to_table_system(void) /* TODO: move test to test_lua_message? */
 {
 	int rc;
 	struct filter_context_t ctx;
@@ -374,7 +374,7 @@ static void test_func_msg_to_table_system(void)
 	proplist_free(&properties);
 }
 
-static void test_func_msg_to_table_timer(void)
+static void test_func_msg_to_table_timer(void) /* TODO: move test to test_lua_message? */
 {
 	int rc;
 	struct filter_context_t ctx;
@@ -477,7 +477,7 @@ static void test_func_msg_to_table_nmea(void)
 	proplist_free(&properties);
 }
 
-static void test_func_msg_to_table_nmea_rmc(void)
+static void test_func_msg_to_table_nmea_rmc(void) /* TODO: move test to test_lua_message? */
 {
 	int rc;
 	struct filter_context_t ctx;

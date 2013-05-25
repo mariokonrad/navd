@@ -75,7 +75,7 @@ static void msg_to_table_timer(lua_State * lua, const struct message_t * msg)
 	lua_setfield(lua, -2, "timer_id");
 }
 
-static void msg_table_nmea_rmc(lua_State * lua, const struct nmea_t * nmea)
+static void msg_to_table_nmea_rmc(lua_State * lua, const struct nmea_t * nmea)
 {
 	const struct nmea_rmc_t * s = &nmea->sentence.rmc;
 
@@ -131,7 +131,7 @@ static void msg_to_table_nmea(lua_State * lua, const struct message_t * msg)
 
 	static const struct msg_nmea_t CONV[] =
 	{
-		{ NMEA_RMC, msg_table_nmea_rmc },
+		{ NMEA_RMC, msg_to_table_nmea_rmc },
 	};
 
 	const struct nmea_t * nmea = &msg->data.nmea;
@@ -231,7 +231,7 @@ static int msg_from_table_system(lua_State * lua, struct message_t * msg)
 }
 
 /**
- * Reads a system message from lua state.
+ * Reads a timer message from lua state.
  *
  * @retval EXIT_SUCCESS
  */
@@ -239,6 +239,115 @@ static int msg_from_table_timer(lua_State * lua, struct message_t * msg)
 {
 	lua_getfield(lua, -1, "timer_id");
 	msg->data.timer_id = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	return EXIT_SUCCESS;
+}
+
+static void msg_from_table_nmea_rmc(lua_State * lua, struct nmea_t * nmea)
+{
+	struct nmea_rmc_t * s = &nmea->sentence.rmc;
+
+	lua_getfield(lua, -1, "time");
+	lua_getfield(lua, -1, "h");
+	s->time.h = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	lua_getfield(lua, -1, "m");
+	s->time.m = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	lua_getfield(lua, -1, "s");
+	s->time.s = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "status");
+	s->status = luaH_checkchar(lua, -1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "lat");
+	luaH_checknmeaangle(lua, -1, &s->lat);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "lat_dir");
+	s->lat_dir = luaH_checkchar(lua, -1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "lon");
+	luaH_checknmeaangle(lua, -1, &s->lon);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "lon_dir");
+	s->lon_dir = luaH_checkchar(lua, -1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "sog");
+	luaH_checknmeafix(lua, -1, &s->sog);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "head");
+	luaH_checknmeafix(lua, -1, &s->head);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "date");
+	lua_getfield(lua, -1, "y");
+	s->date.y = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	lua_getfield(lua, -1, "m");
+	s->date.m = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	lua_getfield(lua, -1, "d");
+	s->date.d = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "m");
+	luaH_checknmeafix(lua, -1, &s->m);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "m_dir");
+	s->m_dir = luaH_checkchar(lua, -1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "sig_integrity");
+	s->sig_integrity = luaH_checkchar(lua, -1);
+	lua_pop(lua, 1);
+}
+
+/**
+ * Reads a nmeaa message from lua state.
+ *
+ * @retval EXIT_SUCCESS
+ */
+static int msg_from_table_nmea(lua_State * lua, struct message_t * msg)
+{
+	struct msg_nmea_t
+	{
+		uint32_t type;
+		void (*func)(lua_State *, struct nmea_t *);
+	};
+
+	static const struct msg_nmea_t CONV[] =
+	{
+		{ NMEA_RMC, msg_from_table_nmea_rmc },
+	};
+
+	struct nmea_t * nmea = &msg->data.nmea;
+	size_t i;
+
+	lua_getfield(lua, -1, "nmea_type");
+	nmea->type = luaL_checkunsigned(lua, -1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "raw");
+	strncpy(nmea->raw, luaL_checkstring(lua, -1), sizeof(nmea->raw) - 1);
+	lua_pop(lua, 1);
+
+	lua_getfield(lua, -1, "sentence");
+	for (i = 0; i < sizeof(CONV) / sizeof(CONV[0]); ++i) {
+		if ((CONV[i].type == nmea->type) && CONV[i].func) {
+			CONV[i].func(lua, nmea);
+			break;
+		}
+	}
 	lua_pop(lua, 1);
 	return EXIT_SUCCESS;
 }
@@ -267,7 +376,7 @@ static int lua__msg_from_table(lua_State * lua)
 	{
 		{ MSG_SYSTEM, msg_from_table_system },
 		{ MSG_TIMER,  msg_from_table_timer  },
-		/* TODO: { MSG_SYSTEM, msg_from_table_nmea   }, */
+		{ MSG_NMEA,   msg_from_table_nmea   },
 	};
 
 	struct message_t * msg;

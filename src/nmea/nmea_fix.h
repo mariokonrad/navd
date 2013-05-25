@@ -26,4 +26,7 @@ void nmea_fix_ntoh(struct nmea_fix_t *);
 int nmea_fix_to_float(float *, const struct nmea_fix_t *);
 int nmea_fix_to_double(double *, const struct nmea_fix_t *);
 
+int nmea_float_to_fix(struct nmea_fix_t *, float);
+int nmea_double_to_fix(struct nmea_fix_t *, double);
+
 #endif

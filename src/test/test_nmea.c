@@ -639,13 +639,11 @@ static void test_endianess(void)
 	}
 }
 
-static void test_conv_float_fix(float expected, const struct nmea_fix_t * fix)
+static void test_conv_fix_float(float expected, const struct nmea_fix_t * fix)
 {
-	int rc;
 	float f;
 
-	rc = nmea_fix_to_float(&f, fix);
-	CU_ASSERT_EQUAL(rc, 0);
+	CU_ASSERT_EQUAL(nmea_fix_to_float(&f, fix), 0);
 	CU_ASSERT_EQUAL(f, expected);
 }
 
@@ -668,20 +666,40 @@ static void test_convert_nmea_fix_float(void)
 	rc = nmea_fix_to_float(NULL, &fix);
 	CU_ASSERT_EQUAL(rc, -1);
 
-	fix.i = 0; fix.d = 0;      test_conv_float_fix(0.0f, &fix);
-	fix.i = 0; fix.d = 500000; test_conv_float_fix(0.5f, &fix);
-	fix.i = 1; fix.d = 0;      test_conv_float_fix(1.0f, &fix);
-	fix.i = 2; fix.d = 0;      test_conv_float_fix(2.0f, &fix);
-	fix.i = 3; fix.d = 0;      test_conv_float_fix(3.0f, &fix);
+	fix.i = 0; fix.d = 0;      test_conv_fix_float(0.0f, &fix);
+	fix.i = 0; fix.d = 500000; test_conv_fix_float(0.5f, &fix);
+	fix.i = 1; fix.d = 0;      test_conv_fix_float(1.0f, &fix);
+	fix.i = 2; fix.d = 0;      test_conv_fix_float(2.0f, &fix);
+	fix.i = 3; fix.d = 0;      test_conv_fix_float(3.0f, &fix);
 }
 
-static void test_conv_double_fix(double expected, const struct nmea_fix_t * fix)
+static void test_conv_float_fix(const struct nmea_fix_t * expected, float f)
 {
-	int rc;
+	struct nmea_fix_t fix;
+
+	CU_ASSERT_EQUAL(nmea_float_to_fix(&fix, f), 0);
+	CU_ASSERT_EQUAL(fix.i, expected->i);
+	CU_ASSERT_EQUAL(fix.d, expected->d);
+}
+
+static void test_convert_nmea_float_fix(void)
+{
+	struct nmea_fix_t fix;
+
+	CU_ASSERT_EQUAL(nmea_float_to_fix(NULL, 0.0f), -1);
+
+	fix.i = 0; fix.d = 0;      test_conv_float_fix(&fix, 0.0f);
+	fix.i = 0; fix.d = 500000; test_conv_float_fix(&fix, 0.5f);
+	fix.i = 1; fix.d = 0;      test_conv_float_fix(&fix, 1.0f);
+	fix.i = 2; fix.d = 0;      test_conv_float_fix(&fix, 2.0f);
+	fix.i = 3; fix.d = 0;      test_conv_float_fix(&fix, 3.0f);
+}
+
+static void test_conv_fix_double(double expected, const struct nmea_fix_t * fix)
+{
 	double d;
 
-	rc = nmea_fix_to_double(&d, fix);
-	CU_ASSERT_EQUAL(rc, 0);
+	CU_ASSERT_EQUAL(nmea_fix_to_double(&d, fix), 0);
 	CU_ASSERT_EQUAL(d, expected);
 }
 
@@ -689,35 +707,51 @@ static void test_convert_nmea_fix_double(void)
 {
 	struct nmea_fix_t fix;
 	double d;
-	int rc;
 
 	fix.i = 0;
 	fix.d = 0;
-	d = 0.0;
 
-	rc = nmea_fix_to_double(NULL, NULL);
-	CU_ASSERT_EQUAL(rc, -1);
+	CU_ASSERT_EQUAL(nmea_fix_to_double(NULL, NULL), -1);
+	CU_ASSERT_EQUAL(nmea_fix_to_double(&d, NULL), -1);
+	CU_ASSERT_EQUAL(nmea_fix_to_float(NULL, &fix), -1);
 
-	rc = nmea_fix_to_double(&d, NULL);
-	CU_ASSERT_EQUAL(rc, -1);
-
-	rc = nmea_fix_to_float(NULL, &fix);
-	CU_ASSERT_EQUAL(rc, -1);
-
-	fix.i = 0; fix.d = 0;      test_conv_double_fix(0.0, &fix);
-	fix.i = 0; fix.d = 500000; test_conv_double_fix(0.5, &fix);
-	fix.i = 1; fix.d = 0;      test_conv_double_fix(1.0, &fix);
-	fix.i = 2; fix.d = 0;      test_conv_double_fix(2.0, &fix);
-	fix.i = 3; fix.d = 0;      test_conv_double_fix(3.0, &fix);
+	fix.i = 0; fix.d = 0;      test_conv_fix_double(0.0, &fix);
+	fix.i = 0; fix.d = 500000; test_conv_fix_double(0.5, &fix);
+	fix.i = 1; fix.d = 0;      test_conv_fix_double(1.0, &fix);
+	fix.i = 2; fix.d = 0;      test_conv_fix_double(2.0, &fix);
+	fix.i = 3; fix.d = 0;      test_conv_fix_double(3.0, &fix);
 }
 
-static void test_conv_double_angle(double expected, const struct nmea_angle_t * angle)
+static void test_conv_double_fix(const struct nmea_fix_t * expected, double d)
 {
-	int rc;
+	struct nmea_fix_t fix;
+
+	CU_ASSERT_EQUAL(nmea_double_to_fix(&fix, d), 0);
+	CU_ASSERT_EQUAL(fix.i, expected->i);
+	CU_ASSERT_EQUAL(fix.d, expected->d);
+}
+
+static void test_convert_nmea_double_fix(void)
+{
+	struct nmea_fix_t fix;
+
+	fix.i = 0;
+	fix.d = 0;
+
+	CU_ASSERT_EQUAL(nmea_double_to_fix(NULL, 0.0), -1);
+
+	fix.i = 0; fix.d = 0;      test_conv_double_fix(&fix, 0.0);
+	fix.i = 0; fix.d = 500000; test_conv_double_fix(&fix, 0.5);
+	fix.i = 1; fix.d = 0;      test_conv_double_fix(&fix, 1.0);
+	fix.i = 2; fix.d = 0;      test_conv_double_fix(&fix, 2.0);
+	fix.i = 3; fix.d = 0;      test_conv_double_fix(&fix, 3.0);
+}
+
+static void test_conv_angle_double(double expected, const struct nmea_angle_t * angle)
+{
 	double d;
 
-	rc = nmea_angle_to_double(&d, angle);
-	CU_ASSERT_EQUAL(rc, 0);
+	CU_ASSERT_EQUAL(nmea_angle_to_double(&d, angle), 0);
 	CU_ASSERT_DOUBLE_EQUAL(d, expected, 1e-4);
 }
 
@@ -725,7 +759,6 @@ static void test_convert_nmea_angle_double(void)
 {
 	struct nmea_angle_t angle;
 	double d;
-	int rc;
 
 	angle.d = 0;
 	angle.m = 0;
@@ -733,19 +766,37 @@ static void test_convert_nmea_angle_double(void)
 	angle.s.d = 0;
 	d = 0.0;
 
-	rc = nmea_angle_to_double(NULL, NULL);
-	CU_ASSERT_EQUAL(rc, -1);
+	CU_ASSERT_EQUAL(nmea_angle_to_double(NULL, NULL), -1);
+	CU_ASSERT_EQUAL(nmea_angle_to_double(&d, NULL), -1);
+	CU_ASSERT_EQUAL(nmea_angle_to_double(NULL, &angle), -1);
 
-	rc = nmea_angle_to_double(&d, NULL);
-	CU_ASSERT_EQUAL(rc, -1);
+	angle.d =  0; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_angle_double( 0.0,      &angle);
+	angle.d = 90; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_angle_double(90.0,      &angle);
+	angle.d =  0; angle.m = 30; angle.s.i = 0; angle.s.d = 0; test_conv_angle_double( 0.5,      &angle);
+	angle.d =  0; angle.m =  0; angle.s.i = 1; angle.s.d = 0; test_conv_angle_double( 0.000278, &angle);
+}
 
-	rc = nmea_angle_to_double(NULL, &angle);
-	CU_ASSERT_EQUAL(rc, -1);
+static void test_conv_double_angle(const struct nmea_angle_t * expected, double angle)
+{
+	struct nmea_angle_t a;
 
-	angle.d =  0; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle( 0.0,      &angle);
-	angle.d = 90; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(90.0,      &angle);
-	angle.d =  0; angle.m = 30; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle( 0.5,      &angle);
-	angle.d =  0; angle.m =  0; angle.s.i = 1; angle.s.d = 0; test_conv_double_angle( 0.000278, &angle);
+	CU_ASSERT_EQUAL(nmea_double_to_angle(&a, angle), 0);
+	CU_ASSERT_EQUAL(a.d, expected->d);
+	CU_ASSERT_EQUAL(a.m, expected->m);
+	CU_ASSERT_EQUAL(a.s.i, expected->s.i);
+	CU_ASSERT_EQUAL(a.s.d, expected->s.d);
+}
+
+static void test_convert_nmea_double_angle(void)
+{
+	struct nmea_angle_t angle;
+
+	CU_ASSERT_EQUAL(nmea_double_to_angle(NULL, 0.0), -1);
+
+	angle.d =  0; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(&angle,  0.0     );
+	angle.d = 90; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(&angle, 90.0     );
+	angle.d =  0; angle.m = 30; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(&angle,  0.5     );
+	angle.d =  0; angle.m =  0; angle.s.i = 1; angle.s.d = 0; test_conv_double_angle(&angle,  0.000278);
 }
 
 static void test_checksum(void)
@@ -930,6 +981,9 @@ void register_suite_nmea(void)
 	CU_add_test(suite, "conversion: fix to float", test_convert_nmea_fix_float);
 	CU_add_test(suite, "conversion: fix to double", test_convert_nmea_fix_double);
 	CU_add_test(suite, "conversion: angle to double", test_convert_nmea_angle_double);
+	CU_add_test(suite, "conversion: float to fix", test_convert_nmea_float_fix);
+	CU_add_test(suite, "conversion: double to fix", test_convert_nmea_double_fix);
+	CU_add_test(suite, "conversion: double to angle", test_convert_nmea_double_angle);
 	CU_add_test(suite, "checksum", test_checksum);
 	CU_add_test(suite, "checksum check", test_checksum_check);
 	CU_add_test(suite, "checksum write", test_checksum_write);

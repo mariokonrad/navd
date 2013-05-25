@@ -3,6 +3,7 @@
 #include <nmea/nmea_angle.h>
 #include <nmea/nmea_date.h>
 #include <nmea/nmea_time.h>
+#include <lua/lauxlib.h>
 
 void luaH_pushnmeafix(lua_State * lua, const struct nmea_fix_t * a)
 {
@@ -49,5 +50,15 @@ void luaH_pushnmeaangle(lua_State * lua, const struct nmea_angle_t * a)
 
 	nmea_angle_to_double(&t, a);
 	lua_pushnumber(lua, t);
+}
+
+void luaH_checknmeafix(lua_State * lua, int index, struct nmea_fix_t * a)
+{
+	nmea_double_to_fix(a, luaL_checknumber(lua, index));
+}
+
+void luaH_checknmeaangle(lua_State * lua, int index, struct nmea_angle_t * a)
+{
+	nmea_double_to_angle(a, luaL_checknumber(lua, index));
 }
 

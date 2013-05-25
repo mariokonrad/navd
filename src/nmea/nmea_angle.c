@@ -1,6 +1,7 @@
 #include <nmea/nmea_angle.h>
 #include <common/endian.h>
 #include <stdio.h>
+#include <math.h>
 
 /**
  * Checks whether all members of the angle information are zero.
@@ -11,7 +12,8 @@
  */
 int nmea_angle_check_zero(const struct nmea_angle_t * v)
 {
-	if (v == NULL) return -1;
+	if (v == NULL)
+		return -1;
 	return (1
 		&& (v->d == 0)
 		&& (v->m == 0)
@@ -30,7 +32,8 @@ int nmea_angle_check_zero(const struct nmea_angle_t * v)
  */
 int nmea_check_latitude(const struct nmea_angle_t * v)
 {
-	if (v == NULL) return -1;
+	if (v == NULL)
+		return -1;
 	return (0
 		|| ((v->d < 90) && (v->m < 60) && (v->s.i < 60) && (v->s.d < NMEA_FIX_DECIMALS))
 		|| ((v->d == 90) && (v->m == 0) && (v->s.i == 0) && (v->s.d == 0))
@@ -47,7 +50,8 @@ int nmea_check_latitude(const struct nmea_angle_t * v)
  */
 int nmea_check_longitude(const struct nmea_angle_t * v)
 {
-	if (v == NULL) return -1;
+	if (v == NULL)
+		return -1;
 	return (0
 		|| ((v->d < 180) && (v->m < 60) && (v->s.i < 60) && (v->s.d < NMEA_FIX_DECIMALS))
 		|| ((v->d == 180) && (v->m == 0) && (v->s.i == 0) && (v->s.d == 0))
@@ -73,7 +77,9 @@ const char * nmea_angle_parse(const char * s, const char * e, struct nmea_angle_
 {
 	struct nmea_fix_t t;
 	const char * p;
-	if (s == NULL || e == NULL || v == NULL) return NULL;
+
+	if (s == NULL || e == NULL || v == NULL)
+		return NULL;
 	if (s == e) {
 		v->d = 0;
 		v->m = 0;
@@ -105,9 +111,12 @@ const char * nmea_angle_parse(const char * s, const char * e, struct nmea_angle_
  */
 int nmea_write_latitude(char * buf, uint32_t size, const struct nmea_angle_t * v)
 {
-	if (buf == NULL || size == 0 || v == NULL) return -1;
-	if (size < 9) return -1;
-	if (nmea_check_latitude(v)) return -1;
+	if (buf == NULL || size == 0 || v == NULL)
+		return -1;
+	if (size < 9)
+		return -1;
+	if (nmea_check_latitude(v))
+		return -1;
 
 	/* division by 100 is to achieve 4 decimal digits, maybe it would be better to use write_fix() */
 	return snprintf(buf, size, "%02u%02u.%04u", v->d, v->m, (v->s.i * NMEA_FIX_DECIMALS + v->s.d) / 60 / 100);
@@ -127,9 +136,12 @@ int nmea_write_latitude(char * buf, uint32_t size, const struct nmea_angle_t * v
  */
 int nmea_write_lonitude(char * buf, uint32_t size, const struct nmea_angle_t * v)
 {
-	if (buf == NULL || size == 0 || v == NULL) return -1;
-	if (size < 10) return -1;
-	if (nmea_check_longitude(v)) return -1;
+	if (buf == NULL || size == 0 || v == NULL)
+		return -1;
+	if (size < 10)
+		return -1;
+	if (nmea_check_longitude(v))
+		return -1;
 
 	/* division by 100 is to achieve 4 decimal digits, maybe it would be better to use write_fix() */
 	return snprintf(buf, size, "%03u%02u.%04u", v->d, v->m, (v->s.i * NMEA_FIX_DECIMALS + v->s.d) / 60 / 100);
@@ -142,7 +154,8 @@ int nmea_write_lonitude(char * buf, uint32_t size, const struct nmea_angle_t * v
  */
 void nmea_angle_hton(struct nmea_angle_t * v)
 {
-	if (v == NULL) return;
+	if (v == NULL)
+		return;
 	v->d = endian_hton_32(v->d);
 	v->m = endian_hton_32(v->m);
 	nmea_fix_hton(&v->s);
@@ -155,7 +168,8 @@ void nmea_angle_hton(struct nmea_angle_t * v)
  */
 void nmea_angle_ntoh(struct nmea_angle_t * v)
 {
-	if (v == NULL) return;
+	if (v == NULL)
+		return;
 	v->d = endian_ntoh_32(v->d);
 	v->m = endian_ntoh_32(v->m);
 	nmea_fix_ntoh(&v->s);
@@ -173,9 +187,40 @@ int nmea_angle_to_double(double * v, const struct nmea_angle_t * angle)
 {
 	double sec = 0.0;
 
-	if (!v || !angle) return -1;
+	if (!v || !angle)
+		return -1;
 	nmea_fix_to_double(&sec, &angle->s);
 	*v = (double)angle->d + ((double)angle->m / 60.0) + (sec / 3600.0);
+	return 0;
+}
+
+/**
+ * Converts the double to angle.
+ *
+ * @param[ut] angle the converted angle
+ * @param[in] v number to convert
+ * @retval  0 success
+ * @retval -1 failure
+ *
+ * @todo Implementation
+ */
+int nmea_double_to_angle(struct nmea_angle_t * angle, double v)
+{
+	double t;
+
+	if (!angle)
+		return -1;
+
+	v = fabs(v);
+	t = floor(v);
+	angle->d = (uint32_t)t;
+	v = (v - t) * 60.0;
+	t = floor(v);
+	angle->m = (uint32_t)t;
+	v = (v - t) * 60.0;
+	nmea_double_to_fix(&angle->s, v);
+	if (angle->s.d < 1000) /* compensate resolution / numerical problems */
+		angle->s.d = 0;
 	return 0;
 }
 

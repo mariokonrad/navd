@@ -2,6 +2,7 @@
 #include <common/endian.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <math.h>
 
 /**
  * Checks whether all members of the fix number are zero.
@@ -12,7 +13,8 @@
  */
 int nmea_fix_check_zero(const struct nmea_fix_t * v)
 {
-	if (v == NULL) return -1;
+	if (v == NULL)
+		return -1;
 	return (1
 		&& (v->i == 0)
 		&& (v->d == 0)
@@ -37,7 +39,9 @@ const char * nmea_fix_parse(const char * s, const char * e, struct nmea_fix_t * 
 {
 	uint32_t f = NMEA_FIX_DECIMALS;
 	int state = 0;
-	if (s == NULL || e == NULL || v == NULL) return NULL;
+
+	if (s == NULL || e == NULL || v == NULL)
+		return NULL;
 	v->i = 0;
 	v->d = 0;
 	for (; *s && s < e && f > 0; ++s) {
@@ -78,8 +82,10 @@ int nmea_fix_write(char * buf, uint32_t size, const struct nmea_fix_t * v, uint3
 	uint32_t d = 1;
 	uint32_t i;
 
-	if (buf == NULL || size == 0 || v == NULL) return -1;
-	if (size < 13) return -1;
+	if (buf == NULL || size == 0 || v == NULL)
+		return -1;
+	if (size < 13)
+		return -1;
 	if (nd > NMEA_FIX_DECIMAL_DIGITS) {
 		nd = NMEA_FIX_DECIMAL_DIGITS;
 	} else if (nd > 0) {
@@ -101,7 +107,8 @@ int nmea_fix_write(char * buf, uint32_t size, const struct nmea_fix_t * v, uint3
  */
 int nmea_fix_to_float(float * v, const struct nmea_fix_t * fix)
 {
-	if (!v || !fix) return -1;
+	if (!v || !fix)
+		return -1;
 	*v = (float)fix->i + ((float)fix->d / (float)NMEA_FIX_DECIMALS);
 	return 0;
 }
@@ -116,7 +123,8 @@ int nmea_fix_to_float(float * v, const struct nmea_fix_t * fix)
  */
 int nmea_fix_to_double(double * v, const struct nmea_fix_t * fix)
 {
-	if (!v || !fix) return -1;
+	if (!v || !fix)
+		return -1;
 	*v = (double)fix->i + ((double)fix->d / (double)NMEA_FIX_DECIMALS);
 	return 0;
 }
@@ -128,7 +136,8 @@ int nmea_fix_to_double(double * v, const struct nmea_fix_t * fix)
  */
 void nmea_fix_hton(struct nmea_fix_t * v)
 {
-	if (v == NULL) return;
+	if (v == NULL)
+		return;
 	v->i = endian_hton_32(v->i);
 	v->d = endian_hton_32(v->d);
 }
@@ -140,8 +149,53 @@ void nmea_fix_hton(struct nmea_fix_t * v)
  */
 void nmea_fix_ntoh(struct nmea_fix_t * v)
 {
-	if (v == NULL) return;
+	if (v == NULL)
+		return;
 	v->i = endian_ntoh_32(v->i);
 	v->d = endian_ntoh_32(v->d);
+}
+
+/**
+ * Converts a float to a fix point number
+ *
+ * @param[out] fix the converted fix point number
+ * @param[in] v number to convert
+ * @retval  0 success
+ * @retval -1 failure
+ */
+int nmea_float_to_fix(struct nmea_fix_t * fix, float v)
+{
+	float t;
+
+	if (!fix)
+		return -1;
+
+	v = fabsf(v);
+	t = floorf(v);
+	fix->i = (uint32_t)t;
+	fix->d = (uint32_t)((v - t) * NMEA_FIX_DECIMALS);
+	return 0;
+}
+
+/**
+ * Converts a double to a fix point number
+ *
+ * @param[out] fix the converted fix point number
+ * @param[in] v number to convert
+ * @retval  0 success
+ * @retval -1 failure
+ */
+int nmea_double_to_fix(struct nmea_fix_t * fix, double v)
+{
+	double t;
+
+	if (!fix)
+		return -1;
+
+	v = fabs(v);
+	t = floor(v);
+	fix->i = (uint32_t)t;
+	fix->d = (uint32_t)((v - t) * NMEA_FIX_DECIMALS);
+	return 0;
 }
 

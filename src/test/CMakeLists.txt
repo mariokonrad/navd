@@ -32,6 +32,7 @@ target_link_libraries(dump
 	devices
 	nmea
 	common
+	m
 	)
 
 add_executable(check_size
