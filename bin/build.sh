@@ -43,6 +43,15 @@ function usage()
 	echo ""
 }
 
+function find_executable()
+{
+	if [[ `which $1` ]] ; then
+		echo "found"
+	else
+		echo "not found"
+	fi
+}
+
 function exec_info()
 {
 	echo ""
@@ -53,6 +62,18 @@ function exec_info()
 	echo "    SCRIPT_BASE    = ${SCRIPT_BASE}"
 	echo "    BASE           = ${BASE}"
 	echo "    TOOLCHAIN_FILE = ${TOOLCHAIN_FILE}"
+	echo ""
+	echo "TOOLS:"
+	echo "    cccc     :" $(find_executable cccc)
+	echo "    cppcheck :" $(find_executable cppcheck)
+	echo "    valgrind :" $(find_executable valgrind)
+	echo "    pmccabe  :" $(find_executable pmccabe)
+	echo "    gcovr    :" $(find_executable gcovr)
+	echo "    lcov     :" $(find_executable lcov)
+	echo "    ctags    :" $(find_executable ctags)
+	echo "    cscope   :" $(find_executable cscope)
+	echo "    doxygen  :" $(find_executable doxygen)
+	echo "    dot      :" $(find_executable dot)
 	echo ""
 }
 
