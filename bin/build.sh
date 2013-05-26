@@ -46,7 +46,7 @@ function usage()
 function find_executable()
 {
 	if [[ `which $1` ]] ; then
-		echo "found"
+		echo "found ("`which $1`")"
 	else
 		echo "not found"
 	fi
@@ -64,6 +64,8 @@ function exec_info()
 	echo "    TOOLCHAIN_FILE = ${TOOLCHAIN_FILE}"
 	echo ""
 	echo "TOOLS:"
+	echo "    flex     :" $(find_executable flex)
+	echo "    bison    :" $(find_executable bison)
 	echo "    cccc     :" $(find_executable cccc)
 	echo "    cppcheck :" $(find_executable cppcheck)
 	echo "    valgrind :" $(find_executable valgrind)

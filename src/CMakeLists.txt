@@ -24,6 +24,7 @@ add_executable(navd
 	daemon.c
 	programoptions.c
 	registry.c
+	route.c
 	)
 
 set(LIBRARIES

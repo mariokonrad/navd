@@ -1,4 +1,13 @@
 #include <global_config.h>
+#include <daemon.h>
+#include <programoptions.h>
+#include <registry.h>
+#include <route.h>
+#include <common/macros.h>
+#include <config/config.h>
+#include <navcom/message.h>
+#include <navcom/proc_list.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,52 +19,6 @@
 #include <signal.h>
 #include <libgen.h>
 #include <unistd.h>
-
-#include <daemon.h>
-#include <programoptions.h>
-#include <registry.h>
-#include <common/macros.h>
-#include <config/config.h>
-#include <navcom/message.h>
-#include <navcom/proc_list.h>
-#include <navcom/filter_list.h>
-
-/**
- * Structure to hold all runtime information about a route
- * for messages from sources through filters to destinations.
- */
-struct msg_route_t {
-	/**
-	 * Source of a message. This information is mandatory.
-	 */
-	struct proc_config_t * source;
-
-	/**
-	 * Destination of a message. This information is mandatory.
-	 */
-	struct proc_config_t * destination;
-
-	/**
-	 * Filter for the message. This information is optional.
-	 * If this is NULL, no filter is applied to the message
-	 * and the original message is routed to the destination.
-	 */
-	const struct filter_desc_t const * filter;
-
-	/**
-	 * Configuration (properties) of the filter. This may be NULL.
-	 */
-	const struct property_list_t const * filter_cfg;
-
-	/**
-	 * Runtime information of the filter. This context
-	 * may hold any information the filter sees fit and is
-	 * unique to the route. This means the same filter may
-	 * be applied to different routes, the context however
-	 * is unique to the route.
-	 */
-	struct filter_context_t filter_ctx;
-};
 
 /**
  * Array containing all procedures (sources and destinations).
@@ -82,11 +45,6 @@ static size_t proc_cfg_base_src = 0;
  * being stored.
  */
 static size_t proc_cfg_base_dst = 0;
-
-/**
- * Array of runtime information of all configured routes.
- */
-static struct msg_route_t * msg_routes = NULL;
 
 static void destroy_proc_configs(void)
 {
@@ -120,41 +78,6 @@ static void prepare_proc_configs(const struct config_t * config)
 	}
 }
 
-static void destroy_msg_routes(const struct config_t * config)
-{
-	size_t i;
-	struct msg_route_t * route;
-
-	if (!msg_routes) {
-		return;
-	}
-
-	for (i = 0; i < config->num_routes; ++i) {
-		route = &msg_routes[i];
-		if (route->filter && route->filter->exit) {
-			route->filter->exit(&route->filter_ctx);
-		}
-	}
-	free(msg_routes);
-	msg_routes = NULL;
-}
-
-static void prepare_msg_routes(const struct config_t * config)
-{
-	size_t i;
-	struct msg_route_t * route;
-
-	destroy_msg_routes(config);
-	msg_routes = malloc(sizeof(struct msg_route_t) * config->num_routes);
-	for (i = 0; i < config->num_routes; ++i) {
-		route = &msg_routes[i];
-		route->source = NULL;
-		route->destination = NULL;
-		route->filter = NULL;
-		route->filter_cfg = NULL;
-	}
-}
-
 static void handle_signal(int sig)
 {
 	syslog(LOG_NOTICE, "pid:%d sig:%d\n", getpid(), sig);
@@ -182,17 +105,23 @@ static int proc_close_wait(struct proc_config_t * proc)
 	return 0;
 }
 
-static int proc_start(struct proc_config_t * proc, const struct proc_desc_t const * desc)
+static int proc_start(
+		struct proc_config_t * proc,
+		const struct proc_desc_t const * desc)
 {
 	int rc_func;
 	int rc;
 	int rfd[2]; /* hub -> proc */
 	int wfd[2]; /* proc -> hub */
 
-	if (proc == NULL) return -1;
-	if (proc->cfg == NULL) return -1;
-	if (desc == NULL) return -1;
-	if (desc->func == NULL) return -1;
+	if (proc == NULL)
+		return -1;
+	if (proc->cfg == NULL)
+		return -1;
+	if (desc == NULL)
+		return -1;
+	if (desc->func == NULL)
+		return -1;
 
 	rc = pipe(rfd);
 	if (rc < 0) {
@@ -285,7 +214,8 @@ static void config_dump(const struct config_t const * config)
 {
 	size_t i;
 
-	if (config == NULL) return;
+	if (config == NULL)
+		return;
 
 	printf("SOURCES\n");
 	for (i = 0; i < config->num_sources; ++i) {
@@ -331,7 +261,7 @@ static int config_read(
 {
 	int rc;
 
-	if (!config) {
+	if (config == NULL) {
 		return -2;
 	}
 
@@ -358,7 +288,8 @@ static int send_terminate(const struct proc_config_t * proc)
 	int rc;
 	struct message_t msg;
 
-	if (!proc || proc->pid <= 0) return 0;
+	if (proc == NULL || proc->pid <= 0)
+		return 0;
 	memset(&msg, 0, sizeof(msg));
 	msg.type = MSG_SYSTEM;
 	msg.data.system = SYSTEM_TERMINATE;
@@ -403,139 +334,6 @@ static int setup_procs(
 	return 0;
 }
 
-static void link_route_sources(
-		struct msg_route_t * route,
-		const struct config_t * config,
-		size_t route_config_index)
-{
-	size_t j;
-
-	for (j = 0; j < config->num_sources; ++j) {
-		if (proc_cfg[j + proc_cfg_base_src].cfg == config->routes[route_config_index].source) {
-			route->source = &proc_cfg[j + proc_cfg_base_src];
-			break;
-		}
-	}
-}
-
-static void link_route_destinations(
-		struct msg_route_t * route,
-		const struct config_t * config,
-		size_t route_config_index)
-{
-	size_t j;
-
-	for (j = 0; j < config->num_destinations; ++j) {
-		if (proc_cfg[j + proc_cfg_base_dst].cfg == config->routes[route_config_index].destination) {
-			route->destination = &proc_cfg[j + proc_cfg_base_dst];
-			break;
-		}
-	}
-}
-
-/**
- * Sets up the routes, consisting of a source and a destination with an optional
- * filter. The data structure used by the router is set up.
- *
- * @param[in] config The configuration data.
- * @retval  0 Success
- * @retval -1 Failure
- */
-static int setup_routes(const struct config_t * config)
-{
-	size_t i;
-	struct msg_route_t * route;
-
-	for (i = 0; i < config->num_routes; ++i) {
-		route = &msg_routes[i];
-		route->source = NULL;
-		route->destination = NULL;
-		route->filter = NULL;
-		route->filter_cfg = NULL;
-
-		link_route_sources(route, config, i);
-		link_route_destinations(route, config, i);
-
-		/* link initialized filter */
-		if (config->routes[i].filter) {
-			route->filter = filterlist_find(registry_filters(), config->routes[i].filter->type);
-			if (route->filter) {
-				route->filter_cfg = &config->routes[i].filter->properties;
-				if (route->filter->init) {
-					if (route->filter->init(&route->filter_ctx, route->filter_cfg)) {
-						syslog(LOG_ERR, "%s:filter configuration failure: '%s'",
-							__FUNCTION__, config->routes[i].name_filter);
-						return -1;
-					}
-				}
-			} else {
-				syslog(LOG_ERR, "%s:unknown filter: '%s'", __FUNCTION__,
-					config->routes[i].name_filter);
-				return -1;
-			}
-		}
-	}
-
-	return 0;
-}
-
-/**
- * Routes a message sent by a source to a destination using an optional filter.
- * The routes are processed sequentially, using a filter in this context.
- *
- * @note Filters are running in the context of the main process, therefore
- *   it has to kept in mind to implement them in a manner as efficient as possible.
- *   Theoretically a filter does not consume any resources (especially time).
- *
- * @param[in] config The system configuration.
- * @param[in] source The source of the message.
- * @param[in] msg The message to send.
- * @retval  0 Success
- * @retval -1 Failure
- */
-static int route_msg(
-		const struct config_t * config,
-		const struct proc_config_t * source,
-		const struct message_t * msg)
-{
-	size_t i;
-	int rc;
-	struct msg_route_t * route;
-	struct message_t out;
-
-	for (i = 0; i < config->num_routes; ++i) {
-		route = &msg_routes[i];
-		if (route->source != source) continue;
-
-		/* execute filter if configured */
-		if (route->filter) {
-			memset(&out, 0, sizeof(out));
-			rc = route->filter->func(&out, msg, &route->filter_ctx, route->filter_cfg);
-			switch (rc) {
-				case FILTER_SUCCESS:
-					break;
-				case FILTER_DISCARD:
-					return 0;
-				default:
-				case FILTER_FAILURE:
-					syslog(LOG_ERR, "filter error");
-					return -1;
-			}
-		} else {
-			memcpy(&out, msg, sizeof(out));
-		}
-
-		/* send message to destination */
-		syslog(LOG_DEBUG, "route: %08x\n", msg->type);
-		rc = write(route->destination->wfd, &out, sizeof(out));
-		if (rc < 0) {
-			syslog(LOG_CRIT, "unable to route message");
-			return -1;
-		}
-	}
-	return 0;
-}
-
 static void terminate_graceful(const struct config_t const * config)
 {
 	size_t i;
@@ -549,7 +347,7 @@ static void terminate_graceful(const struct config_t const * config)
 	}
 
 	/* free resources */
-	destroy_msg_routes(config);
+	route_destroy(config);
 	destroy_proc_configs();
 	registry_free();
 }
@@ -647,8 +445,10 @@ int main(int argc, char ** argv)
 		terminate_graceful(&config);
 		return EXIT_FAILURE;
 	}
-	prepare_msg_routes(&config);
-	if (setup_routes(&config) < 0) {
+
+	/* setup routes */
+	route_init(&config);
+	if (route_setup(&config, proc_cfg, proc_cfg_base_src, proc_cfg_base_dst) < 0) {
 		terminate_graceful(&config);
 		return EXIT_FAILURE;
 	}
@@ -662,9 +462,8 @@ int main(int argc, char ** argv)
 			if (fd <= 0)
 				continue;
 			FD_SET(fd, &rfds);
-			if (fd > fd_max) {
+			if (fd > fd_max)
 				fd_max = fd;
-			}
 		}
 
 		rc = pselect(fd_max + 1, &rfds, NULL, NULL, NULL, proc_get_signal_mask());
