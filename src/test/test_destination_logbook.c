@@ -18,47 +18,62 @@ static void test_existance(void)
 static void test_init(void)
 {
 	struct property_list_t properties;
+	struct proc_config_t config;
 
+	proc_config_init(&config);
 	proplist_init(&properties);
 
 	CU_ASSERT_EQUAL(proc->init(NULL, NULL), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
+
+	CU_ASSERT_EQUAL(proc->init(&config, NULL), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
+
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
 static void test_init_save_timer_id(void)
 {
+	struct proc_config_t config;
 	struct property_list_t properties;
+
+	proc_config_init(&config);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "filename", "/dev/null");
 	proplist_set(&properties, "write_timeout", "5");
 	proplist_set(&properties, "min_position_change", "5");
 
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "save_timer_id", "");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "save_timer_id", "zzz");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "save_timer_id", "5");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
 static void test_init_filename(void)
 {
+	struct proc_config_t config;
 	struct property_list_t properties;
+
+	proc_config_init(&config);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "save_timer_id", "5");
@@ -66,19 +81,22 @@ static void test_init_filename(void)
 	proplist_set(&properties, "min_position_change", "5");
 
 	proplist_set(&properties, "filename", "");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "filename", "/dev/null");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
 static void test_init_write_timeout(void)
 {
+	struct proc_config_t config;
 	struct property_list_t properties;
+
+	proc_config_init(&config);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "save_timer_id", "5");
@@ -86,54 +104,57 @@ static void test_init_write_timeout(void)
 	proplist_set(&properties, "min_position_change", "5");
 
 	proplist_set(&properties, "write_timeout", "");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "write_timeout", "zzz");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "write_timeout", "5");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
 static void test_init_min_position_change(void)
 {
+	struct proc_config_t config;
 	struct property_list_t properties;
+
+	proc_config_init(&config);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "save_timer_id", "5");
 	proplist_set(&properties, "write_timeout", "5");
 	proplist_set(&properties, "filename", "/dev/null");
 
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "min_position_change", "");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "min_position_change", "zzz");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "min_position_change", "-5");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_set(&properties, "min_position_change", "5");
-	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
 static void test_exit(void)
 {
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_FAILURE);
 }
 
 void register_suite_destination_logbook(void)
@@ -142,11 +163,11 @@ void register_suite_destination_logbook(void)
 	suite = CU_add_suite("destination/logbook", NULL, NULL);
 
 	CU_add_test(suite, "existance", test_existance);
+	CU_add_test(suite, "exit", test_exit);
 	CU_add_test(suite, "init", test_init);
 	CU_add_test(suite, "init: save_timer_id", test_init_save_timer_id);
 	CU_add_test(suite, "init: filename", test_init_filename);
 	CU_add_test(suite, "init: write_timeout", test_init_write_timeout);
 	CU_add_test(suite, "init: min_position_change", test_init_min_position_change);
-	CU_add_test(suite, "exit", test_exit);
 }
 

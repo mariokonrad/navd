@@ -48,11 +48,18 @@ struct information_t {
 	int32_t air_temperature; /* units of degree celcius */
 };
 
-/* TODO: static data must be part of config */
-static bool initialized = false;
-static struct logbook_config_t configuration;
-static struct information_t current;
-static struct information_t last_written_data;
+struct logbook_data_t
+{
+	bool initialized;
+	struct logbook_config_t configuration;
+	struct information_t current;
+	struct information_t last_written_data;
+};
+
+static void init_data(struct logbook_data_t * data)
+{
+	memset(data, 0, sizeof(struct logbook_data_t));
+}
 
 /**
  * Returns true if the specified time is not zero.
@@ -124,10 +131,14 @@ static double sqr(double x)
  * Returns the number of meters the positon has changed since the last
  * write update.
  *
+ * @param[in] last Last written information.
+ * @param[in] curr Current information to compare.
  * @retval    -1 Unable to calculate distance
  * @retval other Distance in meters
  */
-static long diff_position(void)
+static long diff_position(
+		const struct information_t * last,
+		const struct information_t * curr)
 {
 	static const double EARTH_RADIUS = 6378000.0; /* [m] mean radius */
 
@@ -136,18 +147,18 @@ static long diff_position(void)
 	double lon_0 = 0.0;
 	double lon_1 = 0.0;
 
-	nmea_angle_to_double(&lat_0, &last_written_data.lat);
-	nmea_angle_to_double(&lon_0, &last_written_data.lon);
-	nmea_angle_to_double(&lat_1, &current.lat);
-	nmea_angle_to_double(&lon_1, &current.lon);
+	nmea_angle_to_double(&lat_0, &last->lat);
+	nmea_angle_to_double(&lon_0, &last->lon);
+	nmea_angle_to_double(&lat_1, &curr->lat);
+	nmea_angle_to_double(&lon_1, &curr->lon);
 
-	if (last_written_data.lat_dir != 'N')
+	if (last->lat_dir != 'N')
 		lat_0 = -lat_0;
-	if (last_written_data.lon_dir != 'W')
+	if (last->lon_dir != 'W')
 		lon_0 = -lon_0;
-	if (current.lat_dir != 'N')
+	if (curr->lat_dir != 'N')
 		lat_1 = -lat_1;
-	if (current.lon_dir != 'W')
+	if (curr->lon_dir != 'W')
 		lon_1 = -lon_1;
 
 	/* calculate distance in meters on sphere, precise enough approximation */
@@ -186,8 +197,13 @@ static bool accept_signal_integrity(char sig_integrity)
 /**
  * Sets the current position (RMC sentence) if the signal integrity is
  * accepted and the last update is not too long since.
+ *
+ * @param[out] current Structure to contain current information.
+ * @param[in] rmc Data to remember within the current information.
  */
-static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
+static void set_current_nmea_rmc(
+		struct information_t * current,
+		const struct nmea_rmc_t * rmc)
 {
 	int rc;
 	struct timeval last_update;
@@ -201,17 +217,17 @@ static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
 		syslog(LOG_ERR, "error while reading timestamp, errno=%d", errno);
 		return;
 	}
-	current.last_update = last_update;
+	current->last_update = last_update;
 
 	/* position information */
-	current.lat = rmc->lat;
-	current.lat_dir = rmc->lat_dir;
-	current.lon = rmc->lon;
-	current.lon_dir = rmc->lon_dir;
-	current.time = rmc->time;
-	current.date = rmc->date;
-	current.course_over_ground = rmc->head;
-	current.speed_over_ground = rmc->sog;
+	current->lat = rmc->lat;
+	current->lat_dir = rmc->lat_dir;
+	current->lon = rmc->lon;
+	current->lon_dir = rmc->lon_dir;
+	current->time = rmc->time;
+	current->date = rmc->date;
+	current->course_over_ground = rmc->head;
+	current->speed_over_ground = rmc->sog;
 }
 
 /**
@@ -221,11 +237,11 @@ static void set_current_nmea_rmc(const struct nmea_rmc_t * rmc)
  * @todo Add NMEA sentence: compass heading [$IIVHW, $IIHDM]
  * @todo Add NMEA sentence: trip and total milage [$IIVLW]
  */
-static void process_nmea(const struct nmea_t * nmea)
+static void process_nmea(struct information_t * current, const struct nmea_t * nmea)
 {
 	switch (nmea->type) {
 		case NMEA_RMC:
-			set_current_nmea_rmc(&nmea->sentence.rmc);
+			set_current_nmea_rmc(current, &nmea->sentence.rmc);
 			break;
 		default:
 			/* NMEA type not supported by now or not interesting at all */
@@ -233,76 +249,112 @@ static void process_nmea(const struct nmea_t * nmea)
 	}
 }
 
-static int prepare_date(char * ptr, int len)
+static int prepare_date(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%04u-%02u-%02u;",
-		current.date.y, current.date.m, current.date.d);
+		curr->date.y, curr->date.m, curr->date.d);
 }
 
-static int prepare_time(char * ptr, int len)
+static int prepare_time(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%02u-%02u-%02u;",
-		current.time.h, current.time.m, current.time.s);
+		curr->time.h, curr->time.m, curr->time.s);
 }
 
-static int prepare_latitude(char * ptr, int len)
+static int prepare_latitude(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%02u-%02u,%1u%c;",
-		current.lat.d, current.lat.m, (current.lat.s.i * 100) / 60, current.lat_dir);
+		curr->lat.d, curr->lat.m, (curr->lat.s.i * 100) / 60, curr->lat_dir);
 }
 
-static int prepare_longitude(char * ptr, int len)
+static int prepare_longitude(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%03u-%02u,%1u%c;",
-		current.lon.d, current.lon.m, (current.lon.s.i * 100) / 60, current.lon_dir);
+		curr->lon.d, curr->lon.m, (curr->lon.s.i * 100) / 60, curr->lon_dir);
 }
 
-static int prepare_course_over_ground(char * ptr, int len)
+static int prepare_course_over_ground(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%u,%1u;",
-		current.course_over_ground.i, current.course_over_ground.d / NMEA_FIX_DECIMALS);
+		curr->course_over_ground.i, curr->course_over_ground.d / NMEA_FIX_DECIMALS);
 }
 
-static int prepare_speed_over_ground(char * ptr, int len)
+static int prepare_speed_over_ground(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%u,%1u;",
-		current.speed_over_ground.i, current.speed_over_ground.d / NMEA_FIX_DECIMALS);
+		curr->speed_over_ground.i, curr->speed_over_ground.d / NMEA_FIX_DECIMALS);
 }
 
-static int prepare_course_magnetic(char * ptr, int len)
+static int prepare_course_magnetic(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%u,%1u;",
-		current.course_magnetic.i, current.course_magnetic.d / NMEA_FIX_DECIMALS);
+		curr->course_magnetic.i, curr->course_magnetic.d / NMEA_FIX_DECIMALS);
 }
 
-static int prepare_speed_through_water(char * ptr, int len)
+static int prepare_speed_through_water(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%u,%1u;",
-		current.speed_through_water.i, current.speed_through_water.d / NMEA_FIX_DECIMALS);
+		curr->speed_through_water.i, curr->speed_through_water.d / NMEA_FIX_DECIMALS);
 }
 
-static int prepare_wind_speed(char * ptr, int len)
+static int prepare_wind_speed(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%u,%1u;",
-		current.wind_speed.i, current.wind_speed.d / NMEA_FIX_DECIMALS);
+		curr->wind_speed.i, curr->wind_speed.d / NMEA_FIX_DECIMALS);
 }
 
-static int prepare_wind_direction(char * ptr, int len)
+static int prepare_wind_direction(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%u;",
-		current.wind_direction.i);
+		curr->wind_direction.i);
 }
 
-static int prepare_pressure(char * ptr, int len)
+static int prepare_pressure(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%u;",
-		current.pressure);
+		curr->pressure);
 }
 
-static int prepare_air_temperature(char * ptr, int len)
+static int prepare_air_temperature(
+		char * ptr,
+		int len,
+		const struct information_t * curr)
 {
 	return snprintf(ptr, len, "%d;",
-		current.air_temperature);
+		curr->air_temperature);
 }
 
 /**
@@ -310,16 +362,16 @@ static int prepare_air_temperature(char * ptr, int len)
  * @retval -1 Unable to calculate update time, do not write
  * @retval -2 Last position update too long ago, do not write
  */
-static int check_age_last_update(void)
+static int check_age_last_update(const struct logbook_data_t * data)
 {
 	long dt;
 
-	dt = elapsed_ms_time(&current.last_update);
+	dt = elapsed_ms_time(&data->current.last_update);
 	if (dt < 0) {
 		syslog(LOG_WARNING, "not writing log, cannot calculate update time");
 		return -1;
 	}
-	if (dt > configuration.timeout_for_writing) {
+	if (dt > data->configuration.timeout_for_writing) {
 		syslog(LOG_WARNING, "not writing log, last position update %ld msec ago", dt);
 		return -2;
 	}
@@ -331,20 +383,20 @@ static int check_age_last_update(void)
  * @retval -1 Unable to calculate position change, do not write log entry
  * @retval -2 No significant position change, log entry not worth it
  */
-static int check_position_change(void)
+static int check_position_change(const struct logbook_data_t * data)
 {
 	long ds = 0;
 
-	if (configuration.min_meter_position_change <= 0)
+	if (data->configuration.min_meter_position_change <= 0)
 		return 0; /* check disabled, always write log */
 
-	ds = diff_position();
+	ds = diff_position(&data->last_written_data, &data->current);
 
 	if (ds < 0) {
 		syslog(LOG_WARNING, "not writing log, cannot calculate position change");
 		return -1;
 	}
-	if (ds < configuration.min_meter_position_change) {
+	if (ds < data->configuration.min_meter_position_change) {
 		syslog(LOG_INFO, "not writing log, position has not changed significantly");
 		return -2;
 	}
@@ -355,10 +407,10 @@ static int check_position_change(void)
  * Write the log entry to either syslog or log file.
  * All data is separated by semi colons (aka CSV format).
  */
-static void write_log(void)
+static void write_log(struct logbook_data_t * data)
 {
-	typedef int (*prepare_func_t)(char *, int);
-	typedef int (*check_func_t)(void);
+	typedef int (*prepare_func_t)(char *, int, const struct information_t *);
+	typedef int (*check_func_t)(const struct logbook_data_t *);
 
 	static const check_func_t CHECK[] =
 	{
@@ -393,7 +445,7 @@ static void write_log(void)
 	/* perform checks */
 
 	for (i = 0; i < sizeof(CHECK) / sizeof(CHECK[0]); ++i) {
-		if (CHECK[i]())
+		if (CHECK[i](data))
 			return;
 	}
 
@@ -404,7 +456,7 @@ static void write_log(void)
 	memset(buf, 0, sizeof(buf));
 
 	for (i = 0; i < sizeof(PREPARE) / sizeof(PREPARE[0]); ++i) {
-		rc = PREPARE[i](ptr, buf_len);
+		rc = PREPARE[i](ptr, buf_len, &data->current);
 		if (rc < 0) {
 			syslog(LOG_DEBUG, "error while preparing log entry, rc=%d (at line %d)", rc, __LINE__);
 			return;
@@ -421,10 +473,10 @@ static void write_log(void)
 
 	/* write entry to syslog or file */
 
-	if (configuration.filename_defined) {
-		file = fopen(configuration.filename, "wt+");
+	if (data->configuration.filename_defined) {
+		file = fopen(data->configuration.filename, "wt+");
 		if (!file) {
-			syslog(LOG_ERR, "cannot open logbook file '%s', error: %s", configuration.filename, strerror(errno));
+			syslog(LOG_ERR, "cannot open logbook file '%s', error: %s", data->configuration.filename, strerror(errno));
 			return;
 		}
 		rc = fprintf(file, "%s\n", buf);
@@ -436,26 +488,30 @@ static void write_log(void)
 		syslog(LOG_INFO, "logbook: %s", buf);
 	}
 
-	last_written_data = current;
+	data->last_written_data = data->current;
 }
 
-static void process_timer(uint32_t id)
+static void process_timer(
+		struct logbook_data_t * data,
+		uint32_t id)
 {
-	if (!configuration.save_timer_defined)
+	if (!data->configuration.save_timer_defined)
 		return;
-	if (id != configuration.save_timer_id)
+	if (id != data->configuration.save_timer_id)
 		return;
-	write_log();
+	write_log(data);
 }
 
-static int read_save_timer(const struct property_list_t * properties)
+static int read_save_timer(
+		struct logbook_config_t * configuration,
+		const struct property_list_t * properties)
 {
 	const struct property_t * prop = NULL;
 	char * endptr;
 
 	prop = proplist_find(properties, "save_timer_id");
 	if (prop) {
-		configuration.save_timer_id = strtoul(prop->value, &endptr, 0);
+		configuration->save_timer_id = strtoul(prop->value, &endptr, 0);
 		if (strlen(prop->value) <= 0) {
 			syslog(LOG_ERR, "invalid value in save_timer_id: '%s'", prop->value);
 			return EXIT_FAILURE;
@@ -464,14 +520,16 @@ static int read_save_timer(const struct property_list_t * properties)
 			syslog(LOG_ERR, "invalid save_timer_id: '%s'", prop->key);
 			return EXIT_FAILURE;
 		}
-		configuration.save_timer_defined = 1;
+		configuration->save_timer_defined = 1;
 	} else {
-		configuration.save_timer_defined = 0;
+		configuration->save_timer_defined = 0;
 	}
 	return EXIT_SUCCESS;
 }
 
-static int read_filename(const struct property_list_t * properties)
+static int read_filename(
+		struct logbook_config_t * configuration,
+		const struct property_list_t * properties)
 {
 	const struct property_t * prop = NULL;
 	size_t len;
@@ -481,27 +539,29 @@ static int read_filename(const struct property_list_t * properties)
 		return EXIT_FAILURE;
 
 	len = strlen(prop->value);
-	if (len > sizeof(configuration.filename) - 1) {
+	if (len > sizeof(configuration->filename) - 1) {
 		return EXIT_FAILURE;
 	}
 
 	if (len > 0) {
-		strncpy(configuration.filename, prop->value, sizeof(configuration.filename) - 1);
-		configuration.filename_defined = 1;
+		strncpy(configuration->filename, prop->value, sizeof(configuration->filename) - 1);
+		configuration->filename_defined = 1;
 	} else {
-		configuration.filename_defined = 0;
+		configuration->filename_defined = 0;
 	}
 
 	return EXIT_SUCCESS;
 }
 
-static int read_timeout(const struct property_list_t * properties)
+static int read_timeout(
+		struct logbook_config_t * configuration,
+		const struct property_list_t * properties)
 {
 	const struct property_t * prop = NULL;
 	char * endptr = NULL;
 
 	prop = proplist_find(properties, "write_timeout");
-	configuration.timeout_for_writing = 5; /* default value */
+	configuration->timeout_for_writing = 5; /* default value */
 	if (prop != NULL) {
 		long tmp = strtol(prop->value, &endptr, 0);
 		if (*endptr != '\0') {
@@ -512,19 +572,21 @@ static int read_timeout(const struct property_list_t * properties)
 			syslog(LOG_ERR, "invalid value for timeout: %ld, must be greater than zero", tmp);
 			return EXIT_FAILURE;
 		}
-		configuration.timeout_for_writing = tmp;
+		configuration->timeout_for_writing = tmp;
 	}
-	configuration.timeout_for_writing *= 1000; /* unit: seconds */
+	configuration->timeout_for_writing *= 1000; /* unit: seconds */
 	return EXIT_SUCCESS;
 }
 
-static int read_min_position_change(const struct property_list_t * properties)
+static int read_min_position_change(
+		struct logbook_config_t * configuration,
+		const struct property_list_t * properties)
 {
 	const struct property_t * prop = NULL;
 	char * endptr = NULL;
 
 	prop = proplist_find(properties, "min_position_change");
-	configuration.min_meter_position_change = 0; /* default value */
+	configuration->min_meter_position_change = 0; /* default value */
 	if (prop != NULL) {
 		long tmp = strtol(prop->value, &endptr, 0);
 		if (strlen(prop->value) <= 0) {
@@ -539,37 +601,55 @@ static int read_min_position_change(const struct property_list_t * properties)
 			syslog(LOG_ERR, "invalid value for timeout: %ld, must be greater than zero", tmp);
 			return EXIT_FAILURE;
 		}
-		configuration.min_meter_position_change = tmp;
+		configuration->min_meter_position_change = tmp;
 	}
 	return EXIT_SUCCESS;
 }
 
 static int init_proc(
-		struct proc_config_t * config,
+		struct proc_config_t * configuration,
 		const struct property_list_t * properties)
 {
-	UNUSED_ARG(config);
+	struct logbook_data_t * data = NULL;
 
-	memset(&configuration, 0, sizeof(configuration));
-	memset(&current, 0, sizeof(current));
-	memset(&last_written_data, 0, sizeof(last_written_data));
-
-	if (read_save_timer(properties) != EXIT_SUCCESS)
+	if (!configuration)
 		return EXIT_FAILURE;
-	if (read_filename(properties) != EXIT_SUCCESS)
+	if (!properties)
 		return EXIT_FAILURE;
-	if (read_timeout(properties) != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	if (read_min_position_change(properties) != EXIT_SUCCESS)
+	if (configuration->data != NULL)
 		return EXIT_FAILURE;
 
-	initialized = true;
+	data = (struct logbook_data_t *)malloc(sizeof(struct logbook_data_t));
+	configuration->data = data;
+	init_data(data);
+
+	if (read_save_timer(&data->configuration, properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (read_filename(&data->configuration, properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (read_timeout(&data->configuration, properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (read_min_position_change(&data->configuration, properties) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+
+	data->initialized = true;
 	return EXIT_SUCCESS;
 }
 
+/**
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
 static int exit_proc(struct proc_config_t * config)
 {
-	UNUSED_ARG(config);
+	if (config == NULL)
+		return EXIT_FAILURE;
+
+	if (config->data) {
+		free(config->data);
+		config->data = NULL;
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -578,8 +658,16 @@ static int proc(struct proc_config_t * config)
 	int rc;
 	fd_set rfds;
 	struct message_t msg;
+	struct logbook_data_t * data;
 
-	if (!initialized) {
+	if (!config)
+		return EXIT_FAILURE;
+
+	data = (struct logbook_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
+
+	if (!data->initialized) {
 		syslog(LOG_ERR, "uninitialized");
 		return EXIT_FAILURE;
 	}
@@ -612,11 +700,11 @@ static int proc(struct proc_config_t * config)
 					break;
 
 				case MSG_NMEA:
-					process_nmea(&msg.data.nmea);
+					process_nmea(&data->current, &msg.data.nmea);
 					break;
 
 				case MSG_TIMER:
-					process_timer(msg.data.timer_id);
+					process_timer(data, msg.data.timer_id);
 					break;
 
 				default:
@@ -634,5 +722,6 @@ const struct proc_desc_t logbook = {
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
+	.help = NULL,
 };
 
