@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <getopt.h>
 #include <limits.h>
 #include <syslog.h>
 #include <sys/select.h>
@@ -12,89 +11,14 @@
 #include <libgen.h>
 #include <unistd.h>
 
+#include <daemon.h>
+#include <programoptions.h>
+#include <registry.h>
 #include <common/macros.h>
 #include <config/config.h>
 #include <navcom/message.h>
 #include <navcom/proc_list.h>
 #include <navcom/filter_list.h>
-
-#ifdef ENABLE_FILTER_LUA
-	#include <navcom/filter/filter_lua.h>
-#endif
-
-#ifdef ENABLE_SOURCE_GPSSERIAL
-	#include <navcom/source/gps_serial.h>
-#endif
-
-#ifdef ENABLE_SOURCE_GPSSIMULATOR
-	#include <navcom/source/gps_simulator.h>
-#endif
-
-#ifdef ENABLE_DESTINATION_LUA
-	#include <navcom/destination/dst_lua.h>
-#endif
-
-#ifdef ENABLE_SOURCE_LUA
-	#include <navcom/source/src_lua.h>
-#endif
-
-#include <navcom/filter/filter_null.h>
-#include <navcom/filter/filter_nmea.h>
-#include <navcom/destination/message_log.h>
-#include <navcom/destination/nmea_serial.h>
-#include <navcom/destination/logbook.h>
-#include <navcom/source/timer.h>
-
-#if !defined(max)
-	#define max(a, b)  ((a) > (b) ? (a) : (b))
-#endif
-
-#if !defined(min)
-	#define min(a, b)  ((a) < (b) ? (a) : (b))
-#endif
-
-/**
- * @todo Documentation
- */
-enum options_t {
-	 OPTION_HELP        = 1000
-	,OPTION_VERSION
-	,OPTION_DEAMON
-	,OPTION_CONFIG
-	,OPTION_LIST
-	,OPTION_LIST_COMPACT
-	,OPTION_DUMP_CONFIG
-	,OPTION_MAX_MSG
-	,OPTION_LOG
-};
-
-static const struct option OPTIONS_LONG[] =
-{
-	{ "help",         optional_argument, 0, OPTION_HELP         },
-	{ "version",      no_argument,       0, OPTION_VERSION      },
-	{ "daemon",       no_argument,       0, OPTION_DEAMON       },
-	{ "config",       required_argument, 0, OPTION_CONFIG       },
-	{ "list",         no_argument,       0, OPTION_LIST         },
-	{ "list-compact", no_argument,       0, OPTION_LIST_COMPACT },
-	{ "dump-config",  no_argument,       0, OPTION_DUMP_CONFIG  },
-	{ "max-msg",      required_argument, 0, OPTION_MAX_MSG      },
-	{ "log",          required_argument, 0, OPTION_LOG          },
-};
-
-/**
- * This structure contains all possible options the program provides.
- */
-static struct {
-	int daemonize;
-	int config;
-	int dump_config;
-	int list;
-	int list_compact;
-	unsigned int max_msg;
-	int log_mask;
-	char config_filename[PATH_MAX+1];
-} option;
-
 
 /**
  * Structure to hold all runtime information about a route
@@ -164,189 +88,15 @@ static size_t proc_cfg_base_dst = 0;
  */
 static struct msg_route_t * msg_routes = NULL;
 
-/**
- * List of all available sources.
- */
-static struct proc_desc_list_t desc_sources;
-
-/**
- * List of all available destinations.
- */
-static struct proc_desc_list_t desc_destinations;
-
-/**
- * List of all available filters.
- */
-static struct filter_desc_list_t desc_filters;
-
-static void print_version(void)
-{
-	printf("%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
-}
-
-static void print_config(void)
-{
-#if defined(ENABLE_SOURCE_GPSSERIAL)
-	printf(" gpsserial ");
-#endif
-
-#if defined(ENABLE_SOURCE_GPSSIMULATOR)
-	printf(" gpssimulator ");
-#endif
-
-#if defined(ENABLE_SOURCE_GPSD)
-	printf(" gpsd ");
-#endif
-
-#if defined(ENABLE_FILTER_LUA)
-	printf(" filter_lua(%s) ", filter_lua_release());
-#endif
-
-#if defined(ENABLE_DESTINATION_LUA)
-	printf(" dst_lua(%s) ", dst_lua_release());
-#endif
-
-	printf("\n");
-}
-
-static void usage(const char * name)
-{
-	printf("\n");
-	printf("usage: %s [options]\n", name);
-	printf("\n");
-	printf("Version: ");
-	print_version();
-	printf("\n");
-	printf("Configured: ");
-	print_config();
-	printf("\n");
-	printf("Options:\n");
-	printf("  --help [=what]  : help information, optional on a source, filter or destination\n");
-	printf("  --version       : version information\n");
-	printf("  --daemon        : daemonize process\n");
-	printf("  --config file   : configuration file\n");
-	printf("  --list          : lists all sources, destinations and filters\n");
-	printf("  --list-compact  : lists all sources, destinations and filters on one compact line\n");
-	printf("  --dump-config   : dumps the configuration and exit\n");
-	printf("  --max-msg n     : routes n number of messages before terminating\n");
-	printf("  --log n         : defines log level on syslog (0..7)\n");
-	printf("\n");
-}
-
-static void print_specific_help(void (*help)(void), const char * name)
-{
-	if (!help) {
-		printf("No help available for '%s'\n", name);
-		return;
-	}
-
-	help();
-}
-
-static void print_help_for(const char * name)
-{
-	size_t i;
-
-	for (i = 0; i < desc_sources.num; ++i) {
-		if (strcmp(name, desc_sources.data[i].name) == 0) {
-			print_specific_help(desc_sources.data[i].help, name);
-			return;
-		}
-	}
-	for (i = 0; i < desc_destinations.num; ++i) {
-		if (strcmp(name, desc_destinations.data[i].name) == 0) {
-			print_specific_help(desc_destinations.data[i].help, name);
-			return;
-		}
-	}
-	for (i = 0; i < desc_filters.num; ++i) {
-		if (strcmp(name, desc_filters.data[i].name) == 0) {
-			print_specific_help(desc_filters.data[i].help, name);
-			return;
-		}
-	}
-	printf("Nothing registered with name '%s'\n", name);
-}
-
-static int parse_options(int argc, char ** argv) /* {{{ */
-{
-	int rc;
-	int index;
-	char * endptr = NULL;
-
-	/* default values */
-	memset(&option, 0, sizeof(option));
-	option.log_mask = LOG_DEBUG;
-
-	while (1) {
-		rc = getopt_long(argc, argv, "", OPTIONS_LONG, &index);
-		if (rc == -1) {
-			break;
-		}
-		switch (rc) {
-			case OPTION_HELP:
-				if (optarg) {
-					print_help_for(optarg);
-				} else {
-					usage(argv[0]);
-				}
-				return -1;
-			case OPTION_VERSION:
-				print_version();
-				return -1;
-			case OPTION_DEAMON:
-				option.daemonize = 1;
-				break;
-			case OPTION_CONFIG:
-				option.config = 1;
-				strncpy(option.config_filename, optarg, sizeof(option.config_filename)-1);
-				break;
-			case OPTION_LIST:
-				option.list = 1;
-				break;
-			case OPTION_LIST_COMPACT:
-				option.list_compact = 1;
-				break;
-			case OPTION_DUMP_CONFIG:
-				option.dump_config = 1;
-				break;
-			case OPTION_MAX_MSG:
-				option.max_msg = strtoul(optarg, &endptr, 0);
-				if (*endptr != '\0') {
-					syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
-					return -1;
-				}
-				break;
-			case OPTION_LOG:
-				option.log_mask = strtoul(optarg, &endptr, 0);
-				if (*endptr != '\0') {
-					syslog(LOG_ERR, "invalid value for parameter '%s': '%s'", OPTIONS_LONG[index].name, optarg);
-					return -1;
-				}
-				option.log_mask = max(LOG_EMERG, option.log_mask);
-				option.log_mask = min(LOG_DEBUG, option.log_mask);
-				break;
-			default:
-				break;
-		}
-	}
-	if (optind < argc) {
-		syslog(LOG_ERR, "unknown parameters");
-		usage(argv[0]);
-		return -1;
-	}
-	return 0;
-} /* }}} */
-
-static void destroy_proc_configs(void) /* {{{ */
+static void destroy_proc_configs(void)
 {
 	if (proc_cfg) {
 		free(proc_cfg);
 		proc_cfg = NULL;
 	}
-} /* }}} */
+}
 
-static void prepare_proc_configs(const struct config_t * config) /* {{{ */
+static void prepare_proc_configs(const struct config_t * config)
 {
 	size_t i;
 	size_t num = config->num_sources + config->num_destinations;
@@ -368,9 +118,9 @@ static void prepare_proc_configs(const struct config_t * config) /* {{{ */
 		proc = &proc_cfg[i + proc_cfg_base_dst];
 		proc->cfg = &config->destinations[i];
 	}
-} /* }}} */
+}
 
-static void destroy_msg_routes(const struct config_t * config) /* {{{ */
+static void destroy_msg_routes(const struct config_t * config)
 {
 	size_t i;
 	struct msg_route_t * route;
@@ -387,9 +137,9 @@ static void destroy_msg_routes(const struct config_t * config) /* {{{ */
 	}
 	free(msg_routes);
 	msg_routes = NULL;
-} /* }}} */
+}
 
-static void prepare_msg_routes(const struct config_t * config) /* {{{ */
+static void prepare_msg_routes(const struct config_t * config)
 {
 	size_t i;
 	struct msg_route_t * route;
@@ -403,29 +153,15 @@ static void prepare_msg_routes(const struct config_t * config) /* {{{ */
 		route->filter = NULL;
 		route->filter_cfg = NULL;
 	}
-} /* }}} */
+}
 
-static void handle_signal(int sig) /* {{{ */
+static void handle_signal(int sig)
 {
 	syslog(LOG_NOTICE, "pid:%d sig:%d\n", getpid(), sig);
 	proc_set_request_terminate(1);
-} /* }}} */
+}
 
-static void daemonize(void) /* {{{ */
-{
-	int rc;
-
-	rc = fork();
-	if (rc < 0) {
-		syslog(LOG_CRIT, "unable to fork");
-		exit(EXIT_FAILURE);
-	}
-	if (rc > 0) {
-		exit(rc);
-	}
-} /* }}} */
-
-static int proc_close(struct proc_config_t * proc) /* {{{ */
+static int proc_close(struct proc_config_t * proc)
 {
 	if (proc->rfd >= 0) {
 		close(proc->rfd);
@@ -436,17 +172,17 @@ static int proc_close(struct proc_config_t * proc) /* {{{ */
 		proc->wfd = -1;
 	}
 	return 0;
-} /* }}} */
+}
 
-static int proc_close_wait(struct proc_config_t * proc) /* {{{ */
+static int proc_close_wait(struct proc_config_t * proc)
 {
 	proc_close(proc);
 	waitpid(proc->pid, NULL, 0);
 	proc->pid = -1;
 	return 0;
-} /* }}} */
+}
 
-static int proc_start(struct proc_config_t * proc, const struct proc_desc_t const * desc) /* {{{ */
+static int proc_start(struct proc_config_t * proc, const struct proc_desc_t const * desc)
 {
 	int rc_func;
 	int rc;
@@ -494,8 +230,14 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		if (desc->init) {
 			rc = desc->init(proc, &proc->cfg->properties);
 			if (rc != EXIT_SUCCESS) {
-				syslog(LOG_ERR, "invalid properties for proc type: '%s', stop proc '%s', rc=%d",
+				syslog(LOG_ERR, "initialization failure for proc type: '%s', stop proc '%s', rc=%d",
 					proc->cfg->type, proc->cfg->name, rc);
+
+				/* try to clean up if init was not completely successful */
+				if (desc->exit)
+					if (desc->exit(proc) != EXIT_SUCCESS)
+						syslog(LOG_ERR, "proc short exit '%s'", proc->cfg->name);
+
 				exit(rc);
 			}
 		}
@@ -503,11 +245,11 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 		/* execute actual procedure */
 		rc_func = desc->func(proc);
 		syslog(LOG_INFO, "stop proc '%s', rc=%d", proc->cfg->name, rc_func);
+
+		/* clean up */
 		if (desc->exit) {
-			rc = desc->exit(proc);
-			if (rc != EXIT_SUCCESS) {
+			if (desc->exit(proc) != EXIT_SUCCESS)
 				syslog(LOG_ERR, "proc exit '%s', rc=%d", proc->cfg->name, rc);
-			}
 		}
 		exit(rc_func);
 	}
@@ -519,38 +261,6 @@ static int proc_start(struct proc_config_t * proc, const struct proc_desc_t cons
 	close(rfd[0]);
 	close(wfd[1]);
 	return rc;
-} /* }}} */
-
-/**
- * Dumps the registered objects (sources, destinations, filters) to the
- * specified stream.
- *
- * @param[in] compact Switch to turn on compact mode, everything on one line.
- */
-static void dump_registered(int compact)
-{
-	size_t i;
-
-	if (!compact)
-		printf("Sources:");
-	for (i = 0; i < desc_sources.num; ++i) {
-		printf(" %s", desc_sources.data[i].name);
-	}
-	if (!compact) {
-		printf("\n");
-		printf("Destinations:");
-	}
-	for (i = 0; i < desc_destinations.num; ++i) {
-		printf(" %s", desc_destinations.data[i].name);
-	}
-	if (!compact) {
-		printf("\n");
-		printf("Filters:");
-	}
-	for (i = 0; i < desc_filters.num; ++i) {
-		printf(" %s", desc_filters.data[i].name);
-	}
-	printf("\n");
 }
 
 static void config_dump_properties(const struct property_list_t const * properties)
@@ -565,9 +275,8 @@ static void config_dump_properties(const struct property_list_t const * properti
 		} else {
 			printf(" %s", prop->key);
 		}
-		if (i < properties->num - 1) {
+		if (i < properties->num - 1)
 			printf(", ");
-		}
 	}
 	printf(" }");
 }
@@ -611,11 +320,14 @@ static void config_dump(const struct config_t const * config)
  * structure.
  *
  * @param[out] config Structure containing the configuration of the file.
+ * @param[in] options Program options.
  * @retval  0 Success
  * @retval -1 Error in reading the configuration.
  * @retval -2 Error caused by invalid parameters.
  */
-static int config_read(struct config_t * config)
+static int config_read(
+		struct config_t * config,
+		const struct options_data_t * options)
 {
 	int rc;
 
@@ -623,25 +335,25 @@ static int config_read(struct config_t * config)
 		return -2;
 	}
 
-	if (option.config != 1) {
+	if (options->config != 1) {
 		syslog(LOG_CRIT, "configuration file name not defined.");
 		return -1;
 	}
-	if (strlen(option.config_filename) <= 0) {
-		syslog(LOG_CRIT, "invalid config file name: '%s'", option.config_filename);
+	if (strlen(options->config_filename) <= 0) {
+		syslog(LOG_CRIT, "invalid config file name: '%s'", options->config_filename);
 		return -1;
 	}
 	config_init(config);
-	rc = config_parse_file(option.config_filename, config);
+	rc = config_parse_file(options->config_filename, config);
 	if (rc < 0) {
-		syslog(LOG_CRIT, "unable to read config file '%s', rc=%d", option.config_filename, rc);
+		syslog(LOG_CRIT, "unable to read config file '%s', rc=%d", options->config_filename, rc);
 		return -1;
 	}
 
 	return 0;
 }
 
-static int send_terminate(const struct proc_config_t * proc) /* {{{ */
+static int send_terminate(const struct proc_config_t * proc)
 {
 	int rc;
 	struct message_t msg;
@@ -656,7 +368,7 @@ static int send_terminate(const struct proc_config_t * proc) /* {{{ */
 		return -1;
 	}
 	return 0;
-} /* }}} */
+}
 
 /**
  * Sets up the procedures (sources and destinations) and starts them.
@@ -685,11 +397,40 @@ static int setup_procs(
 			return -1;
 		}
 		rc = proc_start(ptr, desc);
-		if (rc < 0) {
+		if (rc < 0)
 			return -1;
-		}
 	}
 	return 0;
+}
+
+static void link_route_sources(
+		struct msg_route_t * route,
+		const struct config_t * config,
+		size_t route_config_index)
+{
+	size_t j;
+
+	for (j = 0; j < config->num_sources; ++j) {
+		if (proc_cfg[j + proc_cfg_base_src].cfg == config->routes[route_config_index].source) {
+			route->source = &proc_cfg[j + proc_cfg_base_src];
+			break;
+		}
+	}
+}
+
+static void link_route_destinations(
+		struct msg_route_t * route,
+		const struct config_t * config,
+		size_t route_config_index)
+{
+	size_t j;
+
+	for (j = 0; j < config->num_destinations; ++j) {
+		if (proc_cfg[j + proc_cfg_base_dst].cfg == config->routes[route_config_index].destination) {
+			route->destination = &proc_cfg[j + proc_cfg_base_dst];
+			break;
+		}
+	}
 }
 
 /**
@@ -703,7 +444,6 @@ static int setup_procs(
 static int setup_routes(const struct config_t * config)
 {
 	size_t i;
-	size_t j;
 	struct msg_route_t * route;
 
 	for (i = 0; i < config->num_routes; ++i) {
@@ -713,25 +453,12 @@ static int setup_routes(const struct config_t * config)
 		route->filter = NULL;
 		route->filter_cfg = NULL;
 
-		/* link source */
-		for (j = 0; j < config->num_sources; ++j) {
-			if (proc_cfg[j + proc_cfg_base_src].cfg == config->routes[i].source) {
-				route->source = &proc_cfg[j + proc_cfg_base_src];
-				break;
-			}
-		}
-
-		/* link destination */
-		for (j = 0; j < config->num_destinations; ++j) {
-			if (proc_cfg[j + proc_cfg_base_dst].cfg == config->routes[i].destination) {
-				route->destination = &proc_cfg[j + proc_cfg_base_dst];
-				break;
-			}
-		}
+		link_route_sources(route, config, i);
+		link_route_destinations(route, config, i);
 
 		/* link initialized filter */
 		if (config->routes[i].filter) {
-			route->filter = filterlist_find(&desc_filters, config->routes[i].filter->type);
+			route->filter = filterlist_find(registry_filters(), config->routes[i].filter->type);
 			if (route->filter) {
 				route->filter_cfg = &config->routes[i].filter->properties;
 				if (route->filter->init) {
@@ -809,7 +536,7 @@ static int route_msg(
 	return 0;
 }
 
-static void terminate_graceful(const struct config_t const * config) /* {{{ */
+static void terminate_graceful(const struct config_t const * config)
 {
 	size_t i;
 
@@ -824,126 +551,13 @@ static void terminate_graceful(const struct config_t const * config) /* {{{ */
 	/* free resources */
 	destroy_msg_routes(config);
 	destroy_proc_configs();
-	pdlist_free(&desc_sources);
-	pdlist_free(&desc_destinations);
-	filterlist_free(&desc_filters);
-} /* }}} */
+	registry_free();
+}
 
-static void register_sources(void) /* {{{ */
+static int setup_signal_handling(void)
 {
-	size_t i;
-
-	pdlist_init(&desc_sources);
-
-	pdlist_append(&desc_sources, &timer);
-
-#ifdef ENABLE_SOURCE_GPSSERIAL
-	pdlist_append(&desc_sources, &gps_serial);
-#endif
-
-#ifdef ENABLE_SOURCE_GPSSIMULATOR
-	pdlist_append(&desc_sources, &gps_simulator);
-#endif
-
-#ifdef ENABLE_SOURCE_LUA
-	pdlist_append(&desc_sources, &src_lua);
-#endif
-
-	for (i = 0; i < desc_sources.num; ++i) {
-		config_register_source(desc_sources.data[i].name);
-	}
-} /* }}} */
-
-static void register_destinations(void) /* {{{ */
-{
-	size_t i;
-
-	pdlist_init(&desc_destinations);
-
-	pdlist_append(&desc_destinations, &message_log);
-	pdlist_append(&desc_destinations, &nmea_serial);
-	pdlist_append(&desc_destinations, &logbook);
-
-#ifdef ENABLE_DESTINATION_LUA
-	pdlist_append(&desc_destinations, &dst_lua);
-#endif
-
-	for (i = 0; i < desc_destinations.num; ++i) {
-		config_register_destination(desc_destinations.data[i].name);
-	}
-} /* }}} */
-
-static void register_filters(void) /* {{{ */
-{
-	size_t i;
-
-	filterlist_init(&desc_filters);
-
-	filterlist_append(&desc_filters, &filter_null);
-	filterlist_append(&desc_filters, &filter_nmea);
-
-#ifdef ENABLE_FILTER_LUA
-	filterlist_append(&desc_filters, &filter_lua);
-#endif
-
-	for (i = 0; i < desc_filters.num; ++i) {
-		config_register_filter(desc_filters.data[i].name);
-	}
-} /* }}} */
-
-int main(int argc, char ** argv) /* {{{ */
-{
-	size_t i;
-	int graceful_termination = 0;
-
-	struct message_t msg;
-	int rc;
-	fd_set rfds;
-	int fd_max;
-	int fd;
-
 	sigset_t mask;
 	struct sigaction act;
-
-	struct config_t config;
-
-	openlog(basename(argv[0]), LOG_PID | LOG_CONS | LOG_PERROR, LOG_DAEMON);
-
-	/* register known types (sources, destinations, filters) */
-	register_sources();
-	register_destinations();
-	register_filters();
-
-	/* command line arguments handling */
-	if (parse_options(argc, argv) < 0) return EXIT_FAILURE;
-	rc = setlogmask(LOG_UPTO(option.log_mask));
-	if (rc < 0) {
-		syslog(LOG_CRIT, "unable to set log mask");
-		return EXIT_FAILURE;
-	}
-
-	/* list registered objects */
-	if (option.list || option.list_compact) {
-		dump_registered(option.list_compact);
-		return EXIT_SUCCESS;
-	}
-
-	/* read configuration */
-	if (config_read(&config) < 0) {
-		return EXIT_FAILURE;
-	}
-
-	/* dump information */
-	if (option.dump_config) {
-		config_dump(&config);
-		config_free(&config);
-		return EXIT_SUCCESS;
-	}
-
-	/* daemonize process */
-	if (option.daemonize) {
-		daemonize();
-	}
 
 	/* set up signal handling (active also for all subprocesses, if masks are global) */
 	proc_set_request_terminate(0);
@@ -963,14 +577,73 @@ int main(int argc, char ** argv) /* {{{ */
 		syslog(LOG_CRIT, "unable to signal action for SIGTERM");
 		return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
+}
+
+int main(int argc, char ** argv)
+{
+	size_t i;
+	int graceful_termination = 0;
+	struct message_t msg;
+	int rc;
+	fd_set rfds;
+	int fd_max;
+	int fd;
+	struct config_t config;
+	struct options_data_t option;
+
+	openlog(basename(argv[0]), LOG_PID | LOG_CONS | LOG_PERROR, LOG_DAEMON);
+	registry_register();
+
+	/* command line arguments handling */
+	if (parse_options(argc, argv, &option) < 0)
+		return EXIT_FAILURE;
+
+	if (option.help) {
+		if (strlen(option.help_specific) > 0) {
+			registry_print_help_for(option.help_specific);
+		} else {
+			print_usage(argv[0]);
+		}
+		return EXIT_FAILURE;
+	}
+
+	if (setlogmask(LOG_UPTO(option.log_mask)) < 0) {
+		syslog(LOG_CRIT, "unable to set log mask");
+		return EXIT_FAILURE;
+	}
+
+	/* list registered objects */
+	if (option.list || option.list_compact) {
+		registry_dump(option.list_compact);
+		return EXIT_SUCCESS;
+	}
+
+	/* read configuration */
+	if (config_read(&config, &option) < 0)
+		return EXIT_FAILURE;
+
+	/* dump information */
+	if (option.dump_config) {
+		config_dump(&config);
+		config_free(&config);
+		return EXIT_SUCCESS;
+	}
+
+	/* daemonize process */
+	if (option.daemonize)
+		daemonize();
+
+	if (setup_signal_handling() != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
 	/* setup subprocesses */
 	prepare_proc_configs(&config);
-	if (setup_procs(config.num_destinations, proc_cfg_base_dst, &desc_destinations) < 0) {
+	if (setup_procs(config.num_destinations, proc_cfg_base_dst, registry_destinations()) < 0) {
 		terminate_graceful(&config);
 		return EXIT_FAILURE;
 	}
-	if (setup_procs(config.num_sources, proc_cfg_base_src, &desc_sources) < 0) {
+	if (setup_procs(config.num_sources, proc_cfg_base_src, registry_sources()) < 0) {
 		terminate_graceful(&config);
 		return EXIT_FAILURE;
 	}
@@ -986,7 +659,8 @@ int main(int argc, char ** argv) /* {{{ */
 		fd_max = 0;
 		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
 			fd = proc_cfg[i].rfd;
-			if (fd <= 0) continue;
+			if (fd <= 0)
+				continue;
 			FD_SET(fd, &rfds);
 			if (fd > fd_max) {
 				fd_max = fd;
@@ -1005,8 +679,10 @@ int main(int argc, char ** argv) /* {{{ */
 
 		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
 			fd = proc_cfg[i].rfd;
-			if (fd <= 0) continue;
-			if (!FD_ISSET(fd, &rfds)) continue;
+			if (fd <= 0)
+				continue;
+			if (!FD_ISSET(fd, &rfds))
+				continue;
 
 			rc = read(fd, &msg, sizeof(msg));
 			if (rc < 0) {
@@ -1045,5 +721,5 @@ int main(int argc, char ** argv) /* {{{ */
 	terminate_graceful(&config);
 
 	return EXIT_SUCCESS;
-} /* }}} */
+}
 

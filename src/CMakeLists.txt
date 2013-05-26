@@ -21,6 +21,9 @@ endif()
 
 add_executable(navd
 	navd.c
+	daemon.c
+	programoptions.c
+	registry.c
 	)
 
 set(LIBRARIES
