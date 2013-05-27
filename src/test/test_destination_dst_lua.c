@@ -1,6 +1,7 @@
 #include <cunit/CUnit.h>
 #include <test_destination_dst_lua.h>
 #include <navcom/destination/dst_lua.h>
+#include <navcom/destination/dst_lua_private.h>
 #include <common/macros.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,16 +29,9 @@ static int cleanup(void)
 
 static void prepare_script(const char * code)
 {
-	int rc;
-
-	rc = ftruncate(fd, 0);
-	CU_ASSERT_EQUAL(rc, 0);
-
-	rc = write(fd, code, strlen(code));
-	CU_ASSERT_EQUAL(rc, (int)strlen(code));
-
-	rc = lseek(fd, SEEK_SET, 0);
-	CU_ASSERT_EQUAL(rc, 0);
+	CU_ASSERT_EQUAL(ftruncate(fd, 0), 0);
+	CU_ASSERT_EQUAL(write(fd, code, strlen(code)), (int)strlen(code));
+	CU_ASSERT_EQUAL(lseek(fd, SEEK_SET, 0), 0);
 }
 
 static void test_existance(void)
@@ -48,22 +42,27 @@ static void test_existance(void)
 	CU_ASSERT_PTR_NOT_NULL(proc->exit);
 }
 
+static void test_exit(void)
+{
+	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_FAILURE);
+}
+
 static void test_init_noscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	int rc;
 
 	proc_config_init(&config);
 
 	proplist_init(&properties);
 	proplist_set(&properties, "script", "/dev/null");
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL(rc, EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->init(NULL, NULL), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->init(NULL, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->init(&config, NULL), EXIT_FAILURE);
 
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
@@ -72,7 +71,6 @@ static void test_init_emptyscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	int rc;
 
 	const char SCRIPT[] = "\n";
 
@@ -83,11 +81,9 @@ static void test_init_emptyscript(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
@@ -96,7 +92,6 @@ static void test_init_invalidscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	int rc;
 
 	const char SCRIPT[] =
 		"fucntion def()\n"
@@ -110,11 +105,9 @@ static void test_init_invalidscript(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL(rc, EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
 
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
@@ -160,6 +153,7 @@ void register_suite_destination_dst_lua(void)
 	suite = CU_add_suite("destination/dst_lua", setup, cleanup);
 
 	CU_add_test(suite, "existance", test_existance);
+	CU_add_test(suite, "exit", test_exit);
 	CU_add_test(suite, "init: no script", test_init_noscript);
 	CU_add_test(suite, "init: empty script", test_init_emptyscript);
 	CU_add_test(suite, "init: invalid script", test_init_invalidscript);

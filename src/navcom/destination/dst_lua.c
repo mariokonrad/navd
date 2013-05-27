@@ -1,4 +1,5 @@
 #include <navcom/destination/dst_lua.h>
+#include <navcom/destination/dst_lua_private.h>
 #include <navcom/lua_helper.h>
 #include <navcom/lua_syslog.h>
 #include <navcom/lua_debug.h>
@@ -11,12 +12,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <setjmp.h>
 #include <lua/lua.h>
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
-
-static jmp_buf env;
 
 static int panic(lua_State * lua)
 {
@@ -27,7 +25,7 @@ static int panic(lua_State * lua)
 	data = (struct dst_lua_data_t *)lua_touserdata(lua, -1);
 	lua_pop(lua, 1);
 
-	longjmp(env, -1);
+	longjmp(data->env, -1);
 	return 0;
 }
 
@@ -49,28 +47,30 @@ const char * dst_lua_release(void)
  *
  * @reval EXIT_SUCCESS
  * @reval EXIT_FAILURE
+ *
+ * @todo Test
  */
 static int process_message(
-		lua_State * lua,
+		struct dst_lua_data_t * data,
 		const struct message_t * msg)
 {
 	int rc;
 
-	if (!lua)
+	if (data == NULL)
 		return EXIT_FAILURE;
-	if (!msg)
+	if (msg == NULL)
 		return EXIT_FAILURE;
 
-	if (setjmp(env) == 0) {
-		lua_getglobal(lua, "handle");
-		lua_pushlightuserdata(lua, (void*)msg);
-		rc = lua_pcall(lua, 1, 0, 0);
-		luaH_check_error(lua, rc);
+	if (setjmp(data->env) == 0) {
+		lua_getglobal(data->lua, "handle");
+		lua_pushlightuserdata(data->lua, (void*)msg);
+		rc = lua_pcall(data->lua, 1, 0, 0);
+		luaH_check_error(data->lua, rc);
 		return EXIT_SUCCESS;
 	} else {
-		lua_atpanic(lua, NULL);
-		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
-		lua_pop(lua, 1);
+		lua_atpanic(data->lua, NULL);
+		syslog(LOG_CRIT, "LUA: %s", lua_tostring(data->lua, -1));
+		lua_pop(data->lua, 1);
 		return EXIT_FAILURE;
 	}
 }
@@ -129,7 +129,7 @@ static int init_proc(
 		return EXIT_FAILURE;
 	}
 	lua_atpanic(lua, panic);
-	if (setjmp(env) == 0) {
+	if (setjmp(data->env) == 0) {
 		if (setup_lua_state(lua, prop_debug)) {
 			syslog(LOG_ERR, "unable to setup lua state");
 			return EXIT_FAILURE;
@@ -227,7 +227,7 @@ static int proc(struct proc_config_t * config)
 
 				case MSG_TIMER:
 				case MSG_NMEA:
-					if (process_message(data->lua, &msg) != EXIT_SUCCESS) {
+					if (process_message(data, &msg) != EXIT_SUCCESS) {
 						return EXIT_FAILURE;
 					}
 					break;
