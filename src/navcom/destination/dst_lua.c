@@ -20,10 +20,20 @@ static jmp_buf env;
 
 static int panic(lua_State * lua)
 {
-	UNUSED_ARG(lua);
+	struct dst_lua_data_t * data;
+
+	/* get jmpbuf from Lua state */
+	lua_getglobal(lua, "__PROC_DATA__");
+	data = (struct dst_lua_data_t *)lua_touserdata(lua, -1);
+	lua_pop(lua, 1);
 
 	longjmp(env, -1);
 	return 0;
+}
+
+static void init_data(struct dst_lua_data_t * data)
+{
+	memset(data, 0, sizeof(struct dst_lua_data_t));
 }
 
 /**
@@ -40,7 +50,9 @@ const char * dst_lua_release(void)
  * @reval EXIT_SUCCESS
  * @reval EXIT_FAILURE
  */
-static int process_message(lua_State * lua, const struct message_t * msg)
+static int process_message(
+		lua_State * lua,
+		const struct message_t * msg)
 {
 	int rc;
 
@@ -90,6 +102,18 @@ static int init_proc(
 	lua_State * lua = NULL;
 	const struct property_t * prop_script = NULL;
 	const struct property_t * prop_debug = NULL;
+	struct dst_lua_data_t * data;
+
+	if (!config)
+		return EXIT_FAILURE;
+	if (!properties)
+		return EXIT_FAILURE;
+	if (config->data != NULL)
+		return EXIT_FAILURE;
+
+	data = (struct dst_lua_data_t *)malloc(sizeof(struct dst_lua_data_t));
+	config->data = data;
+	init_data(data);
 
 	prop_script = proplist_find(properties, "script");
 	prop_debug = proplist_find(properties, "DEBUG");
@@ -119,7 +143,11 @@ static int init_proc(
 			return EXIT_FAILURE;
 		}
 
-		config->data = lua;
+		/* introduce proc data to Lua state*/
+		lua_pushlightuserdata(lua, data);
+		lua_setglobal(lua, "__PROC_DATA__");
+
+		data->lua = lua;
 		return EXIT_SUCCESS;
 	} else {
 		lua_atpanic(lua, NULL);
@@ -138,13 +166,21 @@ static int init_proc(
  */
 static int exit_proc(struct proc_config_t * config)
 {
-	if (!config)
-		return EXIT_FAILURE;
+	struct dst_lua_data_t * data;
 
-	if (config->data) {
-		lua_close((lua_State *)config->data);
-		config->data = NULL;
+	if (config == NULL)
+		return EXIT_FAILURE;
+	if (config->data == NULL)
+		return EXIT_SUCCESS;
+
+	data = (struct dst_lua_data_t *)config->data;
+	if (data->lua) {
+		lua_close(data->lua);
+		data->lua = NULL;
 	}
+
+	free(config->data);
+	config->data = NULL;
 	return EXIT_SUCCESS;
 }
 
@@ -153,6 +189,14 @@ static int proc(struct proc_config_t * config)
 	int rc;
 	fd_set rfds;
 	struct message_t msg;
+	struct dst_lua_data_t * data;
+
+	if (config == NULL)
+		return EXIT_FAILURE;
+
+	data = (struct dst_lua_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
 
 	while (!proc_request_terminate()) {
 		FD_ZERO(&rfds);
@@ -183,7 +227,7 @@ static int proc(struct proc_config_t * config)
 
 				case MSG_TIMER:
 				case MSG_NMEA:
-					if (process_message((lua_State *)config->data, &msg) != EXIT_SUCCESS) {
+					if (process_message(data->lua, &msg) != EXIT_SUCCESS) {
 						return EXIT_FAILURE;
 					}
 					break;

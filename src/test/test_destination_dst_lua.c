@@ -123,8 +123,7 @@ static void test_init_scripterror(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	lua_State * lua;
-	int rc;
+	struct dst_lua_data_t * data;
 
 	const char SCRIPT[] =
 		"function abc(t)\n"
@@ -141,16 +140,16 @@ static void test_init_scripterror(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
-	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
+	CU_ASSERT_EQUAL_FATAL(proc->init(&config, &properties), EXIT_SUCCESS);
 
-	lua = (lua_State *)config.data;
-	lua_getglobal(lua, "def");
-	lua_pcall(lua, 0, 0, 0);
+	data = (struct dst_lua_data_t *)config.data;
+	CU_ASSERT_PTR_NOT_NULL_FATAL(data);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(data->lua);
 
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	lua_getglobal(data->lua, "def");
+	lua_pcall(data->lua, 0, 0, 0);
+
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }

@@ -113,7 +113,7 @@ static int proc(struct proc_config_t * config)
 	const struct device_operations_t * ops = NULL;
 	struct nmea_serial_data_t * data;
 
-	if (!config)
+	if (config == NULL)
 		return EXIT_FAILURE;
 
 	data = (struct nmea_serial_data_t *)config->data;
