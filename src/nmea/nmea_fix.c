@@ -173,7 +173,11 @@ int nmea_float_to_fix(struct nmea_fix_t * fix, float v)
 	v = fabsf(v);
 	t = floorf(v);
 	fix->i = (uint32_t)t;
-	fix->d = (uint32_t)((v - t) * NMEA_FIX_DECIMALS);
+	fix->d = (uint32_t)roundf((v - t) * NMEA_FIX_DECIMALS);
+	if (fix->d >= NMEA_FIX_DECIMALS) {
+		fix->i += 1;
+		fix->d -= NMEA_FIX_DECIMALS;
+	}
 	return 0;
 }
 
@@ -195,7 +199,11 @@ int nmea_double_to_fix(struct nmea_fix_t * fix, double v)
 	v = fabs(v);
 	t = floor(v);
 	fix->i = (uint32_t)t;
-	fix->d = (uint32_t)((v - t) * NMEA_FIX_DECIMALS);
+	fix->d = (uint32_t)round((v - t) * NMEA_FIX_DECIMALS);
+	if (fix->d >= NMEA_FIX_DECIMALS) {
+		fix->i += 1;
+		fix->d -= NMEA_FIX_DECIMALS;
+	}
 	return 0;
 }
 

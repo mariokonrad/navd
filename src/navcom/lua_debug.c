@@ -4,17 +4,15 @@
 
 /**
  * Dumps the contents of the stack.
- *
- * @todo Dump top of stack first
  */
 void luaH_stacktrace(lua_State * lua)
 {
 	int i;
 	int top = lua_gettop(lua);
 	printf("stack trace:\n");
-	for (i = 1; i <= top; ++i) {
+	for (i = -1; i >= -top; --i) {
 		int t = lua_type(lua, i);
-		printf("%3d: ", i);
+		printf("%4d: ", i);
 		switch (t) {
 			case LUA_TSTRING:
 				printf("'%s'", lua_tostring(lua, i));

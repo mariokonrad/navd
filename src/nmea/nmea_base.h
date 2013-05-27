@@ -38,7 +38,7 @@ struct nmea_t {
 		struct nmea_ii_vhw_t ii_vhw;
 		struct nmea_ii_mtw_t ii_mtw;
 	} sentence;
-};
+} __attribute((packed));
 
 /**
  * Base structure for all implmentations of NMEA sentences.

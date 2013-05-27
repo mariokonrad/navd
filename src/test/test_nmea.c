@@ -688,11 +688,13 @@ static void test_convert_nmea_float_fix(void)
 
 	CU_ASSERT_EQUAL(nmea_float_to_fix(NULL, 0.0f), -1);
 
-	fix.i = 0; fix.d = 0;      test_conv_float_fix(&fix, 0.0f);
-	fix.i = 0; fix.d = 500000; test_conv_float_fix(&fix, 0.5f);
-	fix.i = 1; fix.d = 0;      test_conv_float_fix(&fix, 1.0f);
-	fix.i = 2; fix.d = 0;      test_conv_float_fix(&fix, 2.0f);
-	fix.i = 3; fix.d = 0;      test_conv_float_fix(&fix, 3.0f);
+	fix.i =  0; fix.d = 0;       test_conv_float_fix(&fix,  0.0f);
+	fix.i =  0; fix.d = 500000;  test_conv_float_fix(&fix,  0.5f);
+	fix.i =  1; fix.d = 0;       test_conv_float_fix(&fix,  1.0f);
+	fix.i =  2; fix.d = 0;       test_conv_float_fix(&fix,  2.0f);
+	fix.i =  3; fix.d = 0;       test_conv_float_fix(&fix,  3.0f);
+	fix.i = 57; fix.d = 0;       test_conv_float_fix(&fix, 57.0f);
+	fix.i = 56; fix.d = 910000;  test_conv_float_fix(&fix, 56.91f);
 }
 
 static void test_conv_fix_double(double expected, const struct nmea_fix_t * fix)
@@ -715,11 +717,11 @@ static void test_convert_nmea_fix_double(void)
 	CU_ASSERT_EQUAL(nmea_fix_to_double(&d, NULL), -1);
 	CU_ASSERT_EQUAL(nmea_fix_to_float(NULL, &fix), -1);
 
-	fix.i = 0; fix.d = 0;      test_conv_fix_double(0.0, &fix);
-	fix.i = 0; fix.d = 500000; test_conv_fix_double(0.5, &fix);
-	fix.i = 1; fix.d = 0;      test_conv_fix_double(1.0, &fix);
-	fix.i = 2; fix.d = 0;      test_conv_fix_double(2.0, &fix);
-	fix.i = 3; fix.d = 0;      test_conv_fix_double(3.0, &fix);
+	fix.i = 0; fix.d = 0;        test_conv_fix_double(0.0, &fix);
+	fix.i = 0; fix.d = 500000;   test_conv_fix_double(0.5, &fix);
+	fix.i = 1; fix.d = 0;        test_conv_fix_double(1.0, &fix);
+	fix.i = 2; fix.d = 0;        test_conv_fix_double(2.0, &fix);
+	fix.i = 3; fix.d = 0;        test_conv_fix_double(3.0, &fix);
 }
 
 static void test_conv_double_fix(const struct nmea_fix_t * expected, double d)
@@ -740,11 +742,13 @@ static void test_convert_nmea_double_fix(void)
 
 	CU_ASSERT_EQUAL(nmea_double_to_fix(NULL, 0.0), -1);
 
-	fix.i = 0; fix.d = 0;      test_conv_double_fix(&fix, 0.0);
-	fix.i = 0; fix.d = 500000; test_conv_double_fix(&fix, 0.5);
-	fix.i = 1; fix.d = 0;      test_conv_double_fix(&fix, 1.0);
-	fix.i = 2; fix.d = 0;      test_conv_double_fix(&fix, 2.0);
-	fix.i = 3; fix.d = 0;      test_conv_double_fix(&fix, 3.0);
+	fix.i =  0; fix.d = 0;       test_conv_double_fix(&fix,  0.0);
+	fix.i =  0; fix.d = 500000;  test_conv_double_fix(&fix,  0.5);
+	fix.i =  1; fix.d = 0;       test_conv_double_fix(&fix,  1.0);
+	fix.i =  2; fix.d = 0;       test_conv_double_fix(&fix,  2.0);
+	fix.i =  3; fix.d = 0;       test_conv_double_fix(&fix,  3.0);
+	fix.i = 57; fix.d = 0;       test_conv_double_fix(&fix, 57.0);
+	fix.i = 56; fix.d = 999900;  test_conv_double_fix(&fix, 56.9999);
 }
 
 static void test_conv_angle_double(double expected, const struct nmea_angle_t * angle)
@@ -793,10 +797,11 @@ static void test_convert_nmea_double_angle(void)
 
 	CU_ASSERT_EQUAL(nmea_double_to_angle(NULL, 0.0), -1);
 
-	angle.d =  0; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(&angle,  0.0     );
-	angle.d = 90; angle.m =  0; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(&angle, 90.0     );
-	angle.d =  0; angle.m = 30; angle.s.i = 0; angle.s.d = 0; test_conv_double_angle(&angle,  0.5     );
-	angle.d =  0; angle.m =  0; angle.s.i = 1; angle.s.d = 0; test_conv_double_angle(&angle,  0.000278);
+	angle.d =  0; angle.m =  0; angle.s.i =  0; angle.s.d = 0; test_conv_double_angle(&angle,  0.0     );
+	angle.d = 90; angle.m =  0; angle.s.i =  0; angle.s.d = 0; test_conv_double_angle(&angle, 90.0     );
+	angle.d =  0; angle.m = 30; angle.s.i =  0; angle.s.d = 0; test_conv_double_angle(&angle,  0.5     );
+	angle.d =  0; angle.m =  0; angle.s.i =  1; angle.s.d = 0; test_conv_double_angle(&angle,  0.000278);
+	angle.d = 12; angle.m = 34; angle.s.i = 57; angle.s.d = 0; test_conv_double_angle(&angle,  12.5825 );
 }
 
 static void test_checksum(void)

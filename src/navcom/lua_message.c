@@ -28,7 +28,7 @@ static int lua__msg_clone(lua_State * lua)
 	msg_out = lua_touserdata(lua, -2);
 	msg_in = lua_touserdata(lua, -1);
 
-	if (!msg_out || !msg_in) {
+	if ((msg_out == NULL) || (msg_in == NULL)) {
 		lua_pushinteger(lua, EXIT_FAILURE);
 		return 1;
 	}
@@ -169,7 +169,7 @@ static void msg_to_table_nmea(lua_State * lua, const struct message_t * msg)
  * @code
  * function filter(msg_out, msg_in)
  *     local t = msg_to_table(msg_in)
- *     if t.type == MSG_SYSTEM then
+ *     if t.msg_type == MSG_SYSTEM then
  *         return FILTER_SUCCESS
  *     end
  *     return FILTER_FAILURE
@@ -333,6 +333,8 @@ static int msg_from_table_nmea(lua_State * lua, struct message_t * msg)
 	struct nmea_t * nmea = &msg->data.nmea;
 	size_t i;
 
+	lua_getfield(lua, -1, "nmea");
+
 	lua_getfield(lua, -1, "nmea_type");
 	nmea->type = luaL_checkunsigned(lua, -1);
 	lua_pop(lua, 1);
@@ -348,7 +350,7 @@ static int msg_from_table_nmea(lua_State * lua, struct message_t * msg)
 			break;
 		}
 	}
-	lua_pop(lua, 1);
+	lua_pop(lua, 2);
 	return EXIT_SUCCESS;
 }
 
