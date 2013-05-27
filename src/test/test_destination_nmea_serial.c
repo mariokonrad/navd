@@ -74,7 +74,7 @@ static void test_init(void)
 
 static void test_exit(void)
 {
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_FAILURE);
 }
 
 void register_suite_destination_nmea_serial(void)
@@ -83,7 +83,7 @@ void register_suite_destination_nmea_serial(void)
 	suite = CU_add_suite("destination/nmea_serial", NULL, NULL);
 
 	CU_add_test(suite, "existance", test_existance);
-	CU_add_test(suite, "init", test_init);
 	CU_add_test(suite, "exit", test_exit);
+	CU_add_test(suite, "init", test_init);
 }
 

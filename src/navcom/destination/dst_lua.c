@@ -63,7 +63,9 @@ static int process_message(lua_State * lua, const struct message_t * msg)
 	}
 }
 
-static int setup_lua_state(lua_State * lua, const struct property_t * debug_property)
+static int setup_lua_state(
+		lua_State * lua,
+		const struct property_t * debug_property)
 {
 	luaopen_base(lua);
 	luaopen_table(lua);
@@ -202,5 +204,6 @@ const struct proc_desc_t dst_lua = {
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
+	.help = NULL,
 };
 

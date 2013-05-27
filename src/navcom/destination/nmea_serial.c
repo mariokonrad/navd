@@ -10,15 +10,25 @@
 #include <unistd.h>
 #include <syslog.h>
 
-/* TODO: static data must be part of config */
-static int initialized = 0;
-static struct serial_config_t serial_config = {
-	"/dev/ttyUSB1",
-	BAUD_4800,
-	DATA_BIT_8,
-	STOP_BIT_1,
-	PARITY_NONE
+/**
+ * Source specific data.
+ */
+struct nmea_serial_data_t
+{
+	int initialized;
+	struct serial_config_t serial_config;
 };
+
+static void init_data(struct nmea_serial_data_t * data)
+{
+	memset(data, 0, sizeof(struct nmea_serial_data_t));
+
+	strncpy(data->serial_config.name, "/dev/ttyUSB1", sizeof(data->serial_config));
+	data->serial_config.baud_rate = BAUD_4800;
+	data->serial_config.data_bits = DATA_BIT_8;
+	data->serial_config.stop_bits = STOP_BIT_1;
+	data->serial_config.parity = PARITY_NONE;
+}
 
 static int send_data(
 		const struct device_operations_t * ops,
@@ -48,31 +58,48 @@ static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
 {
-	UNUSED_ARG(config);
+	struct nmea_serial_data_t * data = NULL;
 
 	if (!config)
 		return EXIT_FAILURE;
 	if (!properties)
 		return EXIT_FAILURE;
-
-	if (prop_serial_read_device(&serial_config, properties, "device") != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	if (prop_serial_read_baudrate(&serial_config, properties, "baud") != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	if (prop_serial_read_parity(&serial_config, properties, "parity") != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	if (prop_serial_read_databits(&serial_config, properties, "data") != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	if (prop_serial_read_stopbits(&serial_config, properties, "stop") != EXIT_SUCCESS)
+	if (config->data != NULL)
 		return EXIT_FAILURE;
 
-	initialized = 1;
+	data = (struct nmea_serial_data_t *)malloc(sizeof(struct nmea_serial_data_t));
+	config->data = data;
+	init_data(data);
+
+	if (prop_serial_read_device(&data->serial_config, properties, "device") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_baudrate(&data->serial_config, properties, "baud") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_parity(&data->serial_config, properties, "parity") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_databits(&data->serial_config, properties, "data") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+	if (prop_serial_read_stopbits(&data->serial_config, properties, "stop") != EXIT_SUCCESS)
+		return EXIT_FAILURE;
+
+	data->initialized = 1;
 	return EXIT_SUCCESS;
 }
 
+/**
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
 static int exit_proc(struct proc_config_t * config)
 {
-	UNUSED_ARG(config);
+	if (config == NULL)
+		return EXIT_FAILURE;
+
+	if (config->data) {
+		free(config->data);
+		config->data = NULL;
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -84,8 +111,16 @@ static int proc(struct proc_config_t * config)
 
 	struct device_t device;
 	const struct device_operations_t * ops = NULL;
+	struct nmea_serial_data_t * data;
 
-	if (!initialized) {
+	if (!config)
+		return EXIT_FAILURE;
+
+	data = (struct nmea_serial_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
+
+	if (!data->initialized) {
 		syslog(LOG_ERR, "uninitialized");
 		return EXIT_FAILURE;
 	}
@@ -93,9 +128,9 @@ static int proc(struct proc_config_t * config)
 	ops = &serial_device_operations;
 	device_init(&device);
 
-	rc = ops->open(&device, (const struct device_config_t *)&serial_config);
+	rc = ops->open(&device, (const struct device_config_t *)&data->serial_config);
 	if (rc < 0) {
-		syslog(LOG_ERR, "unable to open device '%s'", serial_config.name);
+		syslog(LOG_ERR, "unable to open device '%s'", data->serial_config.name);
 		return EXIT_FAILURE;
 	}
 
@@ -145,5 +180,6 @@ const struct proc_desc_t nmea_serial ={
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
+	.help = NULL,
 };
 
