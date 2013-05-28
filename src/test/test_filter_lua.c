@@ -38,23 +38,23 @@ static int cleanup(void)
 	return 0;
 }
 
-static void test_init(void)
+static void test_existance(void)
 {
 	CU_ASSERT_PTR_NOT_NULL(filter);
 	CU_ASSERT_PTR_NOT_NULL(filter->init);
+	CU_ASSERT_PTR_NOT_NULL(filter->exit);
+	CU_ASSERT_PTR_NOT_NULL(filter->func);
 }
 
 static void test_exit(void)
 {
-	CU_ASSERT_PTR_NOT_NULL(filter);
-	CU_ASSERT_PTR_NOT_NULL(filter->exit);
+	CU_ASSERT_EQUAL(filter->exit(NULL), EXIT_FAILURE);
 }
 
 static void test_init_exit(void)
 {
 	struct filter_context_t ctx;
 	struct property_list_t properties;
-	int rc;
 
 	const char SCRIPT[] = "\n";
 
@@ -64,23 +64,22 @@ static void test_init_exit(void)
 
 	proplist_init(&properties);
 
-	CU_ASSERT_EQUAL(filter->init(NULL, NULL), FILTER_FAILURE);
-	CU_ASSERT_EQUAL(filter->init(NULL, &properties), FILTER_FAILURE);
-	CU_ASSERT_EQUAL(filter->init(&ctx, NULL), FILTER_FAILURE);
-	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(NULL, NULL), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(NULL, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(&ctx, NULL), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), EXIT_FAILURE);
 
 	proplist_set(&properties, "script", "");
 
-	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_FAILURE);
+	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), EXIT_FAILURE);
 
 	prepare_script(SCRIPT);
 
 	proplist_set(&properties, "script", tmpfilename);
-	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
 	CU_ASSERT_NOT_EQUAL(ctx.data, NULL);
 
-	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -90,7 +89,6 @@ static void test_debug(void)
 	struct property_list_t properties;
 	struct message_t msg_in;
 	struct message_t msg_out;
-	int rc;
 
 	const char SCRIPT[] =
 		"function barfoo()\n"
@@ -121,19 +119,16 @@ static void test_debug(void)
 	proplist_set(&properties, "script", tmpfilename);
 	proplist_set(&properties, "DEBUG", "crl");
 
-	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
 
-	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
 
 static void test_func_syslog(void)
 {
-	int rc;
 	struct filter_context_t ctx;
 	struct property_list_t properties;
 	struct message_t msg_in;
@@ -160,11 +155,9 @@ static void test_func_syslog(void)
 
 	prepare_script(SCRIPT);
 
-	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
 
-	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
+	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_DISCARD);
 
 	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
@@ -172,7 +165,6 @@ static void test_func_syslog(void)
 
 static void test_func_msg_clone(void)
 {
-	int rc;
 	struct filter_context_t ctx;
 	struct property_list_t properties;
 	struct message_t msg_in;
@@ -198,20 +190,14 @@ static void test_func_msg_clone(void)
 
 	prepare_script(SCRIPT);
 
-	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
 
 	msg_in.type = MSG_TIMER;
 	msg_in.data.timer_id = 12345678;
 
-	rc = filter->func(&msg_out, NULL, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_FAILURE);
-
-	rc = filter->func(NULL, &msg_in, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_FAILURE);
-
-	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->func(&msg_out, NULL, &ctx, &properties), FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->func(NULL, &msg_in, &ctx, &properties), FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_SUCCESS);
 
 	CU_ASSERT_EQUAL(msg_out.type, msg_in.type);
 	CU_ASSERT_EQUAL(msg_out.data.timer_id, msg_in.data.timer_id);
@@ -228,7 +214,6 @@ static void test_func_msg_clone(void)
 
 static void test_func_msg_type(void)
 {
-	int rc;
 	struct filter_context_t ctx;
 	struct property_list_t properties;
 	struct message_t msg_in;
@@ -257,22 +242,16 @@ static void test_func_msg_type(void)
 
 	prepare_script(SCRIPT);
 
-	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
-
-	rc = filter->func(&msg_out, NULL, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_FAILURE);
+	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->func(&msg_out, NULL, &ctx, &properties), FILTER_FAILURE);
 
 	msg_in.type = MSG_SYSTEM;
 
-	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_FAILURE);
+	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_FAILURE);
 
 	msg_in.type = MSG_NMEA;
 
-	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
-
+	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_SUCCESS);
 	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
 }
@@ -310,7 +289,7 @@ static void test_func_msg_to_table(void)
 	prepare_script(SCRIPT);
 
 	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 
 	rc = filter->func(&msg_out, NULL, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_FAILURE);
@@ -320,7 +299,7 @@ static void test_func_msg_to_table(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -362,7 +341,7 @@ static void test_func_msg_to_table_system(void) /* TODO: move test to test_lua_m
 	prepare_script(SCRIPT);
 
 	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 
 	msg_in.type = MSG_SYSTEM;
 	msg_in.data.system = SYSTEM_TERMINATE;
@@ -370,7 +349,7 @@ static void test_func_msg_to_table_system(void) /* TODO: move test to test_lua_m
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -412,7 +391,7 @@ static void test_func_msg_to_table_timer(void) /* TODO: move test to test_lua_me
 	prepare_script(SCRIPT);
 
 	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 
 	msg_in.type = MSG_TIMER;
 	msg_in.data.timer_id = 12345678;
@@ -420,7 +399,7 @@ static void test_func_msg_to_table_timer(void) /* TODO: move test to test_lua_me
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -464,7 +443,7 @@ static void test_func_msg_to_table_nmea(void)
 	prepare_script(SCRIPT);
 
 	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 
 	msg_in.type = MSG_NMEA;
 	msg_in.data.nmea.type = NMEA_RMB;
@@ -473,13 +452,12 @@ static void test_func_msg_to_table_nmea(void)
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 
-	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
 
 static void test_func_msg_to_table_nmea_rmc(void) /* TODO: move test to test_lua_message? */
 {
-	int rc;
 	struct filter_context_t ctx;
 	struct property_list_t properties;
 	struct message_t msg_in;
@@ -536,8 +514,7 @@ static void test_func_msg_to_table_nmea_rmc(void) /* TODO: move test to test_lua
 
 	prepare_script(SCRIPT);
 
-	rc = filter->init(&ctx, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, FILTER_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
 
 	msg_in.type = MSG_NMEA;
 	msg_in.data.nmea.type = NMEA_RMC;
@@ -557,10 +534,8 @@ static void test_func_msg_to_table_nmea_rmc(void) /* TODO: move test to test_lua
 	msg_in.data.nmea.sentence.rmc.head.i = 10;
 	msg_in.data.nmea.sentence.rmc.head.d = 0;
 
-	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
-	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
-
-	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
 
@@ -569,7 +544,7 @@ void register_suite_filter_lua(void)
 	CU_Suite * suite;
 	suite = CU_add_suite(filter->name, setup, cleanup);
 
-	CU_add_test(suite, "init", test_init);
+	CU_add_test(suite, "existance", test_existance);
 	CU_add_test(suite, "exit", test_exit);
 	CU_add_test(suite, "init / exit", test_init_exit);
 	CU_add_test(suite, "debug", test_debug);

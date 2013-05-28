@@ -1,6 +1,7 @@
 #include <navcom/filter/filter_null.h>
 #include <common/macros.h>
 #include <string.h>
+#include <string.h>
 
 /**
  * The null filter copies the original message to the result

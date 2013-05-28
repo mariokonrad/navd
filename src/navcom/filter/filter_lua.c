@@ -7,17 +7,27 @@
 #include <syslog.h>
 #include <stdlib.h>
 #include <setjmp.h>
+#include <string.h>
 #include <lua/lua.h>
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
 
-static jmp_buf env; /* TODO: this environment must be per filter */
+struct filter_lua_data_t
+{
+	lua_State * lua;
+	jmp_buf env;
+};
 
 static int panic(lua_State * lua)
 {
-	UNUSED_ARG(lua);
+	struct filter_lua_data_t * data;
 
-	longjmp(env, -1);
+	/* get jmpbuf from Lua state */
+	lua_getglobal(lua, "__FILTER_DATA__");
+	data = (struct filter_lua_data_t *)lua_touserdata(lua, -1);
+	lua_pop(lua, 1);
+
+	longjmp(data->env, -1);
 	return 0;
 }
 
@@ -27,6 +37,11 @@ static int panic(lua_State * lua)
 const char * filter_lua_release(void)
 {
 	return LUA_RELEASE;
+}
+
+static void init_data(struct filter_lua_data_t * data)
+{
+	memset(data, 0, sizeof(struct filter_lua_data_t));
 }
 
 static void setup_filter_results(lua_State * lua)
@@ -60,58 +75,80 @@ static int init_filter(
 		struct filter_context_t * ctx,
 		const struct property_list_t * properties)
 {
-	int rc;
 	lua_State * lua = NULL;
 	const struct property_t * prop_script = NULL;
 	const struct property_t * prop_debug = NULL;
+	struct filter_lua_data_t * data = NULL;
+
+	if (ctx == NULL)
+		return EXIT_FAILURE;
+	if (properties == NULL)
+		return EXIT_FAILURE;
+
+	data = (struct filter_lua_data_t *)malloc(sizeof(struct filter_lua_data_t));
+	ctx->data = data;
+	init_data(data);
 
 	prop_script = proplist_find(properties, "script");
 	prop_debug = proplist_find(properties, "DEBUG");
 
-	rc = luaH_checkscript_from_prop(prop_script);
-	if (rc != EXIT_SUCCESS)
-		return FILTER_FAILURE;
+	if (luaH_checkscript_from_prop(prop_script) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
 	/* setup lua state */
 	lua = luaL_newstate();
-	if (!lua) {
+	if (lua == NULL) {
 		syslog(LOG_ERR, "unable to create lua state");
-		return FILTER_FAILURE;
+		return EXIT_FAILURE;
 	}
+
+	/* introduce proc data to Lua state*/
+	lua_pushlightuserdata(lua, data);
+	lua_setglobal(lua, "__FILTER_DATA__");
+
 	lua_atpanic(lua, panic);
-	if (setjmp(env) == 0) {
+	if (setjmp(data->env) == 0) {
 		if (setup_lua_state(lua, prop_debug)) {
 			syslog(LOG_ERR, "unable to setup lua state");
-			return FILTER_FAILURE;
+			return EXIT_FAILURE;
 		}
 
 		/* load/execute script */
-		rc = luaL_dofile(lua, prop_script->value);
-		if (rc) {
+		if (luaL_dofile(lua, prop_script->value) != LUA_OK) {
 			syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
 			lua_close(lua);
-			return FILTER_FAILURE;
+			return EXIT_FAILURE;
 		}
-		ctx->data = lua;
-		return FILTER_SUCCESS;
+
+		data->lua = lua;
+		return EXIT_SUCCESS;
 	} else {
 		lua_atpanic(lua, NULL);
 		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
 		lua_pop(lua, 1);
 		lua_close(lua);
-		return FILTER_FAILURE;
+		return EXIT_FAILURE;
 	}
 }
 
 int exit_filter(struct filter_context_t * ctx)
 {
-	if (ctx && ctx->data) {
-		lua_State * lua = (lua_State *)ctx->data;
-		lua_close(lua);
-		ctx->data = NULL;
+	struct filter_lua_data_t * data;
+
+	if (ctx == NULL)
+		return EXIT_FAILURE;
+	if (ctx->data == NULL)
+		return EXIT_FAILURE;
+
+	data = (struct filter_lua_data_t *)ctx->data;
+	if (data->lua) {
+		lua_close(data->lua);
+		data->lua = NULL;
 	}
 
-	return FILTER_SUCCESS;
+	free(data);
+	ctx->data = NULL;
+	return EXIT_SUCCESS;
 }
 
 /**
@@ -124,26 +161,30 @@ static int filter(
 		const struct property_list_t * properties)
 {
 	int rc;
-	lua_State * lua = NULL;
+	struct filter_lua_data_t * data = NULL;
 
 	UNUSED_ARG(properties);
 
-	if (!out || !in)
+	if (out == NULL)
+		return FILTER_FAILURE;
+	if (in == NULL)
+		return FILTER_FAILURE;
+	if (ctx == NULL)
+		return FILTER_FAILURE;
+	if (ctx->data == NULL)
 		return FILTER_FAILURE;
 
-	if (!ctx || !ctx->data)
-		return FILTER_FAILURE;
-	lua = (lua_State *)ctx->data;
+	data = (struct filter_lua_data_t *)ctx->data;
 
-	if (setjmp(env) == 0) {
-		lua_getglobal(lua, "filter");
-		lua_pushlightuserdata(lua, (void*)out);
-		lua_pushlightuserdata(lua, (void*)in);
-		rc = lua_pcall(lua, 2, 1, 0);
-		luaH_check_error(lua, rc);
+	if (setjmp(data->env) == 0) {
+		lua_getglobal(data->lua, "filter");
+		lua_pushlightuserdata(data->lua, (void*)out);
+		lua_pushlightuserdata(data->lua, (void*)in);
+		rc = lua_pcall(data->lua, 2, 1, 0);
+		luaH_check_error(data->lua, rc);
 
 		if (rc == LUA_OK) {
-			rc = luaL_checkinteger(lua, -1);
+			rc = luaL_checkinteger(data->lua, -1);
 			/* TODO: clear Lua stack */
 			return rc;
 		} else {
@@ -151,10 +192,11 @@ static int filter(
 			return FILTER_FAILURE;
 		}
 	} else {
-		lua_atpanic(lua, NULL);
-		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
-		lua_pop(lua, 1);
-		lua_close(lua);
+		lua_atpanic(data->lua, NULL);
+		syslog(LOG_CRIT, "LUA: %s", lua_tostring(data->lua, -1));
+		lua_pop(data->lua, 1);
+		lua_close(data->lua);
+		data->lua = NULL;
 		return FILTER_FAILURE;
 	}
 }
@@ -163,6 +205,7 @@ const struct filter_desc_t filter_lua = {
 	.name = "filter_lua",
 	.init = init_filter,
 	.exit = exit_filter,
-	.func = filter
+	.func = filter,
+	.help = NULL,
 };
 

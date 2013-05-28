@@ -128,6 +128,11 @@ static int init_proc(
 		syslog(LOG_ERR, "unable to create lua state");
 		return EXIT_FAILURE;
 	}
+
+	/* introduce proc data to Lua state*/
+	lua_pushlightuserdata(lua, data);
+	lua_setglobal(lua, "__PROC_DATA__");
+
 	lua_atpanic(lua, panic);
 	if (setjmp(data->env) == 0) {
 		if (setup_lua_state(lua, prop_debug)) {
@@ -136,16 +141,11 @@ static int init_proc(
 		}
 
 		/* load/execute script */
-		rc = luaL_dofile(lua, prop_script->value);
-		if (rc) {
+		if (luaL_dofile(lua, prop_script->value) != LUA_OK) {
 			syslog(LOG_ERR, "unable to load and execute script: '%s'", prop_script->value);
 			lua_close(lua);
 			return EXIT_FAILURE;
 		}
-
-		/* introduce proc data to Lua state*/
-		lua_pushlightuserdata(lua, data);
-		lua_setglobal(lua, "__PROC_DATA__");
 
 		data->lua = lua;
 		return EXIT_SUCCESS;

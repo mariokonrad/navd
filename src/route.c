@@ -154,20 +154,24 @@ int route_setup(
 		link_route_destinations(route, config, i, proc_conf, proc_conf_base_dst);
 
 		/* link initialized filter */
-		if (config->routes[i].filter) {
-			route->filter = filterlist_find(registry_filters(), config->routes[i].filter->type);
-			if (route->filter) {
-				route->filter_cfg = &config->routes[i].filter->properties;
-				if (route->filter->init) {
-					if (route->filter->init(&route->filter_ctx, route->filter_cfg)) {
-						syslog(LOG_ERR, "%s:filter configuration failure: '%s'",
-							__FUNCTION__, config->routes[i].name_filter);
-						return -1;
-					}
-				}
-			} else {
-				syslog(LOG_ERR, "%s:unknown filter: '%s'", __FUNCTION__,
+		if (config->routes[i].filter == NULL)
+			continue;
+
+		route->filter = filterlist_find(registry_filters(), config->routes[i].filter->type);
+		if (route->filter == NULL) {
+			syslog(LOG_ERR, "%s:unknown filter: '%s'", __FUNCTION__,
 					config->routes[i].name_filter);
+			return -1;
+		}
+
+		route->filter_cfg = &config->routes[i].filter->properties;
+		if (route->filter->init) {
+			if (route->filter->init(&route->filter_ctx, route->filter_cfg) != EXIT_SUCCESS) {
+				syslog(LOG_ERR, "%s:filter configuration failure: '%s'",
+						__FUNCTION__, config->routes[i].name_filter);
+				if (route->filter->exit) {
+					route->filter->exit(&route->filter_ctx);
+				}
 				return -1;
 			}
 		}
