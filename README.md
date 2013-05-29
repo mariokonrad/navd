@@ -12,7 +12,7 @@ TODO
 
 Consider:
 - SQlite: https://sqlite.org
-- JSON: Jasmine: https://bitbucket.org/zserge/jsmn/src
+- JSON
 - XML
   - mini-xml: http://svn.msweet.org/mxml/
   - https://github.com/lxfontes/ezxml
