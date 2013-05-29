@@ -201,11 +201,41 @@ static int filter(
 	}
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("filter_lua\n");
+	printf("\n");
+	printf("This filter is scriptable in Lua.\n");
+	printf("\n");
+	printf("Configuration options:\n");
+	printf("  script : filename of the Lua script to execute.\n");
+	printf("  DEBUG  : [optional] a combination of 'c', 'r' and 'l' for debugging purposes.\n");
+	printf("           c : call, traces function calls\n");
+	printf("           r : return, traces function returns\n");
+	printf("           l : line, traces executed lines\n");
+	printf("\n");
+	printf("Example:\n");
+	printf("\n");
+	printf("  timer_1s : timer { id:1, period:1000 };\n");
+	printf("  filter1 : filter_lua { script:'src/test/testfilter.lua' };\n");
+	printf("  log : message_log {};\n");
+	printf("  timer_1s -> [filter1] -> log;\n");
+	printf("\n");
+	printf("Example of Lua script:\n");
+	printf("\n");
+	printf("  function filter(msg_out, msg_in)\n");
+	printf("    msg_clone(msg_out, msg_in)\n");
+	printf("    return FILTER_SUCCESS\n");
+	printf("  end\n");
+	printf("\n");
+}
+
 const struct filter_desc_t filter_lua = {
 	.name = "filter_lua",
 	.init = init_filter,
 	.exit = exit_filter,
 	.func = filter,
-	.help = NULL,
+	.help = help,
 };
 
