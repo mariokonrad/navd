@@ -38,7 +38,8 @@ function usage()
 	echo "    check-coverage : checks if all files are being used for code coverage (debug build only)"
 	echo "    pmccabe        : calculates the cyclomatic complexity of the relevant source (without Lua, tests)"
 	echo "    gcovr          : calculates coverage using gcovr"
-	echo "    lcov           : generates a HTML report on coverage using lcov"
+	echo "    lcov           : executes tests and generates a HTML report on coverage using lcov"
+	echo "    lcov-capture   : generates a HTML report on coverage using lcov"
 	echo "    todo           : searches and displays all todos, fixmes and temps"
 	echo ""
 }
@@ -177,12 +178,32 @@ function exec_gcovr()
 	# cat build/doc/gcovr.txt | grep -E "^/home" | sed 's/\(\w\)\ .*$/\1/' | sort
 }
 
+function exec_lcov_capture()
+{
+	lcov --capture --directory build/src --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "/usr/*" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "lexer.yy.*" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "parser.tab.*" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "lexer.l" --output-file build/doc/coverage.info
+	lcov --remove build/doc/coverage.info "parser.y" --output-file build/doc/coverage.info
+	genhtml build/doc/coverage.info --output-directory build/doc/coverage
+}
+
 function exec_lcov()
 {
 	binary=${BASE}/build/src/navd
 
 	exec_prepare
 	lcov --zerocounters --directory build/src --output-file build/doc/coverage.info
+	exec_integration_test
+	exec_lcov_capture
+}
+
+function exec_integration_test()
+{
+	binary=${BASE}/build/src/navd
+
+	exec_prepare
 	echo "---"
 	${binary} --help
 	echo "---"
@@ -200,13 +221,16 @@ function exec_lcov()
 	echo "---"
 	${BASE}/build/src/test/testrunner
 	echo "---"
-	lcov --capture --directory build/src --output-file build/doc/coverage.info
-	lcov --remove build/doc/coverage.info "/usr/*" --output-file build/doc/coverage.info
-	lcov --remove build/doc/coverage.info "lexer.yy.*" --output-file build/doc/coverage.info
-	lcov --remove build/doc/coverage.info "parser.tab.*" --output-file build/doc/coverage.info
-	lcov --remove build/doc/coverage.info "lexer.l" --output-file build/doc/coverage.info
-	lcov --remove build/doc/coverage.info "parser.y" --output-file build/doc/coverage.info
-	genhtml build/doc/coverage.info --output-directory build/doc/coverage
+	${binary} --max-msg 5 --log 7 --config src/test/testconfig-small
+	echo "---"
+	${binary} --max-msg 5 --log 7 --config src/test/testconfig-small-1
+	echo "---"
+	${binary} --max-msg 5 --log 7 --config src/test/testconfig-small-2
+	echo "---"
+	${binary} --max-msg 5 --log 7 --config src/test/testconfig-logbook
+	echo "---"
+	${binary} --max-msg 5 --log 7 --config src/test/testconfig-lua
+	echo "---"
 }
 
 function exec_test()
@@ -359,6 +383,9 @@ case $1 in
 		;;
 	lcov)
 		exec_lcov
+		;;
+	lcov-capture)
+		exec_lcov_capture
 		;;
 	pmccabe)
 		exec_filelist
