@@ -1,4 +1,5 @@
 #include <navcom/source/src_lua.h>
+#include <navcom/source/src_lua_private.h>
 #include <navcom/lua_helper.h>
 #include <navcom/lua_syslog.h>
 #include <navcom/lua_debug.h>
@@ -15,17 +16,22 @@
 #include <lua/lualib.h>
 #include <lua/lauxlib.h>
 
-/* TODO: move static data into config->data */
-static int initialized = 0;
-static struct timespec tm_cfg;
-static jmp_buf env;
-
 static int panic(lua_State * lua)
 {
-	UNUSED_ARG(lua);
+	struct src_lua_data_t * data;
 
-	longjmp(env, -1);
+	/* get jmpbuf from Lua state */
+	lua_getglobal(lua, "__PROC_DATA__");
+	data = (struct src_lua_data_t *)lua_touserdata(lua, -1);
+	lua_pop(lua, 1);
+
+	longjmp(data->env, -1);
 	return 0;
+}
+
+static void init_data(struct src_lua_data_t * data)
+{
+	memset(data, 0, sizeof(struct src_lua_data_t));
 }
 
 /**
@@ -65,18 +71,18 @@ static int setup_lua_state(
 static int handle_script(const struct proc_config_t * config)
 {
 	struct message_t msg;
-	lua_State * lua = (lua_State *)config->data;
+	struct src_lua_data_t * data = (struct src_lua_data_t *)config->data;
 	int rc;
 
 	memset(&msg, 0, sizeof(msg));
 
-	if (setjmp(env) == 0) {
-		lua_getglobal(lua, "handle");
-		lua_pushlightuserdata(lua, (void*)&msg);
-		rc = luaH_check_error(lua, lua_pcall(lua, 1, 0, 0));
+	if (setjmp(data->env) == 0) {
+		lua_getglobal(data->lua, "handle");
+		lua_pushlightuserdata(data->lua, (void*)&msg);
+		rc = luaH_check_error(data->lua, lua_pcall(data->lua, 1, 0, 0));
 		if (rc == EXIT_SUCCESS) {
-			rc = luaL_checkinteger(lua, -1);
-			lua_pop(lua, 1);
+			rc = luaL_checkinteger(data->lua, -1);
+			lua_pop(data->lua, 1);
 			if (rc) {
 				/* TODO: check message integrity */
 				if (message_write(config->wfd, &msg) != EXIT_SUCCESS)
@@ -84,16 +90,17 @@ static int handle_script(const struct proc_config_t * config)
 			}
 			return EXIT_SUCCESS;
 		}
-		return EXIT_FAILURE;
 	} else {
-		lua_atpanic(lua, NULL);
-		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));
-		lua_pop(lua, 1);
+		lua_atpanic(data->lua, NULL);
+		syslog(LOG_CRIT, "LUA: %s", lua_tostring(data->lua, -1));
+		lua_pop(data->lua, 1);
 	}
 	return EXIT_FAILURE;
 }
 
-static int setup_period(const struct property_t * property)
+static int setup_period(
+		struct src_lua_data_t * data,
+		const struct property_t * property)
 {
 	char * endptr = NULL;
 	uint32_t t;
@@ -107,11 +114,11 @@ static int setup_period(const struct property_t * property)
 		syslog(LOG_ERR, "invalid value in period: '%s'", property->value);
 		return EXIT_FAILURE;
 	}
-	tm_cfg.tv_sec = t / 1000;
-	tm_cfg.tv_nsec = (t % 1000);
-	tm_cfg.tv_nsec *= 1000000;
+	data->tm_cfg.tv_sec = t / 1000;
+	data->tm_cfg.tv_nsec = (t % 1000);
+	data->tm_cfg.tv_nsec *= 1000000;
 
-	initialized = 1;
+	data->initialized = 1;
 	return EXIT_SUCCESS;
 }
 
@@ -123,17 +130,24 @@ static int init_proc(
 	const struct property_t * prop_script = NULL;
 	const struct property_t * prop_period = NULL;
 	const struct property_t * prop_debug = NULL;
+	struct src_lua_data_t * data;
 
 	if (!config)
 		return EXIT_FAILURE;
 	if (!properties)
 		return EXIT_FAILURE;
+	if (config->data != NULL)
+		return EXIT_FAILURE;
+
+	data = (struct src_lua_data_t *)malloc(sizeof(struct src_lua_data_t));
+	config->data = data;
+	init_data(data);
 
 	prop_script = proplist_find(properties, "script");
 	prop_period = proplist_find(properties, "period");
 	prop_debug = proplist_find(properties, "DEBUG");
 
-	if (setup_period(prop_period) != EXIT_SUCCESS)
+	if (setup_period(data, prop_period) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 
 	if (luaH_checkscript_from_prop(prop_script) != EXIT_SUCCESS)
@@ -145,8 +159,13 @@ static int init_proc(
 		syslog(LOG_ERR, "unable to create lua state");
 		return EXIT_FAILURE;
 	}
+
+	/* introduce proc data to Lua state*/
+	lua_pushlightuserdata(lua, data);
+	lua_setglobal(lua, "__PROC_DATA__");
+
 	lua_atpanic(lua, panic);
-	if (setjmp(env) == 0) {
+	if (setjmp(data->env) == 0) {
 		if (setup_lua_state(lua, prop_debug)) {
 			syslog(LOG_ERR, "unable to setup lua state");
 			return EXIT_FAILURE;
@@ -159,7 +178,7 @@ static int init_proc(
 			return EXIT_FAILURE;
 		}
 
-		config->data = lua;
+		data->lua = lua;
 		return EXIT_SUCCESS;
 	} else {
 		lua_atpanic(lua, NULL);
@@ -178,13 +197,21 @@ static int init_proc(
  */
 static int exit_proc(struct proc_config_t * config)
 {
-	if (!config)
-		return EXIT_FAILURE;
+	struct src_lua_data_t * data;
 
-	if (config->data) {
-		lua_close((lua_State *)config->data);
-		config->data = NULL;
+	if (config == NULL)
+		return EXIT_FAILURE;
+	if (config->data == NULL)
+		return EXIT_SUCCESS;
+
+	data = (struct src_lua_data_t *)config->data;
+	if (data->lua) {
+		lua_close(data->lua);
+		data->lua = NULL;
 	}
+
+	free(config->data);
+	config->data = NULL;
 	return EXIT_SUCCESS;
 }
 
@@ -195,8 +222,13 @@ static int proc(struct proc_config_t * config)
 	int fd_max;
 	struct message_t msg;
 	struct timespec tm;
+	struct src_lua_data_t * data;
 
-	if (!initialized) {
+	data = (struct src_lua_data_t *)config->data;
+	if (!data)
+		return EXIT_FAILURE;
+
+	if (!data->initialized) {
 		syslog(LOG_ERR, "uninitialized");
 		return EXIT_FAILURE;
 	}
@@ -208,7 +240,7 @@ static int proc(struct proc_config_t * config)
 		if (config->rfd > fd_max)
 			fd_max = config->rfd;
 
-		tm = tm_cfg;
+		tm = data->tm_cfg;
 
 		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, proc_get_signal_mask());
 		if (rc < 0 && errno != EINTR) {

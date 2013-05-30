@@ -231,6 +231,8 @@ function exec_integration_test()
 	echo "---"
 	${binary} --max-msg 5 --log 7 --config src/test/testconfig-lua
 	echo "---"
+	${binary} --max-msg 5 --log 7 --config src/test/testconfig-dst_lua
+	echo "---"
 }
 
 function exec_test()

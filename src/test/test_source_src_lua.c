@@ -1,6 +1,7 @@
 #include <cunit/CUnit.h>
 #include <test_source_src_lua.h>
 #include <navcom/source/src_lua.h>
+#include <navcom/source/src_lua_private.h>
 #include <common/macros.h>
 #include <string.h>
 #include <stdlib.h>
@@ -73,7 +74,7 @@ static void test_init(void)
 
 	proplist_init(&properties);
 	proplist_set(&properties, "period", "1000");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
@@ -82,7 +83,6 @@ static void test_init_noscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	int rc;
 
 	proc_config_init(&config);
 
@@ -90,11 +90,8 @@ static void test_init_noscript(void)
 	proplist_set(&properties, "script", "/dev/null");
 	proplist_set(&properties, "period", "1000");
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL(rc, EXIT_FAILURE);
-
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
@@ -103,7 +100,6 @@ static void test_init_emptyscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	int rc;
 
 	const char SCRIPT[] = "\n";
 
@@ -115,11 +111,8 @@ static void test_init_emptyscript(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
-
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
@@ -128,7 +121,6 @@ static void test_init_invalidscript(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	int rc;
 
 	const char SCRIPT[] =
 		"fucntion def()\n"
@@ -143,11 +135,8 @@ static void test_init_invalidscript(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL(rc, EXIT_FAILURE);
-
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
@@ -156,8 +145,7 @@ static void test_init_scripterror(void)
 {
 	struct proc_config_t config;
 	struct property_list_t properties;
-	lua_State * lua;
-	int rc;
+	struct src_lua_data_t * data;
 
 	const char SCRIPT[] =
 		"function abc(t)\n"
@@ -175,16 +163,14 @@ static void test_init_scripterror(void)
 
 	prepare_script(SCRIPT);
 
-	rc = proc->init(&config, &properties);
-	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL_FATAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 
-	lua = (lua_State *)config.data;
-	lua_getglobal(lua, "def");
-	lua_pcall(lua, 0, 0, 0);
+	data = (struct src_lua_data_t *)config.data;
+	lua_getglobal(data->lua, "def");
+	lua_pcall(data->lua, 0, 0, 0);
 
-	rc = proc->exit(&config);
-	CU_ASSERT_EQUAL(rc, EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }

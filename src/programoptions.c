@@ -14,6 +14,9 @@
 	#include <navcom/destination/dst_lua.h>
 #endif
 
+#ifdef ENABLE_SOURCE_LUA
+	#include <navcom/source/src_lua.h>
+#endif
 /**
  * Enumeration of all program options.
  */
@@ -49,6 +52,10 @@ static void print_version(void)
 
 static void print_config(void)
 {
+#if defined(ENABLE_SOURCE_LUA)
+	printf(" src_lua(%s) ", src_lua_release());
+#endif
+
 #if defined(ENABLE_SOURCE_GPSSERIAL)
 	printf(" gpsserial ");
 #endif
