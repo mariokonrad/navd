@@ -1,0 +1,24 @@
+# src1 : gps_sim
+# {
+# 	period:2,
+# 	lat:'12-34,45N',
+# 	lon:'123-45,6W',
+# 	time:'12-34-56',
+# 	date:'2012-07-31',
+# 	sog:55,
+# 	mag:25,
+# 	heading:105
+# };
+
+src : timer
+{
+	id:1,
+	period:200
+};
+
+dst : dst_lua
+{
+	script:'src/test/script-test-dst_lua.lua'
+};
+
+src -> dst;

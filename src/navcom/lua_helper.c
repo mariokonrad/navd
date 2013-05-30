@@ -73,13 +73,15 @@ int luaH_checkscript_from_prop(const struct property_t * property)
  *
  * @param[out] lua The Lua state.
  * @param[in] error The error code to check.
+ * @retval EXIT_SUCCESS Success.
+ * @retval EXIT_FAILURE Failure.
  */
-void luaH_check_error(lua_State * lua, int error)
+int luaH_check_error(lua_State * lua, int error)
 {
 	const char * err_string;
 
 	if (error == LUA_OK)
-		return;
+		return EXIT_SUCCESS;
 
 	err_string = lua_tostring(lua, -1);
 	switch (error) {
@@ -100,5 +102,6 @@ void luaH_check_error(lua_State * lua, int error)
 			break;
 	}
 	lua_pop(lua, 1);
+	return EXIT_FAILURE;
 }
 

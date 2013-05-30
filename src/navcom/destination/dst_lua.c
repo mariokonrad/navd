@@ -45,8 +45,8 @@ const char * dst_lua_release(void)
 /**
  * Processes the specified message.
  *
- * @reval EXIT_SUCCESS
- * @reval EXIT_FAILURE
+ * @reval EXIT_SUCCESS Success.
+ * @reval EXIT_FAILURE Failure.
  *
  * @todo Test
  */
@@ -54,8 +54,6 @@ static int process_message(
 		struct dst_lua_data_t * data,
 		const struct message_t * msg)
 {
-	int rc;
-
 	if (data == NULL)
 		return EXIT_FAILURE;
 	if (msg == NULL)
@@ -64,9 +62,7 @@ static int process_message(
 	if (setjmp(data->env) == 0) {
 		lua_getglobal(data->lua, "handle");
 		lua_pushlightuserdata(data->lua, (void*)msg);
-		rc = lua_pcall(data->lua, 1, 0, 0);
-		luaH_check_error(data->lua, rc);
-		return EXIT_SUCCESS;
+		return luaH_check_error(data->lua, lua_pcall(data->lua, 1, 0, 0));
 	} else {
 		lua_atpanic(data->lua, NULL);
 		syslog(LOG_CRIT, "LUA: %s", lua_tostring(data->lua, -1));
@@ -227,9 +223,8 @@ static int proc(struct proc_config_t * config)
 
 				case MSG_TIMER:
 				case MSG_NMEA:
-					if (process_message(data, &msg) != EXIT_SUCCESS) {
+					if (process_message(data, &msg) != EXIT_SUCCESS)
 						return EXIT_FAILURE;
-					}
 					break;
 
 				default:

@@ -73,8 +73,8 @@ static int handle_script(const struct proc_config_t * config)
 	if (setjmp(env) == 0) {
 		lua_getglobal(lua, "handle");
 		lua_pushlightuserdata(lua, (void*)&msg);
-		rc = lua_pcall(lua, 1, 0, 0);
-		if (rc == LUA_OK) {
+		rc = luaH_check_error(lua, lua_pcall(lua, 1, 0, 0));
+		if (rc == EXIT_SUCCESS) {
 			rc = luaL_checkinteger(lua, -1);
 			lua_pop(lua, 1);
 			if (rc) {
@@ -83,9 +83,8 @@ static int handle_script(const struct proc_config_t * config)
 					return EXIT_FAILURE;
 			}
 			return EXIT_SUCCESS;
-		} else {
-			luaH_check_error(lua, rc);
 		}
+		return EXIT_FAILURE;
 	} else {
 		lua_atpanic(lua, NULL);
 		syslog(LOG_CRIT, "LUA: %s", lua_tostring(lua, -1));

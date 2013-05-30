@@ -378,6 +378,7 @@ static int setup_signal_handling(void)
 	return EXIT_SUCCESS;
 }
 
+/* TODO: move filters to their own process like sources and destinations? */
 int main(int argc, char ** argv)
 {
 	size_t i;
@@ -501,7 +502,8 @@ int main(int argc, char ** argv)
 
 			if ((i >= proc_cfg_base_src) && (i < proc_cfg_base_dst)) {
 				if (route_msg(&config, &proc_cfg[i], &msg) < 0) {
-					syslog(LOG_DEBUG, "route: %08x", msg.type);
+					syslog(LOG_DEBUG, "route error: type=%08x", msg.type);
+					/* TODO: escalate error, terminate? */
 				}
 			} else {
 				syslog(LOG_DEBUG, "messages from destinations not supported yet.");

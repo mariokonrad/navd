@@ -180,15 +180,14 @@ static int filter(
 		lua_getglobal(data->lua, "filter");
 		lua_pushlightuserdata(data->lua, (void*)out);
 		lua_pushlightuserdata(data->lua, (void*)in);
-		rc = lua_pcall(data->lua, 2, 1, 0);
-		luaH_check_error(data->lua, rc);
+		rc = luaH_check_error(data->lua, lua_pcall(data->lua, 2, 1, 0));
 
-		if (rc == LUA_OK) {
+		if (rc == EXIT_SUCCESS) {
 			rc = luaL_checkinteger(data->lua, -1);
-			/* TODO: clear Lua stack */
+			lua_pop(data->lua, lua_gettop(data->lua));
 			return rc;
 		} else {
-			/* TODO: clear Lua stack */
+			lua_pop(data->lua, lua_gettop(data->lua));
 			return FILTER_FAILURE;
 		}
 	} else {
