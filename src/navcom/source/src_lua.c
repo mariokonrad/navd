@@ -3,6 +3,7 @@
 #include <navcom/lua_helper.h>
 #include <navcom/lua_syslog.h>
 #include <navcom/lua_debug.h>
+#include <navcom/lua_message.h>
 #include <navcom/message.h>
 #include <navcom/message_comm.h>
 #include <common/macros.h>
@@ -78,12 +79,11 @@ static int handle_script(const struct proc_config_t * config)
 	if (setjmp(data->env) == 0) {
 		lua_getglobal(data->lua, "handle");
 		lua_pushlightuserdata(data->lua, (void*)&msg);
-		rc = luaH_check_error(data->lua, lua_pcall(data->lua, 1, 0, 0));
+		rc = luaH_check_error(data->lua, lua_pcall(data->lua, 1, 1, 0));
 		if (rc == EXIT_SUCCESS) {
 			rc = luaL_checkinteger(data->lua, -1);
 			lua_pop(data->lua, 1);
-			if (rc) {
-				/* TODO: check message integrity */
+			if (rc == EXIT_SUCCESS) {
 				if (message_write(config->wfd, &msg) != EXIT_SUCCESS)
 					return EXIT_FAILURE;
 			}
@@ -116,6 +116,7 @@ static int setup_period(
 	data->tm_cfg.tv_sec = t / 1000;
 	data->tm_cfg.tv_nsec = (t % 1000);
 	data->tm_cfg.tv_nsec *= 1000000;
+	syslog(LOG_DEBUG, "period: %lu.%09lu s", data->tm_cfg.tv_sec, data->tm_cfg.tv_nsec);
 
 	data->initialized = 1;
 	return EXIT_SUCCESS;

@@ -181,11 +181,35 @@ static int proc(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("message_log\n");
+	printf("\n");
+	printf("Logs NMEA messages.\n");
+	printf("\n");
+	printf("Configuration options:\n");
+	printf("  enable     : enable or disables the message log, does not take any arguments.\n");
+	printf("  max_errors : number of errors the log will tolerate, the message log will disable\n");
+	printf("               if this threshold is reached. As errors counts all write errors to\n");
+	printf("               the configured destination or a corrupt NMEA message.\n");
+	printf("  dst        : device/file to which the messages are being logged. If this is not\n");
+	printf("               specified, messages are logged only to syslog.\n");
+	printf("\n");
+	printf("Example:\n");
+	printf("  log : message_log { enable };\n");
+	printf("\n");
+	printf("  log : message_log { enable, dst:'/dev/'null' };\n");
+	printf("\n");
+	printf("  log : message_log { enable, dst:'some_logfile.txt' };\n");
+	printf("\n");
+}
+
 const struct proc_desc_t message_log = {
 	.name = "message_log",
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
-	.help = NULL,
+	.help = help,
 };
 

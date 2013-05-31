@@ -1,0 +1,12 @@
+src : src_lua
+{
+	script: 'src/test/script-src_lua-1.lua',
+	period: 100
+};
+
+log : message_log
+{
+	enable
+};
+
+src -> log;
