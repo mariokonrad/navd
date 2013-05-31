@@ -201,8 +201,6 @@ int nmea_angle_to_double(double * v, const struct nmea_angle_t * angle)
  * @param[in] v number to convert
  * @retval  0 success
  * @retval -1 failure
- *
- * @todo Implementation
  */
 int nmea_double_to_angle(struct nmea_angle_t * angle, double v)
 {

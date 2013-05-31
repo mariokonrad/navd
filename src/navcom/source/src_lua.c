@@ -56,8 +56,7 @@ static int setup_lua_state(
 
 	luaH_setup_syslog(lua);
 	luaH_setup_debug(lua, debug_property);
-
-	/* TODO: setup message handling */
+	luaH_setup_message_handling(lua);
 
 	return EXIT_SUCCESS;
 }

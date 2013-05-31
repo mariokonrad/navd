@@ -152,7 +152,7 @@ int exit_filter(struct filter_context_t * ctx)
 }
 
 /**
- * @todo Implement Lua error handling
+ * Executes the actual filtering with calling the Lua script.
  */
 static int filter(
 		struct message_t * out,
