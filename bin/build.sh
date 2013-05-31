@@ -217,21 +217,21 @@ function exec_integration_test()
 	echo "---"
 	${binary} foobar
 	echo "---"
-	${binary} --config ${BASE}/src/test/testconfig --dump-config --log 7 --max-msg 5
+	${binary} --config ${BASE}/src/test/config-test-2 --dump-config --log 7 --max-msg 5
 	echo "---"
 	${BASE}/build/src/test/testrunner
 	echo "---"
-	${binary} --max-msg 5 --log 7 --config src/test/testconfig-small
+	${binary} --max-msg 5 --log 7 --config src/test/config-test-1
 	echo "---"
-	${binary} --max-msg 5 --log 7 --config src/test/testconfig-small-1
+	${binary} --max-msg 5 --log 7 --config src/test/config-gps_sim
 	echo "---"
-	${binary} --max-msg 5 --log 7 --config src/test/testconfig-small-2
+	${binary} --max-msg 5 --log 7 --config src/test/config-timer
 	echo "---"
-	${binary} --max-msg 5 --log 7 --config src/test/testconfig-logbook
+	${binary} --max-msg 5 --log 7 --config src/test/config-logbook
 	echo "---"
-	${binary} --max-msg 5 --log 7 --config src/test/testconfig-lua
+	${binary} --max-msg 5 --log 7 --config src/test/config-filter_lua-1
 	echo "---"
-	${binary} --max-msg 5 --log 7 --config src/test/testconfig-dst_lua
+	${binary} --max-msg 5 --log 7 --config src/test/config-dst_lua
 	echo "---"
 }
 

@@ -1,0 +1,12 @@
+src : timer
+{
+	id:1,
+	period:200
+};
+
+dst : dst_lua
+{
+	script:'src/test/script-test-dst_lua.lua'
+};
+
+src -> dst;

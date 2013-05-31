@@ -1,4 +1,4 @@
 timer_1s : timer { id:1, period:1000 };
-f : filter_lua { script:'src/test/testfilter.lua' };
+f : filter_lua { script:'src/test/script-filter_lua-1.lua' };
 log : message_log {};
 timer_1s -> [f] -> log;
