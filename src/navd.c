@@ -379,6 +379,7 @@ static int setup_signal_handling(void)
 }
 
 /* TODO: move filters to their own process like sources and destinations? */
+/* TODO: treat sources, filters and destinations the same (as their own processes), implicit routing through pipes */
 int main(int argc, char ** argv)
 {
 	size_t i;
