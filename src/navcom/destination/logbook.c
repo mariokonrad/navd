@@ -14,6 +14,8 @@
 #include <stdbool.h>
 #include <nmea/nmea.h>
 
+/* TODO: configuration of columns in config file, providing a default structure */
+
 struct logbook_config_t {
 	uint32_t save_timer_id;
 	int save_timer_defined;
