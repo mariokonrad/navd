@@ -1,6 +1,7 @@
 #include <daemon.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <unistd.h>
 
 void daemonize(void)
 {

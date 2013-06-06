@@ -16,13 +16,16 @@ static void test_existance(void)
 	CU_ASSERT_PTR_NOT_NULL(proc->help);
 }
 
-/**
- * @todo Check for values after 'init'
- */
+static void test_exit(void)
+{
+	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_FAILURE);
+}
+
 static void test_init(void)
 {
 	struct property_list_t properties;
 	struct proc_config_t config;
+	struct timer_data_t * data;
 
 	proc_config_init(&config);
 	proplist_init(&properties);
@@ -39,27 +42,76 @@ static void test_init(void)
 
 	proplist_set(&properties, "id", "1");
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
-
-	proplist_set(&properties, "period", "100");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
-	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
-
-	proplist_set(&properties, "id", "xyz");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
-	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
-
-	proplist_set(&properties, "id", "1");
-	proplist_set(&properties, "period", "xyz");
-	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
+	data = (struct timer_data_t *)config.data;
+	CU_ASSERT_EQUAL(data->timer_id, 0);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
 }
 
-static void test_exit(void)
+static void test_init_period(void)
 {
-	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_FAILURE);
+	struct property_list_t properties;
+	struct proc_config_t config;
+	struct timer_data_t * data;
+
+	proc_config_init(&config);
+	proplist_init(&properties);
+
+	proplist_set(&properties, "id", "1");
+	proplist_set(&properties, "period", "100");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
+	data = (struct timer_data_t *)config.data;
+	CU_ASSERT_EQUAL(data->timer_id, 1);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_sec, 0);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_nsec, 100000000);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
+
+	proplist_free(&properties);
+}
+
+static void test_init_invalid_id(void)
+{
+	struct property_list_t properties;
+	struct proc_config_t config;
+	struct timer_data_t * data;
+
+	proc_config_init(&config);
+	proplist_init(&properties);
+
+	proplist_set(&properties, "id", "xyz");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
+	data = (struct timer_data_t *)config.data;
+	CU_ASSERT_EQUAL(data->timer_id, 0);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_sec, 0);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_nsec, 0);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
+
+	proplist_free(&properties);
+}
+
+static void test_init_failure(void)
+{
+	struct property_list_t properties;
+	struct proc_config_t config;
+	struct timer_data_t * data;
+
+	proc_config_init(&config);
+	proplist_init(&properties);
+
+	proplist_set(&properties, "id", "1");
+	proplist_set(&properties, "period", "xyz");
+	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_FAILURE);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
+	data = (struct timer_data_t *)config.data;
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_sec, 0);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_nsec, 0);
+	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
+
+	proplist_free(&properties);
 }
 
 void register_suite_source_timer(void)
@@ -68,7 +120,10 @@ void register_suite_source_timer(void)
 	suite = CU_add_suite("source/timer", NULL, NULL);
 
 	CU_add_test(suite, "existance", test_existance);
-	CU_add_test(suite, "init", test_init);
 	CU_add_test(suite, "exit", test_exit);
+	CU_add_test(suite, "init", test_init);
+	CU_add_test(suite, "init: period", test_init_period);
+	CU_add_test(suite, "init: invalid id", test_init_invalid_id);
+	CU_add_test(suite, "init: failure", test_init_failure);
 }
 

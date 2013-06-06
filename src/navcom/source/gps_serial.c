@@ -45,6 +45,8 @@ static int init_proc(
 	config->data = data;
 	init_data(data);
 
+	data->initialized = 0;
+
 	if (prop_serial_read_device(&data->serial_config, properties, "device") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (prop_serial_read_baudrate(&data->serial_config, properties, "baud") != EXIT_SUCCESS)
