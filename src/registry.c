@@ -150,6 +150,10 @@ void register_sources(void)
 	pdlist_append(&desc_sources, &gps_simulator);
 #endif
 
+#ifdef ENABLE_SOURCE_SEATALKSIMULATOR
+	pdlist_append(&desc_sources, &seatalk_simulator);
+#endif
+
 #ifdef ENABLE_SOURCE_LUA
 	pdlist_append(&desc_sources, &src_lua);
 #endif

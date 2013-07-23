@@ -64,6 +64,10 @@ static void print_config(void)
 	printf(" gpssimulator ");
 #endif
 
+#if defined(ENABLE_SOURCE_SEATALKSIMULATOR)
+	printf(" seatalksimulator ");
+#endif
+
 #if defined(ENABLE_SOURCE_GPSD)
 	printf(" gpsd ");
 #endif
