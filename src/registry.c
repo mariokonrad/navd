@@ -18,6 +18,10 @@
 	#include <navcom/source/gps_simulator.h>
 #endif
 
+#ifdef ENABLE_SOURCE_SEATALKSIMULATOR
+	#include <navcom/source/seatalk_simulator.h>
+#endif
+
 #ifdef ENABLE_DESTINATION_LUA
 	#include <navcom/destination/dst_lua.h>
 #endif

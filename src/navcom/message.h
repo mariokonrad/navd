@@ -21,6 +21,9 @@ enum MessageType {
 
 	/** Navigational messages */
 	,MSG_NMEA    = 0x01000001
+
+	/** Navigational messages */
+	,MSG_SEATALK = 0x01000002
 };
 
 /**

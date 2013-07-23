@@ -1,0 +1,6 @@
+#ifndef __TEST_SOURCE_SEATALK_SIMULATOR__H__
+#define __TEST_SOURCE_SEATALK_SIMULATOR__H__
+
+void register_suite_source_seatalk_simulator(void);
+
+#endif

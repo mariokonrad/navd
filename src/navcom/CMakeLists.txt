@@ -16,6 +16,10 @@ if (ENABLE_SOURCE_GPSSIMULATOR)
 	set(SOURCES ${SOURCES} source/gps_simulator.c)
 endif()
 
+if (ENABLE_SOURCE_SEATALKSIMULATOR)
+	set(SOURCES ${SOURCES} source/seatalk_simulator.c)
+endif()
+
 # destinations
 
 set(DESTINATIONS
