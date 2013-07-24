@@ -2,6 +2,7 @@
 #include <navcom/property_read.h>
 #include <navcom/message.h>
 #include <navcom/message_comm.h>
+#include <seatalk/seatalk_util.h>
 #include <common/macros.h>
 #include <errno.h>
 #include <sys/select.h>
@@ -11,7 +12,7 @@
 #include <unistd.h>
 
 struct seatalk_simulator_data_t {
-	uint32_t depth; /* feet */
+	uint32_t depth; /* 100th of meter */
 	uint32_t period; /* milliseconds */
 };
 
@@ -27,8 +28,6 @@ static void init_message(
 {
 	struct seatalk_depth_below_transducer_t * dpt;
 
-	UNUSED_ARG(data);
-
 	msg->type = MSG_SEATALK;
 	msg->data.seatalk.type = SEATALK_DEPTH_BELOW_TRANSDUCER;
 	dpt = &msg->data.seatalk.sentence.depth_below_transducer;
@@ -38,8 +37,7 @@ static void init_message(
 	dpt->attr.transducer_defective       = 0;
 	dpt->attr.metric_display_units       = 0;
 	dpt->attr.anchor_alarm_active        = 0;
-
-	/* TODO: fill seatalk part of message */
+	dpt->depth = seatalk_depth_from_meter(data->depth);
 }
 
 static int init_proc(
