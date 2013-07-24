@@ -72,6 +72,7 @@ set(TEST_SOURCES
 	test_strlist.c
 	test_property.c
 	test_nmea.c
+	test_seatalk.c
 	test_config.c
 	test_filter_null.c
 	test_filter_nmea.c
@@ -113,6 +114,7 @@ target_link_libraries(testrunner
 	navcom
 	config
 	nmea
+	seatalk
 	devices
 	lua
 	common

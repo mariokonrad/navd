@@ -13,6 +13,7 @@ add_subdirectory(common)
 add_subdirectory(config)
 add_subdirectory(device)
 add_subdirectory(nmea)
+add_subdirectory(seatalk)
 add_subdirectory(navcom)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -31,6 +32,7 @@ set(LIBRARIES
 	navcom
 	devices
 	nmea
+	seatalk
 	config
 	common
 	)

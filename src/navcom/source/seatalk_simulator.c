@@ -25,9 +25,19 @@ static void init_message(
 		struct message_t * msg,
 		const struct seatalk_simulator_data_t * data)
 {
+	struct seatalk_depth_below_transducer_t * dpt;
+
 	UNUSED_ARG(data);
 
 	msg->type = MSG_SEATALK;
+	msg->data.seatalk.type = SEATALK_DEPTH_BELOW_TRANSDUCER;
+	dpt = &msg->data.seatalk.sentence.depth_below_transducer;
+
+	dpt->attr.shallow_depth_alarm_active = 0;
+	dpt->attr.depth_alarm_active         = 0;
+	dpt->attr.transducer_defective       = 0;
+	dpt->attr.metric_display_units       = 0;
+	dpt->attr.anchor_alarm_active        = 0;
 
 	/* TODO: fill seatalk part of message */
 }

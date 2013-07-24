@@ -2,6 +2,7 @@
 #define __MESSAGE__H__
 
 #include <nmea/nmea.h>
+#include <seatalk/seatalk.h>
 
 /**
  * Message types, defines what type of message it is.
@@ -47,7 +48,8 @@ struct message_t
 		uint32_t system; /* see enum System */
 		uint32_t timer_id;
 		struct nmea_t nmea;
-		int8_t buf[sizeof(struct nmea_t)]; /* max size of all members */
+		struct seatalk_t seatalk;
+		int8_t buf[sizeof(struct nmea_t)]; /* max size of all members, nmea is the largest */
 	} data;
 } __attribute__((packed));
 

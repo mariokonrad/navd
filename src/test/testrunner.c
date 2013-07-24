@@ -5,6 +5,7 @@
 #include <test_strlist.h>
 #include <test_property.h>
 #include <test_nmea.h>
+#include <test_seatalk.h>
 #include <test_config.h>
 #include <test_filter_null.h>
 #include <test_filter_nmea.h>
@@ -44,6 +45,7 @@ int main()
 	register_suite_strlist();
 	register_suite_property();
 	register_suite_nmea();
+	register_suite_seatalk();
 	register_suite_config();
 	register_suite_filter_null();
 	register_suite_filter_nmea();
