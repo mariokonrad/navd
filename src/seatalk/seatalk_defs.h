@@ -10,6 +10,7 @@
 #define SEATALK_APPARENT_WIND_ANGLE    0x10
 #define SEATALK_APPARENT_WIND_SPEED    0x11
 #define SEATALK_SPEED_THROUGH_WATER    0x20
+#define SEATALK_NONE                   0xff
 
 /* TODO: define other SeaTalk command types */
 

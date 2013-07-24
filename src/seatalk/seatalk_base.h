@@ -4,15 +4,19 @@
 #include <stdint.h>
 #include <seatalk/seatalk_defs.h>
 
-struct seatalk_raw_t
+union seatalk_raw_t
 {
-	uint8_t command;
-	struct
+	struct data_t
 	{
-		uint8_t data   : 4;
-		uint8_t length : 4;
-	} attr;
-	uint8_t data[16];
+		uint8_t command;
+		struct
+		{
+			uint8_t data   : 4;
+			uint8_t length : 4;
+		} attr;
+		uint8_t data[16];
+	} sentence;
+	int8_t buffer[sizeof(struct data_t)];
 } __attribute((packed));
 
 #define SEATALK_MAX_SENTENCE sizeof(struct seatalk_raw_t)
@@ -24,7 +28,7 @@ struct seatalk_raw_t
 struct seatalk_t
 {
 	uint8_t type;
-	struct seatalk_raw_t raw;
+	union seatalk_raw_t raw;
 	union
 	{
 		struct seatalk_depth_below_transducer_t depth_below_transducer;
@@ -42,12 +46,19 @@ struct seatalk_t
 struct seatalk_sentence_t
 {
 	const uint8_t type;
-	int (*read)(struct seatalk_t *, const char *, uint32_t);
-	int (*write)(char *, uint32_t, const struct seatalk_t *);
+	int (*read)(struct seatalk_t *, const union seatalk_raw_t *);
+	int (*write)(union seatalk_raw_t *, const struct seatalk_t *);
 	void (*hton)(struct seatalk_t *);
 	void (*ntoh)(struct seatalk_t *);
 };
 
 int seatalk_init(struct seatalk_t *);
+
+int seatalk_read_tab(
+		struct seatalk_t *,
+		const char *,
+		uint32_t,
+		const struct seatalk_sentence_t **,
+		uint32_t);
 
 #endif

@@ -20,27 +20,35 @@ int nmea_init(struct nmea_t * nmea)
 }
 
 /**
- * Reads all NMEA senteces defined defined in the specified table.
+ * Reads all NMEA senteces defined in the specified table.
  *
- * @param[in] s read sentence
  * @param[out] nmea data of the parsed structure
+ * @param[in] s read sentence
  * @param[in] tab table of sentences to parse
+ * @param[in] tab_size size of the table of sentences to parse
  * @retval  0 success
  * @retval -1 parameter error
  * @retval -2 nmea_checksum error
  * @retval -3 format error
  * @retval -4 unknown sentence
  */
-int nmea_read_tab(struct nmea_t * nmea, const char * s, const struct nmea_sentence_t ** tab, uint32_t tab_size)
+int nmea_read_tab(
+		struct nmea_t * nmea,
+		const char * s,
+		const struct nmea_sentence_t ** tab,
+		uint32_t tab_size)
 {
 	const char * p = s;
 	const struct nmea_sentence_t * entry = NULL;
 	uint32_t i;
 	int rc;
 
-	if (s == NULL || nmea == NULL || tab == NULL || tab_size == 0) return -1;
-	if (nmea_checksum_check(s, START_TOKEN_NMEA)) return -2;
-	if (*s != START_TOKEN_NMEA) return -3;
+	if (s == NULL || nmea == NULL || tab == NULL || tab_size == 0)
+		return -1;
+	if (nmea_checksum_check(s, START_TOKEN_NMEA))
+		return -2;
+	if (*s != START_TOKEN_NMEA)
+		return -3;
 	p = find_token_end(s+1);
 	for (i = 0; i < tab_size; ++i) {
 		entry = tab[i];
