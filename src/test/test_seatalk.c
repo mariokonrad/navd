@@ -74,6 +74,8 @@ static void test_sentence_reading_00()
 
 	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
 		s = &SENTENCES[i];
+		CU_ASSERT_EQUAL(seatalk_read(&info, NULL, s->size), -1);
+		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, 0), -1);
 		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, s->size), 0);
 		CU_ASSERT_EQUAL(info.type, SEATALK_DEPTH_BELOW_TRANSDUCER);
 		CU_ASSERT_EQUAL(info.sentence.depth_below_transducer.depth, DEPTHS[i]);
@@ -110,6 +112,8 @@ static void test_sentence_reading_01()
 
 	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
 		s = &SENTENCES[i];
+		CU_ASSERT_EQUAL(seatalk_read(&info, NULL, s->size), -1);
+		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, 0), -1);
 		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, s->size), 0);
 		CU_ASSERT_EQUAL(info.type, SEATALK_EQUIPMENT_ID);
 		CU_ASSERT_EQUAL(memcmp(info.sentence.equipment_id.id, &IDS[i].data, IDS[i].size), 0);
@@ -140,6 +144,8 @@ static void test_sentence_reading_10()
 
 	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
 		s = &SENTENCES[i];
+		CU_ASSERT_EQUAL(seatalk_read(&info, NULL, s->size), -1);
+		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, 0), -1);
 		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, s->size), 0);
 		CU_ASSERT_EQUAL(info.type, SEATALK_APPARENT_WIND_ANGLE);
 		CU_ASSERT_EQUAL(info.sentence.apparent_wind_angle.angle, ANGLES[i]);
@@ -184,6 +190,8 @@ static void test_sentence_reading_11()
 
 	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
 		s = &SENTENCES[i];
+		CU_ASSERT_EQUAL(seatalk_read(&info, NULL, s->size), -1);
+		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, 0), -1);
 		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, s->size), 0);
 		CU_ASSERT_EQUAL(info.type, SEATALK_APPARENT_WIND_SPEED);
 		CU_ASSERT_EQUAL(info.sentence.apparent_wind_speed.unit, SPEEDS[i].unit);
@@ -215,6 +223,8 @@ static void test_sentence_reading_20()
 
 	for (i = 0; i < sizeof(SENTENCES)/sizeof(SENTENCES[0]); ++i) {
 		s = &SENTENCES[i];
+		CU_ASSERT_EQUAL(seatalk_read(&info, NULL, s->size), -1);
+		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, 0), -1);
 		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, s->size), 0);
 		CU_ASSERT_EQUAL(info.type, SEATALK_SPEED_THROUGH_WATER);
 		CU_ASSERT_EQUAL(info.sentence.speed_through_water.speed, SPEEDS[i]);
