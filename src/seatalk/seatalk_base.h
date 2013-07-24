@@ -11,8 +11,8 @@ union seatalk_raw_t
 		uint8_t command;
 		struct
 		{
-			uint8_t data   : 4;
 			uint8_t length : 4;
+			uint8_t data   : 4;
 		} attr;
 		uint8_t data[16];
 	} sentence;

@@ -32,11 +32,11 @@ static void init_message(
 	msg->data.seatalk.type = SEATALK_DEPTH_BELOW_TRANSDUCER;
 	dpt = &msg->data.seatalk.sentence.depth_below_transducer;
 
-	dpt->attr.shallow_depth_alarm_active = 0;
-	dpt->attr.depth_alarm_active         = 0;
-	dpt->attr.transducer_defective       = 0;
-	dpt->attr.metric_display_units       = 0;
-	dpt->attr.anchor_alarm_active        = 0;
+	dpt->shallow_depth_alarm_active = 0;
+	dpt->depth_alarm_active         = 0;
+	dpt->transducer_defective       = 0;
+	dpt->metric_display_units       = 0;
+	dpt->anchor_alarm_active        = 0;
 	dpt->depth = seatalk_depth_from_meter(data->depth);
 }
 

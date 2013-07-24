@@ -45,7 +45,6 @@ int main()
 	register_suite_strlist();
 	register_suite_property();
 	register_suite_nmea();
-	register_suite_seatalk();
 	register_suite_config();
 	register_suite_filter_null();
 	register_suite_filter_nmea();
@@ -77,6 +76,8 @@ int main()
 #if defined(ENABLE_SOURCE_LUA)
 	register_suite_source_src_lua();
 #endif
+
+	register_suite_seatalk();
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();

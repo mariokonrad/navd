@@ -5,6 +5,7 @@
 #include <seatalk/seatalk_sentence_01.h>
 #include <seatalk/seatalk_sentence_10.h>
 #include <seatalk/seatalk_sentence_11.h>
+#include <seatalk/seatalk_sentence_20.h>
 
 /**
  * @todo Implementation
@@ -15,6 +16,7 @@ static const struct seatalk_sentence_t * SENTENCES[] =
 	&sentence_01,
 	&sentence_10,
 	&sentence_11,
+	&sentence_20,
 };
 
 /**

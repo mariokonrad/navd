@@ -12,6 +12,9 @@
 #define SEATALK_SPEED_THROUGH_WATER    0x20
 #define SEATALK_NONE                   0xff
 
+#define SEATALK_UNIT_KNOT             0x01
+#define SEATALK_UNIT_METER_PER_SECOND 0x02
+
 /* TODO: define other SeaTalk command types */
 
 /**
@@ -21,15 +24,11 @@
  */
 struct seatalk_depth_below_transducer_t
 {
-	struct
-	{
-		uint8_t shallow_depth_alarm_active : 1;
-		uint8_t depth_alarm_active         : 1;
-		uint8_t transducer_defective       : 1;
-		uint8_t unused                     : 3;
-		uint8_t metric_display_units       : 1;
-		uint8_t anchor_alarm_active        : 1;
-	} attr;
+	uint8_t anchor_alarm_active;
+	uint8_t metric_display_units;
+	uint8_t transducer_defective;
+	uint8_t depth_alarm_active;
+	uint8_t shallow_depth_alarm_active;
 	uint16_t depth; /* in 10th of feet, 1 m = 3.2808 feet */
 } __attribute__((packed));
 
@@ -45,7 +44,7 @@ struct seatalk_depth_below_transducer_t
  */
 struct seatalk_equipment_id_t
 {
-	uint8_t id[6];
+	uint8_t id[6]; /* TODO: change to uint32_t for easier handling? */
 } __attribute__((packed));
 
 /**
@@ -55,7 +54,7 @@ struct seatalk_equipment_id_t
  */
 struct seatalk_apparent_wind_angle_t
 {
-	uint16_t angle; /* angle/2 degrees right of bow */
+	uint16_t angle; /* degrees right of bow */
 } __attribute__((packed));
 
 /**
@@ -65,7 +64,8 @@ struct seatalk_apparent_wind_angle_t
  */
 struct seatalk_apparent_wind_speed_t
 {
-	/* TODO */
+	uint8_t unit;   /* unit of value */
+	uint16_t speed; /* wind speed */
 } __attribute__((packed));
 
 /**
@@ -75,7 +75,7 @@ struct seatalk_apparent_wind_speed_t
  */
 struct seatalk_speed_through_water_t
 {
-	/* TODO */
+	uint16_t speed; /* speed in 10th of knots */
 } __attribute__((packed));
 
 #endif
