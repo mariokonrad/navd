@@ -22,11 +22,22 @@ static void test_util_depth_to_meter()
 	CU_ASSERT_EQUAL(seatalk_depth_to_meter(1000), 3048); /* 100 ft */
 }
 
+static void test_base_init()
+{
+	struct seatalk_t data;
+
+	CU_ASSERT_EQUAL(seatalk_init(NULL), -1);
+
+	CU_ASSERT_EQUAL(seatalk_init(&data), 0);
+	CU_ASSERT_EQUAL(data.type, 0xff);
+}
+
 void register_suite_seatalk(void)
 {
 	CU_Suite * suite;
 	suite = CU_add_suite("seatalk", NULL, NULL);
 	CU_add_test(suite, "util: depth from meter", test_util_depth_from_meter);
 	CU_add_test(suite, "util: depth to meter", test_util_depth_to_meter);
+	CU_add_test(suite, "base: init", test_base_init);
 }
 

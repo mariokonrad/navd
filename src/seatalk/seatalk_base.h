@@ -36,4 +36,18 @@ struct seatalk_t
 	} sentence;
 } __attribute((packed));
 
+/**
+ * Base structure for all implementations of SeaTalk sentences.
+ */
+struct seatalk_sentence_t
+{
+	const uint8_t type;
+	int (*read)(struct seatalk_t *, const char *, uint32_t);
+	int (*write)(char *, uint32_t, const struct seatalk_t *);
+	void (*hton)(struct seatalk_t *);
+	void (*ntoh)(struct seatalk_t *);
+};
+
+int seatalk_init(struct seatalk_t *);
+
 #endif

@@ -59,7 +59,10 @@ static const struct nmea_sentence_t * SENTENCES[] = {
  */
 int nmea_read(struct nmea_t * nmea, const char * s)
 {
-	return nmea_read_tab(nmea, s, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
+	return nmea_read_tab(
+		nmea,
+		s,
+		SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
 /**
@@ -76,8 +79,17 @@ int nmea_read(struct nmea_t * nmea, const char * s)
  */
 int nmea_write(char * buf, uint32_t size, const struct nmea_t * nmea)
 {
-	if (buf == NULL || size == 0 || nmea == NULL) return -1;
-	return nmea_write_tab(buf, size, nmea, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
+	if (buf == NULL)
+		return -1;
+	if (size == 0)
+		return -1;
+	if (nmea == NULL)
+		return -1;
+	return nmea_write_tab(
+		buf,
+		size,
+		nmea,
+		SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
 /**
@@ -91,8 +103,11 @@ int nmea_write(char * buf, uint32_t size, const struct nmea_t * nmea)
  */
 int nmea_hton(struct nmea_t * nmea)
 {
-	if (nmea == NULL) return -1;
-	return nmea_hton_tab(nmea, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
+	if (nmea == NULL)
+		return -1;
+	return nmea_hton_tab(
+		nmea,
+		SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
 /**
@@ -106,8 +121,11 @@ int nmea_hton(struct nmea_t * nmea)
  */
 int nmea_ntoh(struct nmea_t * nmea)
 {
-	if (nmea == NULL) return -1;
-	return nmea_ntoh_tab(nmea, SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
+	if (nmea == NULL)
+		return -1;
+	return nmea_ntoh_tab(
+		nmea,
+		SENTENCES, sizeof(SENTENCES)/sizeof(struct nmea_sentence_t *));
 }
 
 /**
