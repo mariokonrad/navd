@@ -235,6 +235,8 @@ function exec_integration_test()
 	echo "---"
 	${binary} --max-msg 5 --log 7 --config src/test/config-src_lua
 	echo "---"
+	${binary} --max-msg 5 --log 7 --config src/test/config-seatalk_sim
+	echo "---"
 }
 
 function exec_test()

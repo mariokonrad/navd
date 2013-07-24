@@ -1,0 +1,6 @@
+sim : seatalk_sim {
+	period:500,
+	depth:15
+};
+log : message_log {};
+sim -> log;

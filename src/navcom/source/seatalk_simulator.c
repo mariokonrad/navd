@@ -109,8 +109,9 @@ static int proc(struct proc_config_t * config)
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
 
-		tm.tv_sec = data->period;
-		tm.tv_nsec = 0;
+		tm.tv_sec = data->period / 1000;
+		tm.tv_nsec = data->period % 1000;
+		tm.tv_nsec *= 1000000;
 
 		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, &tm, proc_get_signal_mask());
 		if (rc < 0 && errno != EINTR) {
