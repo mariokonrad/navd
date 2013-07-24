@@ -54,6 +54,7 @@ static void test_sentence_reading_00()
 {
 	static const struct test_sentence_t SENTENCES[] =
 	{
+		{ 5, "\x00\x02\x60\x65\x00" },
 		{ 5, "\x00\x02\x00\x64\x02" },
 		{ 5, "\x00\x02\x00\x64\x00" },
 		{ 5, "\x00\x02\x00\x00\x02" },
@@ -62,10 +63,11 @@ static void test_sentence_reading_00()
 
 	static const uint16_t DEPTHS[sizeof(SENTENCES) / sizeof(SENTENCES[0])] =
 	{
-		612,
-		100,
-		512,
-		0,
+		101, /*  3.1 m, 10.17 feet */
+		612, /* 18.7 m, 61.2  feet */
+		100, /*  3.0 m, 10.0  feet */
+		512, /* 15.6 m, 51.2  feet */
+		0,   /*  0.0 m,  0.0  feet */
 	};
 
 	unsigned int i;
@@ -116,7 +118,7 @@ static void test_sentence_reading_01()
 		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, 0), -1);
 		CU_ASSERT_EQUAL(seatalk_read(&info, s->data, s->size), 0);
 		CU_ASSERT_EQUAL(info.type, SEATALK_EQUIPMENT_ID);
-		CU_ASSERT_EQUAL(memcmp(info.sentence.equipment_id.id, &IDS[i].data, IDS[i].size), 0);
+		CU_ASSERT_EQUAL(memcmp(info.sentence.equipment_id.id, IDS[i].data, IDS[i].size), 0);
 	}
 }
 
@@ -157,13 +159,13 @@ static void test_sentence_reading_11()
 	static const struct test_sentence_t SENTENCES[] =
 	{
 		{ 4, "\x11\x01\x00\x00" },
-		{ 4, "\x11\x01\x01\x00" },
-		{ 4, "\x11\x01\x00\x01" },
-		{ 4, "\x11\x01\x01\x01" },
-		{ 4, "\x11\x01\x00\x00" },
-		{ 4, "\x11\x01\x01\x00" },
-		{ 4, "\x11\x01\x00\x01" },
-		{ 4, "\x11\x01\x01\x01" },
+		{ 4, "\x11\x01\x08\x00" },
+		{ 4, "\x11\x01\x00\x08" },
+		{ 4, "\x11\x01\x08\x08" },
+		{ 4, "\x11\x01\x80\x00" },
+		{ 4, "\x11\x01\x88\x00" },
+		{ 4, "\x11\x01\x80\x08" },
+		{ 4, "\x11\x01\x88\x08" },
 	};
 
 	struct speeds_t
@@ -174,14 +176,14 @@ static void test_sentence_reading_11()
 
 	static const struct speeds_t SPEEDS[sizeof(SENTENCES) / sizeof(SENTENCES[0])] =
 	{
-		{ SEATALK_UNIT_KNOT,             0 },
-		{ SEATALK_UNIT_KNOT,             0 },
-		{ SEATALK_UNIT_KNOT,             0 },
-		{ SEATALK_UNIT_KNOT,             0 },
-		{ SEATALK_UNIT_METER_PER_SECOND, 0 },
-		{ SEATALK_UNIT_METER_PER_SECOND, 0 },
-		{ SEATALK_UNIT_METER_PER_SECOND, 0 },
-		{ SEATALK_UNIT_METER_PER_SECOND, 0 },
+		{ SEATALK_UNIT_KNOT,              0 },
+		{ SEATALK_UNIT_KNOT,              8 },
+		{ SEATALK_UNIT_KNOT,              8 },
+		{ SEATALK_UNIT_KNOT,             16 },
+		{ SEATALK_UNIT_METER_PER_SECOND,  0 },
+		{ SEATALK_UNIT_METER_PER_SECOND,  8 },
+		{ SEATALK_UNIT_METER_PER_SECOND,  8 },
+		{ SEATALK_UNIT_METER_PER_SECOND, 16 },
 	};
 
 	unsigned int i;

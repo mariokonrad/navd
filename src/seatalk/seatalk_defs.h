@@ -65,7 +65,7 @@ struct seatalk_apparent_wind_angle_t
 struct seatalk_apparent_wind_speed_t
 {
 	uint8_t unit;   /* unit of value */
-	uint16_t speed; /* wind speed */
+	uint16_t speed; /* wind speed in 10th of unit */
 } __attribute__((packed));
 
 /**

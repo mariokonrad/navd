@@ -28,8 +28,9 @@ static int read(
 	seatalk->type = raw->sentence.command;
 	v = &seatalk->sentence.apparent_wind_speed;
 
-	/* TODO: set wind speed value */
-	v->speed = 1;
+	v->speed = 0;
+	v->speed += raw->sentence.data[0] & 0x7f;
+	v->speed += raw->sentence.data[1] & 0x0f;
 
 	v->unit = (raw->sentence.data[0] & 0x80)
 		? SEATALK_UNIT_METER_PER_SECOND
