@@ -2,6 +2,7 @@
 #include <common/macros.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /**
  * Structure to hand simulation data.
@@ -12,9 +13,6 @@ struct simulator_data_t
 	int i;
 	int len;
 };
-
-/* TODO: Simulator specific data must not be static */
-static struct simulator_data_t simulator_data;
 
 /**
  * Opens the simulator device.
@@ -28,6 +26,8 @@ static int simulator_open(
 		struct device_t * device,
 		const struct device_config_t * cfg)
 {
+	struct simulator_data_t * data;
+
 	UNUSED_ARG(cfg);
 
 	if (device == NULL)
@@ -35,15 +35,17 @@ static int simulator_open(
 	if (device->fd >= 0)
 		return 0;
 	device->fd = 0;
-	device->data = &simulator_data;
-	simulator_data.i = 0;
-	simulator_data.s =
+
+	data = (struct simulator_data_t *)malloc(sizeof(struct simulator_data_t));
+	data->i = 0;
+	data->s =
 		"$GPRMC,202451,A,4702.3966,N,00818.3287,E,0.0,312.3,260711,0.6,E,A*19\r\n"
 		"$GPGSV,3,1,12,03,77,155,29,06,65,131,34,07,05,288,00,08,08,314,00*76\r\n"
 		"$GPGLL,4702.3966,N,00818.3287,E,202451,A,A*43\r\n"
 		"\0"
 		;
-	simulator_data.len = strlen(simulator_data.s);
+	data->len = strlen(data->s);
+	device->data = data;
 	return 0;
 }
 
@@ -61,6 +63,10 @@ static int simulator_close(struct device_t * device)
 	if (device->fd < 0)
 		return 0;
 	device->fd = -1;
+	if (device->data) {
+		free(device->data);
+		device->data = NULL;
+	}
 	return 0;
 }
 
@@ -86,6 +92,8 @@ static int simulator_read(
 	if (buf == NULL)
 		return -1;
 	if (device->fd < 0)
+		return -1;
+	if (device->data == NULL)
 		return -1;
 
 	data = (struct simulator_data_t *)device->data;

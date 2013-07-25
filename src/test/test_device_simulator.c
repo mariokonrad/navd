@@ -47,6 +47,21 @@ static void test_close(void)
 	CU_ASSERT_EQUAL(dev.fd, -1);
 }
 
+static void test_open_close(void)
+{
+	struct device_t dev;
+
+	device_init(&dev);
+	CU_ASSERT_EQUAL(dev.fd, -1);
+	CU_ASSERT_PTR_NULL(dev.data);
+	CU_ASSERT_EQUAL(device->open(&dev, NULL), 0);
+	CU_ASSERT_NOT_EQUAL(dev.fd, -1);
+	CU_ASSERT_PTR_NOT_NULL(dev.data);
+	CU_ASSERT_EQUAL(device->close(&dev), 0);
+	CU_ASSERT_EQUAL(dev.fd, -1);
+	CU_ASSERT_PTR_NULL(dev.data);
+}
+
 static void test_write(void)
 {
 	CU_ASSERT_EQUAL(device->write(NULL, NULL, 0), -1);
@@ -84,6 +99,7 @@ void register_suite_device_simulator(void)
 	CU_add_test(suite, "existance", test_existance);
 	CU_add_test(suite, "open", test_open);
 	CU_add_test(suite, "close", test_close);
+	CU_add_test(suite, "open/close", test_open_close);
 	CU_add_test(suite, "write", test_write);
 	CU_add_test(suite, "read", test_read);
 }
