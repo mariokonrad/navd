@@ -1,4 +1,4 @@
-gps : gps_serial { device:'/dev/ttyUSB0', baud:115200, parity:'none', data:8, stop:1 };
+gps : gps_serial { device:'/dev/ttyUSB0', baud:4800, parity:'none', data:8, stop:1 };
 log0 : message_log { enable };
 log1 : message_log { enable };
 log2 : message_log { enable };

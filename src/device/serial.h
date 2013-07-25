@@ -14,10 +14,13 @@ typedef enum {
 	,BAUD_38400  =  38400
 	,BAUD_57600  =  57600
 	,BAUD_115200 = 115200
+	,BAUD_230400 = 230400
 } Baud;
 
 typedef enum {
-	 DATA_BIT_7 = 7
+	 DATA_BIT_5 = 5
+	,DATA_BIT_6 = 6
+	,DATA_BIT_7 = 7
 	,DATA_BIT_8 = 8
 } DataBits;
 
@@ -30,6 +33,7 @@ typedef enum {
 	 PARITY_NONE
 	,PARITY_EVEN
 	,PARITY_ODD
+	,PARITY_MARK
 } Parity;
 
 /**

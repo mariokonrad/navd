@@ -62,6 +62,7 @@ int prop_serial_read_baudrate(
 		case BAUD_38400:
 		case BAUD_57600:
 		case BAUD_115200:
+		case BAUD_230400:
 			serial->baud_rate = baud;
 			syslog(LOG_DEBUG, "baud rate configured, using '%u'", serial->baud_rate);
 			break;
@@ -94,6 +95,8 @@ int prop_serial_read_parity(
 		serial->parity = PARITY_EVEN;
 	} else if (strcmp(prop->value, "odd") == 0) {
 		serial->parity = PARITY_ODD;
+	} else if (strcmp(prop->value, "mark") == 0) {
+		serial->parity = PARITY_MARK;
 	} else {
 		syslog(LOG_ERR, "invalid parity configured: %s", prop->value);
 		return EXIT_FAILURE;
@@ -126,6 +129,8 @@ int prop_serial_read_databits(
 	}
 
 	switch (bits) {
+		case DATA_BIT_5:
+		case DATA_BIT_6:
 		case DATA_BIT_7:
 		case DATA_BIT_8:
 			serial->data_bits = bits;

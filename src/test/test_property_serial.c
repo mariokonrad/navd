@@ -64,17 +64,21 @@ static void test_read_baudrate(void)
 	CU_ASSERT_EQUAL(prop_serial_read_baudrate(&cfg, &list, "baud"), EXIT_SUCCESS);
 
 	proplist_set(&list, "baud", "9600");
-
 	CU_ASSERT_EQUAL(prop_serial_read_baudrate(&cfg, &list, ""), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.baud_rate, BAUD_4800);
-
 	CU_ASSERT_EQUAL(prop_serial_read_baudrate(&cfg, &list, "baud"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.baud_rate, BAUD_9600);
 
 	proplist_set(&list, "baud", "12345");
-
 	CU_ASSERT_EQUAL(prop_serial_read_baudrate(&cfg, &list, "baud"), EXIT_FAILURE);
 	CU_ASSERT_EQUAL(cfg.baud_rate, BAUD_9600);
+
+	proplist_set(&list, "baud", "4800");
+	CU_ASSERT_EQUAL(prop_serial_read_baudrate(&cfg, &list, "baud"), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(cfg.baud_rate, BAUD_4800);
+
+	proplist_set(&list, "baud", "99");
+	CU_ASSERT_EQUAL(prop_serial_read_baudrate(&cfg, &list, "baud"), EXIT_FAILURE);
 
 	proplist_free(&list);
 }
@@ -105,22 +109,25 @@ static void test_read_parity(void)
 	CU_ASSERT_EQUAL(prop_serial_read_parity(&cfg, &list, "parity"), EXIT_SUCCESS);
 
 	proplist_set(&list, "parity", "none");
-
 	CU_ASSERT_EQUAL(prop_serial_read_parity(&cfg, &list, ""), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.parity, PARITY_NONE);
-
 	CU_ASSERT_EQUAL(prop_serial_read_parity(&cfg, &list, "parity"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.parity, PARITY_NONE);
 
 	proplist_set(&list, "parity", "even");
-
 	CU_ASSERT_EQUAL(prop_serial_read_parity(&cfg, &list, "parity"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.parity, PARITY_EVEN);
 
 	proplist_set(&list, "parity", "odd");
-
 	CU_ASSERT_EQUAL(prop_serial_read_parity(&cfg, &list, "parity"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.parity, PARITY_ODD);
+
+	proplist_set(&list, "parity", "mark");
+	CU_ASSERT_EQUAL(prop_serial_read_parity(&cfg, &list, "parity"), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(cfg.parity, PARITY_MARK);
+
+	proplist_set(&list, "parity", "zzz");
+	CU_ASSERT_EQUAL(prop_serial_read_parity(&cfg, &list, "parity"), EXIT_FAILURE);
 
 	proplist_free(&list);
 }
@@ -151,17 +158,25 @@ static void test_read_databits(void)
 	CU_ASSERT_EQUAL(prop_serial_read_databits(&cfg, &list, "data"), EXIT_SUCCESS);
 
 	proplist_set(&list, "data", "7");
-
 	CU_ASSERT_EQUAL(prop_serial_read_databits(&cfg, &list, ""), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.data_bits, DATA_BIT_8);
-
 	CU_ASSERT_EQUAL(prop_serial_read_databits(&cfg, &list, "data"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.data_bits, DATA_BIT_7);
 
 	proplist_set(&list, "data", "8");
-
 	CU_ASSERT_EQUAL(prop_serial_read_databits(&cfg, &list, "data"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.data_bits, DATA_BIT_8);
+
+	proplist_set(&list, "data", "5");
+	CU_ASSERT_EQUAL(prop_serial_read_databits(&cfg, &list, "data"), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(cfg.data_bits, DATA_BIT_5);
+
+	proplist_set(&list, "data", "6");
+	CU_ASSERT_EQUAL(prop_serial_read_databits(&cfg, &list, "data"), EXIT_SUCCESS);
+	CU_ASSERT_EQUAL(cfg.data_bits, DATA_BIT_6);
+
+	proplist_set(&list, "data", "99");
+	CU_ASSERT_EQUAL(prop_serial_read_databits(&cfg, &list, "data"), EXIT_FAILURE);
 
 	proplist_free(&list);
 }
@@ -192,17 +207,17 @@ static void test_read_stopbits(void)
 	CU_ASSERT_EQUAL(prop_serial_read_stopbits(&cfg, &list, "stop"), EXIT_SUCCESS);
 
 	proplist_set(&list, "stop", "2");
-
 	CU_ASSERT_EQUAL(prop_serial_read_stopbits(&cfg, &list, ""), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.stop_bits, STOP_BIT_1);
-
 	CU_ASSERT_EQUAL(prop_serial_read_stopbits(&cfg, &list, "stop"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.stop_bits, STOP_BIT_2);
 
 	proplist_set(&list, "stop", "1");
-
 	CU_ASSERT_EQUAL(prop_serial_read_stopbits(&cfg, &list, "stop"), EXIT_SUCCESS);
 	CU_ASSERT_EQUAL(cfg.stop_bits, STOP_BIT_1);
+
+	proplist_set(&list, "stop", "99");
+	CU_ASSERT_EQUAL(prop_serial_read_stopbits(&cfg, &list, "stop"), EXIT_FAILURE);
 
 	proplist_free(&list);
 }

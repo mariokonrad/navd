@@ -5,6 +5,69 @@
 #include <string.h>
 #include <unistd.h>
 
+static tcflag_t get_baud(const struct serial_config_t * config)
+{
+	switch (config->baud_rate) {
+		case BAUD_300:    return B300;
+		case BAUD_600:    return B600;
+		case BAUD_1200:   return B1200;
+		case BAUD_2400:   return B2400;
+		case BAUD_4800:   return B4800;
+		case BAUD_9600:   return B9600;
+		case BAUD_19200:  return B19200;
+		case BAUD_38400:  return B38400;
+		case BAUD_57600:  return B57600;
+		case BAUD_115200: return B115200;
+		case BAUD_230400: return B230400;
+		default: break;
+	};
+	return B0;
+}
+
+static tcflag_t get_data_bits(const struct serial_config_t * config)
+{
+	switch (config->data_bits) {
+		case DATA_BIT_5: return CS5;
+		case DATA_BIT_6: return CS6;
+		case DATA_BIT_7: return CS7;
+		case DATA_BIT_8: return CS8;
+		default: break;
+	}
+	return 0;
+}
+
+static tcflag_t get_stop_bits(const struct serial_config_t * config)
+{
+	switch (config->stop_bits) {
+		case STOP_BIT_1: return 0;
+		case STOP_BIT_2: return CSTOPB;
+		default: break;
+	}
+	return 0;
+}
+
+static tcflag_t get_parity_cflag(const struct serial_config_t * config)
+{
+	switch (config->parity) {
+		case PARITY_NONE: return 0;
+		case PARITY_EVEN: return PARENB;
+		case PARITY_ODD:  return PARENB | PARODD;
+		case PARITY_MARK: return 0;
+	}
+	return 0;
+}
+
+static tcflag_t get_parity_iflag(const struct serial_config_t * config)
+{
+	switch (config->parity) {
+		case PARITY_NONE: return IGNPAR;
+		case PARITY_EVEN: return INPCK;
+		case PARITY_ODD:  return INPCK;
+		case PARITY_MARK: return PARMRK;
+	}
+	return 0;
+}
+
 /**
  * Opens a serial device.
  *
@@ -37,13 +100,15 @@ static int serial_open(
 	tcgetattr(device->fd, &old_tio);
 	memset(&new_tio, 0, sizeof(new_tio));
 	new_tio.c_cflag = 0
-		| B4800
-		| CS8
-		| CLOCAL
-		| CREAD
+		| get_baud(config)
+		| get_data_bits(config)
+		| get_stop_bits(config)
+		| get_parity_cflag(config)
+		| CLOCAL /* ignore modem control lines */
+		| CREAD /* enable receiver */
 		;
 	new_tio.c_iflag = 0
-		| IGNPAR
+		| get_parity_iflag(config)
 		;
 	new_tio.c_oflag = 0
 		;
