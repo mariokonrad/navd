@@ -24,6 +24,10 @@ endif()
 
 add_subdirectory(cunit)
 
+add_executable(serial_hexdump
+	serial_hexdump.c
+	)
+
 add_executable(dump
 	dump.c
 	)
