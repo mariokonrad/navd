@@ -54,8 +54,6 @@ static int init_proc(
 	config->data = data;
 	init_data(data);
 
-	data->initialized = 0;
-
 	if (prop_serial_read_device(&data->serial_config, properties, "device") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (prop_serial_read_baudrate(&data->serial_config, properties, "baud") != EXIT_SUCCESS)
@@ -67,7 +65,6 @@ static int init_proc(
 	if (prop_serial_read_stopbits(&data->serial_config, properties, "stop") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 
-	data->initialized = 1;
 	return EXIT_SUCCESS;
 }
 
@@ -173,11 +170,6 @@ static int proc(struct proc_config_t * config)
 	data = (struct gps_serial_data_t *)config->data;
 	if (!data)
 		return EXIT_FAILURE;
-
-	if (!data->initialized) {
-		syslog(LOG_ERR, "uninitialized");
-		return EXIT_FAILURE;
-	}
 
 	ops = &serial_device_operations;
 	device_init(&device);

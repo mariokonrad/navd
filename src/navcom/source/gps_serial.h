@@ -9,7 +9,6 @@
  */
 struct gps_serial_data_t
 {
-	int initialized;
 	struct serial_config_t serial_config;
 };
 

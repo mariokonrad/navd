@@ -52,7 +52,6 @@ static void test_init_name(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct gps_serial_data_t *)config.data;
-	CU_ASSERT_EQUAL(data->initialized, 1);
 	CU_ASSERT_STRING_EQUAL(data->serial_config.name, "/dev/null");
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
@@ -72,7 +71,6 @@ static void test_init_baud_rate(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct gps_serial_data_t *)config.data;
-	CU_ASSERT_EQUAL(data->initialized, 1);
 	CU_ASSERT_EQUAL(data->serial_config.baud_rate, BAUD_9600);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
