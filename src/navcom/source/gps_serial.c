@@ -17,17 +17,26 @@ struct nmea_read_buffer_t
 	struct message_t msg;
 };
 
+/**
+ * Initializes the configuration data with default values.
+ *
+ * @param[out] data The configuration to initialize.
+ */
 static void init_data(struct gps_serial_data_t * data)
 {
 	memset(data, 0, sizeof(struct gps_serial_data_t));
 
-	strncpy(data->serial_config.name, "/dev/ttyUSB0", sizeof(data->serial_config));
+	strncpy(data->serial_config.name, "/dev/ttyUSB0", sizeof(data->serial_config.name));
 	data->serial_config.baud_rate = BAUD_4800;
 	data->serial_config.data_bits = DATA_BIT_8;
 	data->serial_config.stop_bits = STOP_BIT_1;
 	data->serial_config.parity = PARITY_NONE;
 }
 
+/**
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
 static int init_proc(
 		struct proc_config_t * config,
 		const struct property_list_t * properties)
@@ -79,6 +88,16 @@ static int exit_proc(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Reads data from the device and processes them as NMEA data.
+ *
+ * @param[in] config
+ * @param[in] ops Device operations
+ * @param[in] device Device to operate on
+ * @param[out] buf Working context
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
 static int process_nmea(
 		struct proc_config_t * config,
 		const struct device_operations_t * ops,
@@ -224,5 +243,6 @@ const struct proc_desc_t gps_serial = {
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
+	.help = NULL,
 };
 
