@@ -54,7 +54,7 @@ static void test_init_name(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct gps_serial_data_t *)config.data;
-	CU_ASSERT_STRING_EQUAL(data->serial_config.name, "/dev/null");
+	CU_ASSERT_STRING_EQUAL(data->config.serial.name, "/dev/null");
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
@@ -73,7 +73,7 @@ static void test_init_baud_rate(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct gps_serial_data_t *)config.data;
-	CU_ASSERT_EQUAL(data->serial_config.baud_rate, BAUD_9600);
+	CU_ASSERT_EQUAL(data->config.serial.baud_rate, BAUD_9600);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
@@ -92,7 +92,7 @@ static void test_init_parity(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct gps_serial_data_t *)config.data;
-	CU_ASSERT_EQUAL(data->serial_config.parity, PARITY_NONE);
+	CU_ASSERT_EQUAL(data->config.serial.parity, PARITY_NONE);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
@@ -111,7 +111,7 @@ static void test_init_data_bit(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct gps_serial_data_t *)config.data;
-	CU_ASSERT_EQUAL(data->serial_config.data_bits, DATA_BIT_8);
+	CU_ASSERT_EQUAL(data->config.serial.data_bits, DATA_BIT_8);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
@@ -130,7 +130,7 @@ static void test_init_stop_bit(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct gps_serial_data_t *)config.data;
-	CU_ASSERT_EQUAL(data->serial_config.stop_bits, STOP_BIT_1);
+	CU_ASSERT_EQUAL(data->config.serial.stop_bits, STOP_BIT_1);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);

@@ -3,6 +3,7 @@
 #include <navcom/property_serial.h>
 #include <navcom/message.h>
 #include <navcom/message_comm.h>
+#include <device/simulator_serial_gps.h>
 #include <common/macros.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -10,8 +11,6 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <sys/select.h>
-
-/* TODO: make is possible to use other devices than 'serial', to support better testing */
 
 struct read_buffer_t
 {
@@ -28,13 +27,14 @@ struct read_buffer_t
  */
 static void init_data(struct gps_serial_data_t * data)
 {
-	memset(data, 0, sizeof(struct gps_serial_data_t));
+	memset(data, 0, sizeof(*data));
 
-	strncpy(data->serial_config.name, "/dev/ttyUSB0", sizeof(data->serial_config.name));
-	data->serial_config.baud_rate = BAUD_4800;
-	data->serial_config.data_bits = DATA_BIT_8;
-	data->serial_config.stop_bits = STOP_BIT_1;
-	data->serial_config.parity = PARITY_NONE;
+	/* default values for the default device type */
+	strncpy(data->config.serial.name, "/dev/ttyUSB0", sizeof(data->config.serial.name));
+	data->config.serial.baud_rate = BAUD_4800;
+	data->config.serial.data_bits = DATA_BIT_8;
+	data->config.serial.stop_bits = STOP_BIT_1;
+	data->config.serial.parity = PARITY_NONE;
 }
 
 /**
@@ -58,15 +58,19 @@ static int init_proc(
 	config->data = data;
 	init_data(data);
 
-	if (prop_serial_read_device(&data->serial_config, properties, "device") != EXIT_SUCCESS)
+	/* device type */
+	strncpy(data->type, "serial", sizeof(data->type));
+
+	/* default device properties */
+	if (prop_serial_read_device(&data->config.serial, properties, "device") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (prop_serial_read_baudrate(&data->serial_config, properties, "baud") != EXIT_SUCCESS)
+	if (prop_serial_read_baudrate(&data->config.serial, properties, "baud") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (prop_serial_read_parity(&data->serial_config, properties, "parity") != EXIT_SUCCESS)
+	if (prop_serial_read_parity(&data->config.serial, properties, "parity") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (prop_serial_read_databits(&data->serial_config, properties, "data") != EXIT_SUCCESS)
+	if (prop_serial_read_databits(&data->config.serial, properties, "data") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (prop_serial_read_stopbits(&data->serial_config, properties, "stop") != EXIT_SUCCESS)
+	if (prop_serial_read_stopbits(&data->config.serial, properties, "stop") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 
 	return EXIT_SUCCESS;
@@ -141,7 +145,6 @@ static int process_nmea(
 /**
  * Reads data from the device.
  *
- * @param[in] config Process configuration
  * @param[in] ops Device operations
  * @param[in] device Device to operate on
  * @param[out] data Working context.
@@ -149,27 +152,42 @@ static int process_nmea(
  * @retval EXIT_FAILURE
  */
 static int read_data(
-		const struct proc_config_t * config,
 		const struct device_operations_t * ops,
 		struct device_t * device,
 		struct read_buffer_t * buf)
 {
 	int rc;
-	struct gps_serial_data_t * data = (struct gps_serial_data_t *)config->data;
 
 	rc = ops->read(device, &buf->raw, sizeof(buf->raw));
 	if (rc < 0) {
-		syslog(LOG_ERR, "unable to read from device '%s': %s",
-			data->serial_config.name, strerror(errno));
+		syslog(LOG_ERR, "unable to read from device: %s", strerror(errno));
 		return EXIT_FAILURE;
 	}
 	if (rc != sizeof(buf->raw)) {
-		syslog(LOG_ERR, "invalid size read from device '%s': %s",
-			data->serial_config.name, strerror(errno));
+		syslog(LOG_ERR, "invalid size read from device: %s", strerror(errno));
 		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;
+}
+
+static void get_device_ops(
+		const struct gps_serial_data_t * data,
+		const struct device_operations_t ** ops,
+		const struct device_config_t ** device_config)
+{
+	*ops = NULL;
+	*device_config = NULL;
+
+	if (strcmp(data->type, "serial") == 0) {
+		*ops = &serial_device_operations;
+		*device_config = (const struct device_config_t *)&data->config.serial;
+		return;
+	}
+	if (strcmp(data->type, "simulator_serial_gps") == 0) {
+		*ops = &simulator_serial_gps_operations;
+		return;
+	}
 }
 
 static int proc(struct proc_config_t * config)
@@ -183,6 +201,7 @@ static int proc(struct proc_config_t * config)
 
 	struct device_t device;
 	const struct device_operations_t * ops = NULL;
+	const struct device_config_t * device_config = NULL;
 
 	struct read_buffer_t readbuf;
 	struct gps_serial_data_t * data;
@@ -194,14 +213,19 @@ static int proc(struct proc_config_t * config)
 	if (!data)
 		return EXIT_FAILURE;
 
-	ops = &serial_device_operations;
-	device_init(&device);
+	get_device_ops(data, &ops, &device_config);
+	if (!ops) {
+		syslog(LOG_ERR, "unknown device type");
+		return EXIT_FAILURE;
+	}
+
 	memset(&readbuf, 0, sizeof(readbuf));
 	readbuf.msg.type = MSG_NMEA;
 
-	rc = ops->open(&device, (const struct device_config_t *)&data->serial_config);
+	device_init(&device);
+	rc = ops->open(&device, device_config);
 	if (rc < 0) {
-		syslog(LOG_ERR, "unable to open device '%s'", data->serial_config.name);
+		syslog(LOG_ERR, "unable to open device");
 		return EXIT_FAILURE;
 	}
 
@@ -225,7 +249,7 @@ static int proc(struct proc_config_t * config)
 		}
 
 		if (FD_ISSET(device.fd, &rfds)) {
-			if (read_data(config, ops, &device, &readbuf) != EXIT_SUCCESS)
+			if (read_data(ops, &device, &readbuf) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
 			if (process_nmea(config, &readbuf) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
@@ -240,8 +264,7 @@ static int proc(struct proc_config_t * config)
 						case SYSTEM_TERMINATE:
 							rc = ops->close(&device);
 							if (rc < 0) {
-								syslog(LOG_ERR, "unable to close device '%s': %s",
-									data->serial_config.name, strerror(errno));
+								syslog(LOG_ERR, "unable to close device: %s", strerror(errno));
 								return EXIT_FAILURE;
 							}
 							return EXIT_SUCCESS;
