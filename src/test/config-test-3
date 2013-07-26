@@ -1,0 +1,3 @@
+gps : gps_serial { _devicetype_:'simulator_serial_gps' };
+log : message_log { enable };
+gps -> log;

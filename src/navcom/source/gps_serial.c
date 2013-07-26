@@ -1,6 +1,7 @@
 #include <navcom/source/gps_serial.h>
 #include <navcom/source/gps_serial_private.h>
 #include <navcom/property_serial.h>
+#include <navcom/property_read.h>
 #include <navcom/message.h>
 #include <navcom/message_comm.h>
 #include <device/simulator_serial_gps.h>
@@ -25,9 +26,12 @@ struct read_buffer_t
  *
  * @param[out] data The configuration to initialize.
  */
-static void init_data(struct gps_serial_data_t * data)
+static void init_default_data(struct gps_serial_data_t * data)
 {
 	memset(data, 0, sizeof(*data));
+
+	/* device type */
+	strncpy(data->type, "serial", sizeof(data->type));
 
 	/* default values for the default device type */
 	strncpy(data->config.serial.name, "/dev/ttyUSB0", sizeof(data->config.serial.name));
@@ -55,13 +59,14 @@ static int init_proc(
 		return EXIT_FAILURE;
 
 	data = (struct gps_serial_data_t *)malloc(sizeof(struct gps_serial_data_t));
+	init_default_data(data);
 	config->data = data;
-	init_data(data);
 
 	/* device type */
-	strncpy(data->type, "serial", sizeof(data->type));
+	if (property_read_string(properties, "_devicetype_", data->type, sizeof(data->type)) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 
-	/* default device properties */
+	/* device properties */
 	if (prop_serial_read_device(&data->config.serial, properties, "device") != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	if (prop_serial_read_baudrate(&data->config.serial, properties, "baud") != EXIT_SUCCESS)
@@ -215,7 +220,7 @@ static int proc(struct proc_config_t * config)
 
 	get_device_ops(data, &ops, &device_config);
 	if (!ops) {
-		syslog(LOG_ERR, "unknown device type");
+		syslog(LOG_ERR, "unknown device type: '%s'", data->type);
 		return EXIT_FAILURE;
 	}
 
@@ -299,6 +304,8 @@ static void help(void)
 	printf("           5, 6, 7, 8\n");
 	printf("  stop   : number of stop bits, valid values:\n");
 	printf("           1, 2\n");
+	printf("\n");
+	printf("  _devicetype_ : testing only\n");
 	printf("\n");
 	printf("Example:\n");
 	printf("  gps : gps_serial { device:'/dev/ttyUSB0', baud:4800, parity:'none', data:8, stop:1 };\n");
