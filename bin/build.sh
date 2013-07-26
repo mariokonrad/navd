@@ -129,6 +129,7 @@ function exec_build()
 			-DCMAKE_VERBOSE_MAKEFILE=FALSE \
 			-DCMAKE_COLOR_MAKEFILE=TRUE \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+			-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 			..
 	fi
 	#cmake --build .
