@@ -250,7 +250,7 @@ static int proc(struct proc_config_t * config)
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
 		} else if (rc < 0 && errno == EINTR) {
-			break;
+			continue;
 		}
 
 		if (FD_ISSET(device.fd, &rfds)) {

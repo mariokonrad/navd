@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <syslog.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/time.h>
 
 /**
  * Structure to hand simulation data.
@@ -12,7 +16,37 @@ struct simulator_data_t
 	const char * s;
 	int i;
 	int len;
+
+	int fd;
 };
+
+/**
+ * Simulator device data. Must be module global in order to
+ * grant access to the signal handler for SIGALRM.
+ */
+static struct simulator_data_t simulator_data = { NULL, 0, 0, -1 };
+
+/**
+ * Alarm handler, sends data to the pipe.
+ */
+static void alarm_handler(int sig, siginfo_t * siginfo, void * context)
+{
+	char c;
+	int rc;
+
+	UNUSED_ARG(sig);
+	UNUSED_ARG(siginfo);
+	UNUSED_ARG(context);
+
+	if (simulator_data.fd < 0)
+		return;
+
+	c = simulator_data.s[simulator_data.i];
+	rc = write(simulator_data.fd, &c, sizeof(c));
+	if (rc == sizeof(c)) {
+		simulator_data.i = (simulator_data.i + 1) % simulator_data.len;
+	}
+}
 
 /**
  * Opens the simulator device.
@@ -26,7 +60,9 @@ static int simulator_open(
 		struct device_t * device,
 		const struct device_config_t * cfg)
 {
-	struct simulator_data_t * data;
+	struct sigaction act;
+	int pfd[2];
+	struct itimerval timerval;
 
 	UNUSED_ARG(cfg);
 
@@ -34,18 +70,41 @@ static int simulator_open(
 		return -1;
 	if (device->fd >= 0)
 		return 0;
-	device->fd = 0;
 
-	data = (struct simulator_data_t *)malloc(sizeof(struct simulator_data_t));
-	data->i = 0;
-	data->s =
+	if (pipe(pfd) < 0) {
+		syslog(LOG_CRIT, "unable create pipe");
+		return -1;
+	}
+
+	/* setup the device and simulator data */
+	device->fd = pfd[0];
+	device->data = NULL;
+	simulator_data.fd = pfd[1];
+	simulator_data.i = 0;
+	simulator_data.s =
 		"$GPRMC,202451,A,4702.3966,N,00818.3287,E,0.0,312.3,260711,0.6,E,A*19\r\n"
-		"$GPGSV,3,1,12,03,77,155,29,06,65,131,34,07,05,288,00,08,08,314,00*76\r\n"
-		"$GPGLL,4702.3966,N,00818.3287,E,202451,A,A*43\r\n"
-		"\0"
+		"$GPRMC,202452,A,4702.3966,N,00818.3287,E,0.0,312.3,260711,0.6,E,A*1a\r\n"
+		"$GPRMC,202453,A,4702.3966,N,00818.3287,E,0.0,312.3,260711,0.6,E,A*1b\r\n"
 		;
-	data->len = strlen(data->s);
-	device->data = data;
+	simulator_data.len = strlen(simulator_data.s);
+
+	/* setup periodic handler to send simulated GPS data */
+	memset(&timerval, 0, sizeof(timerval));
+	timerval.it_interval.tv_sec = 0;
+	timerval.it_interval.tv_usec = 5000;
+	timerval.it_value.tv_sec = 0;
+	timerval.it_value.tv_usec = 5000;
+
+	memset(&act, 0, sizeof(act));
+	act.sa_sigaction = alarm_handler;
+	act.sa_flags = SA_SIGINFO;
+	if (sigaction(SIGALRM, &act, NULL) < 0) {
+		syslog(LOG_CRIT, "unable to signal action for SIGALRM");
+		return -1;
+	} else {
+		setitimer(ITIMER_REAL, &timerval, NULL);
+	}
+
 	return 0;
 }
 
@@ -62,11 +121,13 @@ static int simulator_close(struct device_t * device)
 		return -1;
 	if (device->fd < 0)
 		return 0;
+
+	sigaction(SIGALRM, NULL, NULL);
+	close(simulator_data.fd);
+	close(device->fd);
+
 	device->fd = -1;
-	if (device->data) {
-		free(device->data);
-		device->data = NULL;
-	}
+	device->data = NULL;
 	return 0;
 }
 
@@ -84,24 +145,16 @@ static int simulator_read(
 		char * buf,
 		uint32_t size)
 {
-	struct simulator_data_t * data = NULL;
-	uint32_t i;
-
 	if (device == NULL)
 		return -1;
 	if (buf == NULL)
 		return -1;
 	if (device->fd < 0)
 		return -1;
-	if (device->data == NULL)
-		return -1;
+	if (size == 0)
+		return 0;
 
-	data = (struct simulator_data_t *)device->data;
-	for (i = 0; i < size; ++i) {
-		buf[i] = data->s[data->i];
-		data->i = (data->i + 1) % data->len;
-	}
-	return (int)size;
+	return read(device->fd, buf, size);
 }
 
 /**

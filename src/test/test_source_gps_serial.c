@@ -150,7 +150,7 @@ static void test_init_non_default_type(void)
 	proc_config_init(&config);
 	proplist_init(&properties);
 
-	proplist_set(&properties, "device-type", "test-device-type");
+	proplist_set(&properties, "_devicetype_", "test-device-type");
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 

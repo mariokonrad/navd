@@ -224,6 +224,8 @@ function exec_integration_test()
 	echo "---"
 	${binary} --max-msg 5 --log 7 --config src/test/config-test-1
 	echo "---"
+	${binary} --max-msg 5 --log 7 --config src/test/config-test-3
+	echo "---"
 	${binary} --max-msg 5 --log 7 --config src/test/config-gps_sim
 	echo "---"
 	${binary} --max-msg 5 --log 7 --config src/test/config-timer

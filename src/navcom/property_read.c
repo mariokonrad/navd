@@ -1,6 +1,7 @@
 #include <navcom/property_read.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <string.h>
 
 /**
  * Reads an uin32_t property from the list, given by a key.
