@@ -1,4 +1,5 @@
 #include <navcom/source/gps_serial.h>
+#include <navcom/source/gps_serial_private.h>
 #include <navcom/property_serial.h>
 #include <navcom/message.h>
 #include <navcom/message_comm.h>
@@ -9,6 +10,8 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <sys/select.h>
+
+/* TODO: make is possible to use other devices than 'serial', to support better testing */
 
 struct nmea_read_buffer_t
 {

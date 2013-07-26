@@ -1,6 +1,7 @@
 #include <cunit/CUnit.h>
 #include <test_source_gps_serial.h>
 #include <navcom/source/gps_serial.h>
+#include <navcom/source/gps_serial_private.h>
 #include <common/macros.h>
 #include <string.h>
 #include <stdlib.h>

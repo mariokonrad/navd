@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+/* TODO: make is possible to use other devices than 'serial', to support better testing */
+
 enum { STATE_READ, STATE_ESCAPE, STATE_PARITY };
 
 struct seatalk_context_t
