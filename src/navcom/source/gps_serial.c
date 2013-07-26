@@ -13,9 +13,10 @@
 
 /* TODO: make is possible to use other devices than 'serial', to support better testing */
 
-struct nmea_read_buffer_t
+struct read_buffer_t
 {
 	int index;
+	char raw;
 	char data[NMEA_MAX_SENTENCE + 1];
 	struct message_t msg;
 };
@@ -89,36 +90,21 @@ static int exit_proc(struct proc_config_t * config)
 }
 
 /**
- * Reads data from the device and processes them as NMEA data.
+ * Processes NMEA data read from the device.
  *
- * @param[in] config
- * @param[in] ops Device operations
- * @param[in] device Device to operate on
- * @param[out] buf Working context
+ * @param[in] config Process configuration
+ * @param[out] buf Working context.
  * @retval EXIT_SUCCESS
  * @retval EXIT_FAILURE
  */
 static int process_nmea(
-		struct proc_config_t * config,
-		const struct device_operations_t * ops,
-		struct device_t * device,
-		struct nmea_read_buffer_t * buf)
+		const struct proc_config_t * config,
+		struct read_buffer_t * buf)
 {
-	char c;
 	int rc;
-	struct gps_serial_data_t * data = (struct gps_serial_data_t *)config->data;
 
-	rc = ops->read(device, &c, sizeof(c));
-	if (rc < 0) {
-		syslog(LOG_ERR, "unable to read from device '%s': %s", data->serial_config.name, strerror(errno));
-		return EXIT_FAILURE;
-	}
-	if (rc != sizeof(c)) {
-		syslog(LOG_ERR, "invalid size read from device '%s': %s", data->serial_config.name, strerror(errno));
-		return EXIT_FAILURE;
-	}
 	nmea_init(&buf->msg.data.nmea);
-	switch (c) {
+	switch (buf->raw) {
 		case '\r':
 			break;
 		case '\n':
@@ -141,7 +127,7 @@ static int process_nmea(
 			break;
 		default:
 			if (buf->index < NMEA_MAX_SENTENCE) {
-				buf->data[buf->index++] = c;
+				buf->data[buf->index++] = buf->raw;
 			} else {
 				syslog(LOG_ERR, "sentence too long, discarding");
 				buf->index = 0;
@@ -149,6 +135,40 @@ static int process_nmea(
 			buf->data[buf->index] = 0;
 			break;
 	}
+	return EXIT_SUCCESS;
+}
+
+/**
+ * Reads data from the device.
+ *
+ * @param[in] config Process configuration
+ * @param[in] ops Device operations
+ * @param[in] device Device to operate on
+ * @param[out] data Working context.
+ * @retval EXIT_SUCCESS
+ * @retval EXIT_FAILURE
+ */
+static int read_data(
+		const struct proc_config_t * config,
+		const struct device_operations_t * ops,
+		struct device_t * device,
+		struct read_buffer_t * buf)
+{
+	int rc;
+	struct gps_serial_data_t * data = (struct gps_serial_data_t *)config->data;
+
+	rc = ops->read(device, &buf->raw, sizeof(buf->raw));
+	if (rc < 0) {
+		syslog(LOG_ERR, "unable to read from device '%s': %s",
+			data->serial_config.name, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	if (rc != sizeof(buf->raw)) {
+		syslog(LOG_ERR, "invalid size read from device '%s': %s",
+			data->serial_config.name, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
 	return EXIT_SUCCESS;
 }
 
@@ -164,7 +184,7 @@ static int proc(struct proc_config_t * config)
 	struct device_t device;
 	const struct device_operations_t * ops = NULL;
 
-	struct nmea_read_buffer_t readbuf;
+	struct read_buffer_t readbuf;
 	struct gps_serial_data_t * data;
 
 	if (!config)
@@ -204,9 +224,12 @@ static int proc(struct proc_config_t * config)
 			break;
 		}
 
-		if (FD_ISSET(device.fd, &rfds))
-			if (process_nmea(config, ops, &device, &readbuf) != EXIT_SUCCESS)
+		if (FD_ISSET(device.fd, &rfds)) {
+			if (read_data(config, ops, &device, &readbuf) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
+			if (process_nmea(config, &readbuf) != EXIT_SUCCESS)
+				return EXIT_FAILURE;
+		}
 
 		if (FD_ISSET(config->rfd, &rfds)) {
 			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)
@@ -217,7 +240,8 @@ static int proc(struct proc_config_t * config)
 						case SYSTEM_TERMINATE:
 							rc = ops->close(&device);
 							if (rc < 0) {
-								syslog(LOG_ERR, "unable to close device '%s': %s", data->serial_config.name, strerror(errno));
+								syslog(LOG_ERR, "unable to close device '%s': %s",
+									data->serial_config.name, strerror(errno));
 								return EXIT_FAILURE;
 							}
 							return EXIT_SUCCESS;
