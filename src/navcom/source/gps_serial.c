@@ -257,11 +257,36 @@ static int proc(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("gps_serial\n");
+	printf("\n");
+	printf("Receives navigational data on a serial interface and\n");
+	printf("sends messages accoringly.\n");
+	printf("\n");
+	printf("Configuration options:\n");
+	printf("  device : the device to read data from\n");
+	printf("  baud   : baud rate to operate on, valid values:\n");
+	printf("           300, 600, 1200, 2400, 4800, 9600, 19200\n");
+	printf("           34800, 57600, 115200, 230400\n");
+	printf("  parity : parity check to use, valid values:\n");
+	printf("           none, even, odd, mark\n");
+	printf("  data   : number of data bits, valid values:\n");
+	printf("           5, 6, 7, 8\n");
+	printf("  stop   : number of stop bits, valid values:\n");
+	printf("           1, 2\n");
+	printf("\n");
+	printf("Example:\n");
+	printf("  gps : gps_serial { device:'/dev/ttyUSB0', baud:4800, parity:'none', data:8, stop:1 };\n");
+	printf("\n");
+}
+
 const struct proc_desc_t gps_serial = {
 	.name = "gps_serial",
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
-	.help = NULL,
+	.help = help,
 };
 
