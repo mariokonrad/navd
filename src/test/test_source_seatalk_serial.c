@@ -1,11 +1,11 @@
 #include <cunit/CUnit.h>
-#include <test_source_gps_serial.h>
-#include <navcom/source/gps_serial.h>
+#include <test_source_seatalk_serial.h>
+#include <navcom/source/seatalk_serial.h>
 #include <common/macros.h>
 #include <string.h>
 #include <stdlib.h>
 
-static const struct proc_desc_t * proc = &gps_serial;
+static const struct proc_desc_t * proc = &seatalk_serial;
 
 static void test_existance(void)
 {
@@ -16,6 +16,7 @@ static void test_existance(void)
 	CU_ASSERT_PTR_NOT_NULL(proc->help);
 }
 
+/*
 static void test_exit(void)
 {
 	CU_ASSERT_EQUAL(proc->exit(NULL), EXIT_FAILURE);
@@ -134,13 +135,15 @@ static void test_init_stop_bit(void)
 
 	proplist_free(&properties);
 }
+*/
 
-void register_suite_source_gps_serial(void)
+void register_suite_source_seatalk_serial(void)
 {
 	CU_Suite * suite;
-	suite = CU_add_suite("source/gps_serial", NULL, NULL);
+	suite = CU_add_suite("source/seatalk_serial", NULL, NULL);
 
 	CU_add_test(suite, "existance", test_existance);
+/*
 	CU_add_test(suite, "exit", test_exit);
 	CU_add_test(suite, "init", test_init);
 	CU_add_test(suite, "init: name", test_init_name);
@@ -148,5 +151,6 @@ void register_suite_source_gps_serial(void)
 	CU_add_test(suite, "init: parity", test_init_parity);
 	CU_add_test(suite, "init: data bit", test_init_data_bit);
 	CU_add_test(suite, "init: stop bit", test_init_stop_bit);
+*/
 }
 

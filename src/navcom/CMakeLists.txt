@@ -12,6 +12,10 @@ if (ENABLE_SOURCE_GPSSERIAL)
 	set(SOURCES ${SOURCES} source/gps_serial.c)
 endif()
 
+if (ENABLE_SOURCE_SEATALKSERIAL)
+	set(SOURCES ${SOURCES} source/seatalk_serial.c)
+endif()
+
 if (ENABLE_SOURCE_GPSSIMULATOR)
 	set(SOURCES ${SOURCES} source/gps_simulator.c)
 endif()

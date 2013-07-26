@@ -21,6 +21,7 @@
 #include <test_source_gps_serial.h>
 #include <test_source_gps_simulator.h>
 #include <test_source_seatalk_simulator.h>
+#include <test_source_seatalk_serial.h>
 #include <test_destination_nmea_serial.h>
 #include <test_destination_logbook.h>
 #include <test_destination_dst_lua.h>
@@ -59,7 +60,6 @@ int main()
 	register_suite_source_timer();
 	register_suite_source_gps_serial();
 	register_suite_source_gps_simulator();
-	register_suite_source_seatalk_simulator();
 	register_suite_destination_nmea_serial();
 	register_suite_destination_logbook();
 	register_suite_destination_dst_lua();
@@ -77,6 +77,8 @@ int main()
 	register_suite_source_src_lua();
 #endif
 
+	register_suite_source_seatalk_simulator();
+	register_suite_source_seatalk_serial();
 	register_suite_seatalk();
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);

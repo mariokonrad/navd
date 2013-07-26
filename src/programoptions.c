@@ -50,37 +50,39 @@ static void print_version(void)
 	printf("%d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
 
-static void print_config(void)
+static void print_config(const char * prefix, const char * suffix)
 {
 #if defined(ENABLE_SOURCE_LUA)
-	printf(" src_lua(%s) ", src_lua_release());
+	printf("%ssrc_lua(%s)%s", prefix, src_lua_release(), suffix);
 #endif
 
 #if defined(ENABLE_SOURCE_GPSSERIAL)
-	printf(" gpsserial ");
+	printf("%sgpsserial%s", prefix, suffix);
 #endif
 
 #if defined(ENABLE_SOURCE_GPSSIMULATOR)
-	printf(" gpssimulator ");
+	printf("%sgpssimulator%s", prefix, suffix);
 #endif
 
 #if defined(ENABLE_SOURCE_SEATALKSIMULATOR)
-	printf(" seatalksimulator ");
+	printf("%sseatalksimulator%s", prefix, suffix);
+#endif
+
+#if defined(ENABLE_SOURCE_SEATALKSERIAL)
+	printf("%sseatalkserial%s", prefix, suffix);
 #endif
 
 #if defined(ENABLE_SOURCE_GPSD)
-	printf(" gpsd ");
+	printf("%sgpsd%s", prefix, suffix);
 #endif
 
 #if defined(ENABLE_FILTER_LUA)
-	printf(" filter_lua(%s) ", filter_lua_release());
+	printf("%sfilter_lua(%s)%s", prefix, filter_lua_release(), suffix);
 #endif
 
 #if defined(ENABLE_DESTINATION_LUA)
-	printf(" dst_lua(%s) ", dst_lua_release());
+	printf("%sdst_lua(%s)%s", prefix, dst_lua_release(), suffix);
 #endif
-
-	printf("\n");
 }
 
 void print_usage(const char * name)
@@ -91,8 +93,8 @@ void print_usage(const char * name)
 	printf("Version: ");
 	print_version();
 	printf("\n");
-	printf("Configured: ");
-	print_config();
+	printf("Configured features:\n");
+	print_config("  - ", "\n");
 	printf("\n");
 	printf("Options:\n");
 	printf("  --help [=what]  : help information, optional on a source, filter or destination\n");

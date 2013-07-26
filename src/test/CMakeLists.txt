@@ -92,6 +92,7 @@ set(TEST_SOURCES
 	test_source_gps_serial.c
 	test_source_gps_simulator.c
 	test_source_seatalk_simulator.c
+	test_source_seatalk_serial.c
 	test_destination_nmea_serial.c
 	test_destination_logbook.c
 	test_destination_dst_lua.c

@@ -22,6 +22,10 @@
 	#include <navcom/source/seatalk_simulator.h>
 #endif
 
+#ifdef ENABLE_SOURCE_SEATALKSERIAL
+	#include <navcom/source/seatalk_serial.h>
+#endif
+
 #ifdef ENABLE_DESTINATION_LUA
 	#include <navcom/destination/dst_lua.h>
 #endif
@@ -152,6 +156,10 @@ void register_sources(void)
 
 #ifdef ENABLE_SOURCE_SEATALKSIMULATOR
 	pdlist_append(&desc_sources, &seatalk_simulator);
+#endif
+
+#ifdef ENABLE_SOURCE_SEATALKSERIAL
+	pdlist_append(&desc_sources, &seatalk_serial);
 #endif
 
 #ifdef ENABLE_SOURCE_LUA
