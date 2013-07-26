@@ -1,4 +1,4 @@
-#include <device/simulator.h>
+#include <device/simulator_serial_gps.h>
 #include <common/macros.h>
 #include <stdio.h>
 #include <string.h>
@@ -121,7 +121,7 @@ static int simulator_write(
 /**
  * Structure to describe the simulator device.
  */
-const struct device_operations_t simulator_operations =
+const struct device_operations_t simulator_serial_gps_operations =
 {
 	.open = simulator_open,
 	.close = simulator_close,

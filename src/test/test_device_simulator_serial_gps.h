@@ -1,0 +1,6 @@
+#ifndef __TEST_DEVICE_SIMULATOR_SERIAL_GPS__H__
+#define __TEST_DEVICE_SIMULATOR_SERIAL_GPS__H__
+
+void register_suite_device_simulator_serial_gps(void);
+
+#endif

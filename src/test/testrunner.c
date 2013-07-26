@@ -11,7 +11,7 @@
 #include <test_filter_nmea.h>
 #include <test_filterlist.h>
 #include <test_device.h>
-#include <test_device_simulator.h>
+#include <test_device_simulator_serial_gps.h>
 #include <test_device_serial.h>
 #include <test_property_serial.h>
 #include <test_fileutil.h>
@@ -51,7 +51,7 @@ int main()
 	register_suite_filter_nmea();
 	register_suite_filterlist();
 	register_suite_device();
-	register_suite_device_simulator();
+	register_suite_device_simulator_serial_gps();
 	register_suite_device_serial();
 	register_suite_property_serial();
 	register_suite_fileutil();

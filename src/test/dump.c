@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include <nmea/nmea.h>
-#include <device/simulator.h>
+#include <device/simulator_serial_gps.h>
 #include <device/serial.h>
 #include <common/macros.h>
 
@@ -39,7 +39,7 @@ int main(int argc, char ** argv)
 	switch (type) {
 		case 0: {
 			config = NULL;
-			ops = &simulator_operations;
+			ops = &simulator_serial_gps_operations;
 			} break;
 		case 1: {
 			config = (const struct device_config_t *)&serial_config;

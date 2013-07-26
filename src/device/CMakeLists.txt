@@ -1,7 +1,7 @@
 
 add_library(devices
 	device.c
-	simulator.c
 	serial.c
+	simulator_serial_gps.c
 	)
 

@@ -1,10 +1,10 @@
 #include <cunit/CUnit.h>
-#include <test_device_simulator.h>
-#include <device/simulator.h>
+#include <test_device_simulator_serial_gps.h>
+#include <device/simulator_serial_gps.h>
 #include <common/macros.h>
 #include <string.h>
 
-static const struct device_operations_t * device = &simulator_operations;
+static const struct device_operations_t * device = &simulator_serial_gps_operations;
 
 static void test_existance(void)
 {
@@ -91,10 +91,10 @@ static void test_read(void)
 	CU_ASSERT_EQUAL(device->read(&dev, buf, sizeof(buf)), -1);
 }
 
-void register_suite_device_simulator(void)
+void register_suite_device_simulator_serial_gps(void)
 {
 	CU_Suite * suite;
-	suite = CU_add_suite("device/simulator", NULL, NULL);
+	suite = CU_add_suite("device/simulator_serial_gps", NULL, NULL);
 
 	CU_add_test(suite, "existance", test_existance);
 	CU_add_test(suite, "open", test_open);

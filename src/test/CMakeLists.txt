@@ -82,7 +82,7 @@ set(TEST_SOURCES
 	test_filter_nmea.c
 	test_filterlist.c
 	test_device.c
-	test_device_simulator.c
+	test_device_simulator_serial_gps.c
 	test_device_serial.c
 	test_property_serial.c
 	test_fileutil.c
