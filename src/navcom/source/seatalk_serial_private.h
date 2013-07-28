@@ -8,7 +8,10 @@
  */
 struct seatalk_serial_data_t
 {
-	struct serial_config_t serial_config;
+	char type[32];
+	union {
+		struct serial_config_t serial;
+	} config;
 };
 
 #endif

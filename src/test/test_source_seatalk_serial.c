@@ -54,7 +54,7 @@ static void test_init_name(void)
 	CU_ASSERT_EQUAL(proc->init(&config, &properties), EXIT_SUCCESS);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct seatalk_serial_data_t *)config.data;
-	CU_ASSERT_STRING_EQUAL(data->serial_config.name, "/dev/null");
+	CU_ASSERT_STRING_EQUAL(data->config.serial.name, "/dev/null");
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);

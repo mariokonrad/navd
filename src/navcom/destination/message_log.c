@@ -191,6 +191,11 @@ static int proc(struct proc_config_t * config)
 					}
 					break;
 
+				case MSG_SEATALK:
+					/* TODO: message log to support seatalk messages */
+					syslog(LOG_WARNING, "seatalk messages not handled yet: %08x\n", msg.type);
+					break;
+
 				default:
 					syslog(LOG_WARNING, "unknown msg type: %08x\n", msg.type);
 					break;

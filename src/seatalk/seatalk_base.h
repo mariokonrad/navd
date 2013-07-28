@@ -19,7 +19,7 @@ union seatalk_raw_t
 	int8_t buffer[sizeof(struct data_t)];
 } __attribute((packed));
 
-#define SEATALK_MAX_SENTENCE sizeof(struct seatalk_raw_t)
+#define SEATALK_MAX_SENTENCE sizeof(union seatalk_raw_t)
 
 /**
  * Represents a NMEA message, containing the original raw NMEA sentence
@@ -56,7 +56,7 @@ int seatalk_init(struct seatalk_t *);
 
 int seatalk_read_tab(
 		struct seatalk_t *,
-		const char *,
+		const uint8_t *,
 		uint32_t,
 		const struct seatalk_sentence_t **,
 		uint32_t);

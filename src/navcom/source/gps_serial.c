@@ -121,9 +121,8 @@ static int process_nmea(
 			rc = nmea_read(&buf->msg.data.nmea, buf->data);
 			if (rc == 0) {
 				rc = message_write(config->wfd, &buf->msg);
-				if (rc != EXIT_SUCCESS) {
+				if (rc != EXIT_SUCCESS)
 					syslog(LOG_ERR, "unable to write NMEA data: %s", strerror(errno));
-				}
 			} else if (rc == 1) {
 				syslog(LOG_ERR, "unknown sentence: '%s'", buf->data);
 			} else if (rc == -2) {
@@ -177,6 +176,16 @@ static int read_data(
 	return EXIT_SUCCESS;
 }
 
+/**
+ * Determines the device configuration and operation according to
+ * the specified configuration (containing the device type).
+ *
+ * @param[in] data The source specific data.
+ * @param[out] ops The device operations, NULL if no valid device type
+ *   is configured.
+ * @param[out] device_config The device configuration, NULL if no valid
+ *   device type is configured.
+ */
 static void get_device_ops(
 		const struct gps_serial_data_t * data,
 		const struct device_operations_t ** ops,

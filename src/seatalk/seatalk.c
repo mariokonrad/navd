@@ -31,7 +31,7 @@ static const struct seatalk_sentence_t * SENTENCES[] =
  *
  * @todo Implementation
  */
-int seatalk_read(struct seatalk_t * seatalk, const char * buffer, uint32_t size)
+int seatalk_read(struct seatalk_t * seatalk, const uint8_t * buffer, uint32_t size)
 {
 	if (seatalk == NULL)
 		return -1;
@@ -50,7 +50,7 @@ int seatalk_read(struct seatalk_t * seatalk, const char * buffer, uint32_t size)
  * @todo Implementation
  * @todo Documentation
  */
-int seatalk_write(char * buffer, uint32_t size, const struct seatalk_t * seatalk)
+int seatalk_write(uint8_t * buffer, uint32_t size, const struct seatalk_t * seatalk)
 {
 	if (buffer == NULL)
 		return -1;

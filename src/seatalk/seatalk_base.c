@@ -35,7 +35,7 @@ int seatalk_init(struct seatalk_t * seatalk)
  */
 int seatalk_read_tab(
 		struct seatalk_t * seatalk,
-		const char * buffer,
+		const uint8_t * buffer,
 		uint32_t size,
 		const struct seatalk_sentence_t ** tab,
 		uint32_t tab_size)

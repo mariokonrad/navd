@@ -3,8 +3,8 @@
 
 #include <seatalk/seatalk_base.h>
 
-int seatalk_read(struct seatalk_t *, const char *, uint32_t);
-int seatalk_write(char *, uint32_t, const struct seatalk_t *);
+int seatalk_read(struct seatalk_t *, const uint8_t *, uint32_t);
+int seatalk_write(uint8_t *, uint32_t, const struct seatalk_t *);
 int seatalk_hton(struct seatalk_t *);
 int seatalk_ntoh(struct seatalk_t *);
 
