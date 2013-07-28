@@ -3,6 +3,7 @@
 #include <navcom/message_comm.h>
 #include <common/macros.h>
 #include <sys/select.h>
+#include <sys/signalfd.h>
 #include <sys/time.h>
 #include <syslog.h>
 #include <stdlib.h>
@@ -658,9 +659,11 @@ static int exit_proc(struct proc_config_t * config)
 static int proc(struct proc_config_t * config)
 {
 	int rc;
+	int fd_max;
 	fd_set rfds;
 	struct message_t msg;
 	struct logbook_data_t * data;
+	struct signalfd_siginfo signal_info;
 
 	if (!config)
 		return EXIT_FAILURE;
@@ -674,11 +677,17 @@ static int proc(struct proc_config_t * config)
 		return EXIT_FAILURE;
 	}
 
-	while (!proc_request_terminate()) {
+	while (1) {
+		fd_max = -1;
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
+		if (config->rfd > fd_max)
+			fd_max = config->rfd;
+		FD_SET(config->signal_fd, &rfds);
+		if (config->signal_fd > fd_max)
+			fd_max = config->signal_fd;
 
-		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, NULL, proc_get_signal_mask());
+		rc = pselect(fd_max + 1, &rfds, NULL, NULL, NULL, NULL);
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
@@ -686,6 +695,17 @@ static int proc(struct proc_config_t * config)
 			break;
 		} else if (rc == 0) {
 			continue;
+		}
+
+		if (FD_ISSET(config->signal_fd, &rfds)) {
+			rc = read(config->signal_fd, &signal_info, sizeof(signal_info));
+			if (rc < 0 || rc != sizeof(signal_info)) {
+				syslog(LOG_ERR, "cannot read singal info");
+				return EXIT_FAILURE;
+			}
+
+			if (signal_info.ssi_signo == SIGTERM)
+				break;
 		}
 
 		if (FD_ISSET(config->rfd, &rfds)) {

@@ -8,6 +8,7 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <sys/signalfd.h>
 
 static void init_data(struct timer_data_t * data)
 {
@@ -93,6 +94,7 @@ static int proc(struct proc_config_t * config)
 	struct timespec tm;
 	struct timer_data_t * data;
 	struct message_t timer_message;
+	struct signalfd_siginfo signal_info;
 
 	if (!config)
 		return EXIT_FAILURE;
@@ -106,18 +108,23 @@ static int proc(struct proc_config_t * config)
 		return EXIT_FAILURE;
 	}
 
+	/* setup signal handling */
 	timer_message.type = MSG_TIMER;
 	timer_message.data.timer_id = data->timer_id;
 
-	while (!proc_request_terminate()) {
+	while (1) {
 		fd_max = -1;
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
-		if (config->rfd > fd_max) fd_max = config->rfd;
+		if (config->rfd > fd_max)
+			fd_max = config->rfd;
+		FD_SET(config->signal_fd, &rfds);
+		if (config->signal_fd > fd_max)
+			fd_max = config->signal_fd;
 
 		tm = data->tm_cfg;
 
-		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, proc_get_signal_mask());
+		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, NULL);
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
@@ -128,6 +135,17 @@ static int proc(struct proc_config_t * config)
 		if (rc == 0) /* timeout */
 			if (message_write(config->wfd, &timer_message) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
+
+		if (FD_ISSET(config->signal_fd, &rfds)) {
+			rc = read(config->signal_fd, &signal_info, sizeof(signal_info));
+			if (rc < 0 || rc != sizeof(signal_info)) {
+				syslog(LOG_ERR, "cannot read singal info");
+				return EXIT_FAILURE;
+			}
+
+			if (signal_info.ssi_signo == SIGTERM)
+				break;
+		}
 
 		if (FD_ISSET(config->rfd, &rfds)) {
 			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)
@@ -146,6 +164,7 @@ static int proc(struct proc_config_t * config)
 			continue;
 		}
 	}
+
 	return EXIT_SUCCESS;
 }
 

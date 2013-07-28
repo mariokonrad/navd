@@ -10,6 +10,10 @@ struct proc_config_t {
 	int rfd; /* pipe file descriptor to read */
 	int wfd; /* pipe file descriptor to write */
 
+	/* signal handling using file descriptors (see signalfd) */
+	int signal_fd;
+	sigset_t signal_mask;
+
 	const struct proc_t const * cfg; /* configuration */
 	void * data; /* proc specific data */
 };
@@ -27,10 +31,5 @@ struct proc_desc_t {
 	proc_function func;
 	help_function help;
 };
-
-void proc_set_request_terminate(int);
-int proc_request_terminate(void);
-
-sigset_t * proc_get_signal_mask(void);
 
 #endif

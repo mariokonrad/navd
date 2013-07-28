@@ -15,6 +15,7 @@
 #include <limits.h>
 #include <syslog.h>
 #include <sys/select.h>
+#include <sys/signalfd.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <libgen.h>
@@ -76,12 +77,6 @@ static void prepare_proc_configs(const struct config_t * config)
 		proc = &proc_cfg[i + proc_cfg_base_dst];
 		proc->cfg = &config->destinations[i];
 	}
-}
-
-static void handle_signal(int sig)
-{
-	syslog(LOG_NOTICE, "pid:%d sig:%d\n", getpid(), sig);
-	proc_set_request_terminate(1);
 }
 
 static int proc_close(struct proc_config_t * proc)
@@ -155,6 +150,21 @@ static int proc_start(
 		close(rfd[1]);
 		close(wfd[0]);
 
+		/* setup signal handling for child process */
+		sigemptyset(&proc->signal_mask);
+		sigaddset(&proc->signal_mask, SIGINT);
+		sigaddset(&proc->signal_mask, SIGTERM);
+		sigaddset(&proc->signal_mask, SIGALRM);
+		if (sigprocmask(SIG_BLOCK, &proc->signal_mask, NULL) < 0) {
+			syslog(LOG_ERR, "unable to initialize signal handling");
+			return EXIT_FAILURE;
+		}
+		proc->signal_fd = signalfd(-1, &proc->signal_mask, 0);
+		if (proc->signal_fd < 0) {
+			syslog(LOG_ERR, "unable to obtain file descriptor for signal handling");
+			return EXIT_FAILURE;
+		}
+
 		/* initialize procedure */
 		if (desc->init) {
 			rc = desc->init(proc, &proc->cfg->properties);
@@ -180,6 +190,7 @@ static int proc_start(
 			if (desc->exit(proc) != EXIT_SUCCESS)
 				syslog(LOG_ERR, "proc exit '%s', rc=%d", proc->cfg->name, rc);
 		}
+		close(proc->signal_fd);
 		exit(rc_func);
 	}
 
@@ -352,33 +363,6 @@ static void terminate_graceful(const struct config_t const * config)
 	registry_free();
 }
 
-/* TODO: replace signal handling with 'signalfd' for all processes, this also replaces 'pselect' with 'select' and the tedious '*request_terminate' stuff */
-static int setup_signal_handling(void)
-{
-	sigset_t mask;
-	struct sigaction act;
-
-	/* set up signal handling (active also for all subprocesses, if masks are global) */
-	proc_set_request_terminate(0);
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = handle_signal;
-	if (sigaction(SIGTERM, &act, NULL) < 0) {
-		syslog(LOG_CRIT, "unable to signal action for SIGTERM");
-		return EXIT_FAILURE;
-	}
-	if (sigaction(SIGINT, &act, NULL) < 0) {
-		syslog(LOG_CRIT, "unable to signal action for SIGINT");
-		return EXIT_FAILURE;
-	}
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGTERM);
-	if (sigprocmask(SIG_BLOCK, &mask, proc_get_signal_mask()) < 0) {
-		syslog(LOG_CRIT, "unable to signal action for SIGTERM");
-		return EXIT_FAILURE;
-	}
-	return EXIT_SUCCESS;
-}
-
 /* TODO: move filters to their own process like sources and destinations? */
 /* TODO: treat sources, filters and destinations the same (as their own processes), implicit routing through pipes */
 int main(int argc, char ** argv)
@@ -392,6 +376,11 @@ int main(int argc, char ** argv)
 	int fd;
 	struct config_t config;
 	struct options_data_t option;
+
+	/* signal handling */
+	int signal_fd;
+	sigset_t signal_mask;
+	struct signalfd_siginfo signal_info;
 
 	openlog(basename(argv[0]), LOG_PID | LOG_CONS | LOG_PERROR, LOG_DAEMON);
 	registry_register();
@@ -435,9 +424,6 @@ int main(int argc, char ** argv)
 	if (option.daemonize)
 		daemonize();
 
-	if (setup_signal_handling() != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-
 	/* setup subprocesses */
 	prepare_proc_configs(&config);
 	if (setup_procs(config.num_destinations, proc_cfg_base_dst, registry_destinations()) < 0) {
@@ -456,8 +442,23 @@ int main(int argc, char ** argv)
 		return EXIT_FAILURE;
 	}
 
+	/* setup signal handling */
+	sigemptyset(&signal_mask);
+	sigaddset(&signal_mask, SIGINT);
+	sigaddset(&signal_mask, SIGTERM);
+	sigaddset(&signal_mask, SIGALRM);
+	if (sigprocmask(SIG_BLOCK, &signal_mask, NULL) < 0) {
+		syslog(LOG_ERR, "unable to initialize signal handling");
+		return EXIT_FAILURE;
+	}
+	signal_fd = signalfd(-1, &signal_mask, 0);
+	if (signal_fd < 0) {
+		syslog(LOG_ERR, "unable to obtain file descriptor for signal handling");
+		return EXIT_FAILURE;
+	}
+
 	/* main / hub process */
-	for (; !proc_request_terminate() && !graceful_termination;) {
+	while (!graceful_termination) {
 		FD_ZERO(&rfds);
 		fd_max = 0;
 		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
@@ -468,15 +469,29 @@ int main(int argc, char ** argv)
 			if (fd > fd_max)
 				fd_max = fd;
 		}
+		FD_SET(signal_fd, &rfds);
+		if (signal_fd > fd_max)
+			fd_max = signal_fd;
 
-		rc = pselect(fd_max + 1, &rfds, NULL, NULL, NULL, proc_get_signal_mask());
+		rc = select(fd_max + 1, &rfds, NULL, NULL, NULL);
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_CRIT, "error in pselect: %s", strerror(errno));
 			return EXIT_FAILURE;
-		} else if (proc_request_terminate()) {
-			break;
 		} else if (rc == 0) {
 			continue;
+		}
+
+		if (FD_ISSET(signal_fd, &rfds)) {
+			rc = read(signal_fd, &signal_info, sizeof(signal_info));
+			if (rc < 0 || rc != sizeof(signal_info)) {
+				syslog(LOG_ERR, "cannot read singal info");
+				return EXIT_FAILURE;
+			}
+
+			if (signal_info.ssi_signo == SIGTERM)
+				break;
+			if (signal_info.ssi_signo == SIGINT)
+				break;
 		}
 
 		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
@@ -521,6 +536,7 @@ int main(int argc, char ** argv)
 		}
 	}
 
+	close(signal_fd);
 	terminate_graceful(&config);
 
 	return EXIT_SUCCESS;

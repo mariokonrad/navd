@@ -6,6 +6,7 @@
 #include <common/macros.h>
 #include <errno.h>
 #include <sys/select.h>
+#include <sys/signalfd.h>
 #include <syslog.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,11 +86,13 @@ static int exit_proc(struct proc_config_t * config)
 static int proc(struct proc_config_t * config)
 {
 	fd_set rfds;
+	int fd_max;
 	struct message_t msg;
 	int rc;
 	struct timespec tm;
 	struct message_t sim_message;
 	struct seatalk_simulator_data_t * data;
+	struct signalfd_siginfo signal_info;
 
 /*
 	char buf[NMEA_MAX_SENTENCE];
@@ -113,15 +116,21 @@ static int proc(struct proc_config_t * config)
 	}
 */
 
-	while (!proc_request_terminate()) {
+	while (1) {
+		fd_max = -1;
 		FD_ZERO(&rfds);
 		FD_SET(config->rfd, &rfds);
+		if (config->rfd > fd_max)
+			fd_max = config->rfd;
+		FD_SET(config->signal_fd, &rfds);
+		if (config->signal_fd > fd_max)
+			fd_max = config->signal_fd;
 
 		tm.tv_sec = data->period / 1000;
 		tm.tv_nsec = data->period % 1000;
 		tm.tv_nsec *= 1000000;
 
-		rc = pselect(config->rfd + 1, &rfds, NULL, NULL, &tm, proc_get_signal_mask());
+		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, NULL);
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
@@ -132,6 +141,17 @@ static int proc(struct proc_config_t * config)
 		if (rc == 0) /* timeout */
 			if (message_write(config->wfd, &sim_message) != EXIT_SUCCESS)
 				return EXIT_FAILURE;
+
+		if (FD_ISSET(config->signal_fd, &rfds)) {
+			rc = read(config->signal_fd, &signal_info, sizeof(signal_info));
+			if (rc < 0 || rc != sizeof(signal_info)) {
+				syslog(LOG_ERR, "cannot read singal info");
+				return EXIT_FAILURE;
+			}
+
+			if (signal_info.ssi_signo == SIGTERM)
+				break;
+		}
 
 		if (FD_ISSET(config->rfd, &rfds)) {
 			if (message_read(config->rfd, &msg) != EXIT_SUCCESS)

@@ -217,27 +217,27 @@ function exec_integration_test()
 	done
 	echo "---"
 	${binary} foobar
-	echo "---"
+	echo "--- cofnig-test-2"
 	${binary} --config ${BASE}/src/test/config-test-2 --dump-config --log 7 --max-msg 5
-	echo "---"
+	echo "--- testrunner"
 	${BASE}/build/src/test/testrunner
-	echo "---"
+	echo "--- config-test-1"
 	${binary} --max-msg 5 --log 7 --config src/test/config-test-1
-	echo "---"
+	echo "--- config-test-3"
 	${binary} --max-msg 5 --log 7 --config src/test/config-test-3
-	echo "---"
+	echo "--- config-gps_sim"
 	${binary} --max-msg 5 --log 7 --config src/test/config-gps_sim
-	echo "---"
+	echo "--- config-timer"
 	${binary} --max-msg 5 --log 7 --config src/test/config-timer
-	echo "---"
+	echo "--- config-logbook"
 	${binary} --max-msg 5 --log 7 --config src/test/config-logbook
-	echo "---"
+	echo "--- config-filter_lua-1"
 	${binary} --max-msg 5 --log 7 --config src/test/config-filter_lua-1
-	echo "---"
+	echo "--- config-dst_lua"
 	${binary} --max-msg 5 --log 7 --config src/test/config-dst_lua
-	echo "---"
+	echo "--- config-src_lua"
 	${binary} --max-msg 5 --log 7 --config src/test/config-src_lua
-	echo "---"
+	echo "--- config-seatalk_sim"
 	${binary} --max-msg 5 --log 7 --config src/test/config-seatalk_sim
 	echo "---"
 }
