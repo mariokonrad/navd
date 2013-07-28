@@ -3,14 +3,14 @@
 
 #include <lua/lua.h>
 #include <setjmp.h>
-#include <time.h>
+#include <sys/time.h>
 
 struct src_lua_data_t
 {
 	lua_State * lua;
 	jmp_buf env;
 	int initialized;
-	struct timespec tm_cfg;
+	struct timeval tm_cfg;
 };
 
 #endif

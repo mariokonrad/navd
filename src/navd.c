@@ -474,7 +474,7 @@ int main(int argc, char ** argv)
 
 		rc = select(fd_max + 1, &rfds, NULL, NULL, NULL);
 		if (rc < 0 && errno != EINTR) {
-			syslog(LOG_CRIT, "error in pselect: %s", strerror(errno));
+			syslog(LOG_CRIT, "error in select: %s", strerror(errno));
 			return EXIT_FAILURE;
 		} else if (rc == 0) {
 			continue;

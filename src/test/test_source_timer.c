@@ -66,7 +66,7 @@ static void test_init_period(void)
 	data = (struct timer_data_t *)config.data;
 	CU_ASSERT_EQUAL(data->timer_id, 1);
 	CU_ASSERT_EQUAL(data->tm_cfg.tv_sec, 0);
-	CU_ASSERT_EQUAL(data->tm_cfg.tv_nsec, 100000000);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_usec, 100000);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
@@ -87,7 +87,7 @@ static void test_init_invalid_id(void)
 	data = (struct timer_data_t *)config.data;
 	CU_ASSERT_EQUAL(data->timer_id, 0);
 	CU_ASSERT_EQUAL(data->tm_cfg.tv_sec, 0);
-	CU_ASSERT_EQUAL(data->tm_cfg.tv_nsec, 0);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_usec, 0);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);
@@ -108,7 +108,7 @@ static void test_init_failure(void)
 	CU_ASSERT_PTR_NOT_NULL_FATAL(config.data);
 	data = (struct timer_data_t *)config.data;
 	CU_ASSERT_EQUAL(data->tm_cfg.tv_sec, 0);
-	CU_ASSERT_EQUAL(data->tm_cfg.tv_nsec, 0);
+	CU_ASSERT_EQUAL(data->tm_cfg.tv_usec, 0);
 	CU_ASSERT_EQUAL(proc->exit(&config), EXIT_SUCCESS);
 
 	proplist_free(&properties);

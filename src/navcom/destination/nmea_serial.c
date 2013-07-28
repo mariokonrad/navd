@@ -147,7 +147,7 @@ static int proc(struct proc_config_t * config)
 		if (config->signal_fd > fd_max)
 			fd_max = config->signal_fd;
 
-		rc = pselect(fd_max + 1, &rfds, NULL, NULL, NULL, NULL);
+		rc = select(fd_max + 1, &rfds, NULL, NULL, NULL);
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;

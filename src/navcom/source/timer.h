@@ -3,6 +3,7 @@
 
 #include <navcom/proc.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 /**
  * Source specific data.
@@ -11,7 +12,7 @@ struct timer_data_t
 {
 	int initialized;
 	uint32_t timer_id;
-	struct timespec tm_cfg;
+	struct timeval tm_cfg;
 };
 
 extern const struct proc_desc_t timer;

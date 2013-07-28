@@ -203,7 +203,7 @@ static int proc(struct proc_config_t * config)
 	fd_set rfds;
 	int fd_max;
 	struct message_t msg;
-	struct timespec tm;
+	struct timeval tm;
 	struct signalfd_siginfo signal_info;
 
 	struct device_t device;
@@ -250,9 +250,9 @@ static int proc(struct proc_config_t * config)
 			fd_max = config->signal_fd;
 
 		tm.tv_sec = 1;
-		tm.tv_nsec = 0;
+		tm.tv_usec = 0;
 
-		rc = pselect(fd_max + 1, &rfds, NULL, NULL, &tm, NULL);
+		rc = select(fd_max + 1, &rfds, NULL, NULL, &tm);
 		if (rc < 0 && errno != EINTR) {
 			syslog(LOG_ERR, "error in 'select': %s", strerror(errno));
 			return EXIT_FAILURE;
