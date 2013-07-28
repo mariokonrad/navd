@@ -154,7 +154,6 @@ static int proc_start(
 		sigemptyset(&proc->signal_mask);
 		sigaddset(&proc->signal_mask, SIGINT);
 		sigaddset(&proc->signal_mask, SIGTERM);
-		sigaddset(&proc->signal_mask, SIGALRM);
 		if (sigprocmask(SIG_BLOCK, &proc->signal_mask, NULL) < 0) {
 			syslog(LOG_ERR, "unable to initialize signal handling");
 			return EXIT_FAILURE;
