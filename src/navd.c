@@ -352,6 +352,7 @@ static void terminate_graceful(const struct config_t const * config)
 	registry_free();
 }
 
+/* TODO: replace signal handling with 'signalfd' for all processes, this also replaces 'pselect' with 'select' and the tedious '*request_terminate' stuff */
 static int setup_signal_handling(void)
 {
 	sigset_t mask;
