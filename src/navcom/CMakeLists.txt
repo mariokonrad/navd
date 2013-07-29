@@ -28,23 +28,32 @@ endif()
 
 set(DESTINATIONS
 	destination/message_log.c
-	destination/nmea_serial.c
-	destination/logbook.c
 	)
 
 if (ENABLE_DESTINATION_LUA)
 	set(DESTINATIONS ${DESTINATIONS} destination/dst_lua.c)
 endif()
 
+if (ENABLE_DESTINATION_LOGBOOK)
+	set(DESTINATIONS ${DESTINATIONS} destination/logbook.c)
+endif()
+
+if (ENABLE_DESTINATION_NMEASERIAL)
+	set(DESTINATIONS ${DESTINATIONS} destination/nmea_serial.c)
+endif()
+
 # filters
 
 set(FILTERS
 	filter/filter_null.c
-	filter/filter_nmea.c
 	)
 
 if (ENABLE_FILTER_LUA)
 	set(FILTERS ${FILTERS} filter/filter_lua.c)
+endif()
+
+if (ENABLE_FILTER_NMEA)
+	set(FILTERS ${FILTERS} filter/filter_nmea.c)
 endif()
 
 # common
@@ -58,7 +67,7 @@ set(COMMON
 	message_comm.c
 	)
 
-if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA OR ENABLE_SOURCE_LUA)
+if (NEEDS_LUA)
 	set(COMMON ${COMMON}
 		lua_helper.c
 		lua_syslog.c

@@ -37,7 +37,7 @@
 	#include <test_source_seatalk_simulator.h>
 #endif
 
-#if defined(ENABLE_SOURCE_SETALKSERIAL) || defined(ENABLE_SOURCE_SETALKSIMULATOR)
+#if defined(NEEDS_SEATALK)
 	#include <test_seatalk.h>
 #endif
 
@@ -45,7 +45,7 @@
 	#include <test_filter_lua.h>
 #endif
 
-#if defined(ENABLE_FILTER_LUA) || defined(ENABLE_DESTINATION_LUA) || defined(ENABLE_SOURCE_LUA)
+#if defined(NEEDS_LUA)
 	#include <test_lua_message.h>
 #endif
 
@@ -57,16 +57,18 @@
 	#include <test_destination_dst_lua.h>
 #endif
 
+#if defined(ENABLE_DESTINATION_LUA)
+	#include <test_destination_logbook.h>
+#endif
+
 int main()
 {
 	CU_initialize_registry();
 
 	register_suite_strlist();
 	register_suite_property();
-	register_suite_nmea();
 	register_suite_config();
 	register_suite_filter_null();
-	register_suite_filter_nmea();
 	register_suite_filterlist();
 	register_suite_device();
 	register_suite_device_simulator_serial_gps();
@@ -76,8 +78,6 @@ int main()
 	register_suite_proc();
 	register_suite_proc_list();
 	register_suite_source_timer();
-	register_suite_destination_nmea_serial();
-	register_suite_destination_logbook();
 	register_suite_destination_message_log();
 
 #if defined(ENABLE_SOURCE_GPSSERIAL)
@@ -88,12 +88,20 @@ int main()
 	register_suite_source_gps_simulator();
 #endif
 
-#if defined(ENABLE_FILTER_LUA) || defined(ENABLE_DESTINATION_LUA) || defined(ENABLE_SOURCE_LUA)
+#if defined(NEEDS_LUA)
 	register_suite_lua_message();
 #endif
 
-#ifdef ENABLE_FILTER_LUA
+#if defined(NEEDS_NMEA)
+	register_suite_nmea();
+#endif
+
+#if defined(ENABLE_FILTER_LUA)
 	register_suite_filter_lua();
+#endif
+
+#if defined(ENABLE_FILTER_NMEA)
+	register_suite_filter_nmea();
 #endif
 
 #if defined(ENABLE_SOURCE_LUA)
@@ -104,6 +112,14 @@ int main()
 	register_suite_destination_dst_lua();
 #endif
 
+#if defined(ENABLE_DESTINATION_LOGBOOK)
+	register_suite_destination_logbook();
+#endif
+
+#if defined(ENABLE_DESTINATION_NMEASERIAL)
+	register_suite_destination_nmea_serial();
+#endif
+
 #if defined(ENABLE_SOURCE_SETALKSERIAL)
 	register_suite_source_seatalk_serial();
 #endif
@@ -112,7 +128,7 @@ int main()
 	register_suite_source_seatalk_simulator();
 #endif
 
-#if defined(ENABLE_SOURCE_SETALKSERIAL) || defined(ENABLE_SOURCE_SETALKSIMULATOR)
+#if defined(NEEDS_SEATALK)
 	register_suite_seatalk();
 #endif
 

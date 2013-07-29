@@ -35,10 +35,21 @@
 #endif
 
 #include <navcom/filter/filter_null.h>
-#include <navcom/filter/filter_nmea.h>
+
+#ifdef ENABLE_FILTER_NMEA
+	#include <navcom/filter/filter_nmea.h>
+#endif
+
 #include <navcom/destination/message_log.h>
-#include <navcom/destination/nmea_serial.h>
-#include <navcom/destination/logbook.h>
+
+#ifdef ENABLE_DESTINATION_NMEASERIAL
+	#include <navcom/destination/nmea_serial.h>
+#endif
+
+#ifdef ENABLE_DESTINATION_LOGBOOK
+	#include <navcom/destination/logbook.h>
+#endif
+
 #include <navcom/source/timer.h>
 
 /**
@@ -183,8 +194,14 @@ void register_destinations(void)
 	pdlist_init(&desc_destinations);
 
 	pdlist_append(&desc_destinations, &message_log);
+
+#ifdef ENABLE_DESTINATION_NMEASERIAL
 	pdlist_append(&desc_destinations, &nmea_serial);
+#endif
+
+#ifdef ENABLE_DESTINATION_LOGBOOK
 	pdlist_append(&desc_destinations, &logbook);
+#endif
 
 #ifdef ENABLE_DESTINATION_LUA
 	pdlist_append(&desc_destinations, &dst_lua);
@@ -207,7 +224,10 @@ void register_filters(void)
 	filterlist_init(&desc_filters);
 
 	filterlist_append(&desc_filters, &filter_null);
+
+#ifdef ENABLE_FILTER_NMEA
 	filterlist_append(&desc_filters, &filter_nmea);
+#endif
 
 #ifdef ENABLE_FILTER_LUA
 	filterlist_append(&desc_filters, &filter_lua);

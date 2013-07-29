@@ -19,7 +19,8 @@ struct message_log_data_t {
 	uint32_t max_errors;
 };
 
-static int log_message(
+#if defined(NEEDS_NMEA)
+static int log_nmea_message(
 		const struct message_t * msg,
 		const struct message_log_data_t * data)
 {
@@ -55,6 +56,7 @@ static int log_message(
 
 	return EXIT_SUCCESS;
 }
+#endif
 
 static void init_data(struct message_log_data_t * data)
 {
@@ -179,8 +181,9 @@ static int proc(struct proc_config_t * config)
 					break;
 
 				case MSG_NMEA:
+#if defined(NEEDS_NMEA)
 					if (data->enable) {
-						rc = log_message(&msg, data);
+						rc = log_nmea_message(&msg, data);
 						if (rc < 0) {
 							++cnt_error;
 							if (cnt_error >= data->max_errors) {
@@ -189,11 +192,14 @@ static int proc(struct proc_config_t * config)
 							}
 						}
 					}
+#endif
 					break;
 
 				case MSG_SEATALK:
+#if defined(NEEDS_SEATALK)
 					/* TODO: message log to support seatalk messages */
 					syslog(LOG_WARNING, "seatalk messages not handled yet: %08x\n", msg.type);
+#endif
 					break;
 
 				default:

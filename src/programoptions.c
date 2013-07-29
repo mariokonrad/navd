@@ -81,9 +81,25 @@ static void print_config(const char * prefix, const char * suffix)
 	printf("%sfilter_lua(%s)%s", prefix, filter_lua_release(), suffix);
 #endif
 
+#if defined(ENABLE_FILTER_NMEA)
+	printf("%sfilter_nmea%s", prefix, suffix);
+#endif
+
 #if defined(ENABLE_DESTINATION_LUA)
 	printf("%sdst_lua(%s)%s", prefix, dst_lua_release(), suffix);
 #endif
+
+#if defined(ENABLE_DESTINATION_LOGBOOK)
+	printf("%slogbook%s", prefix, suffix);
+#endif
+
+#if defined(ENABLE_DESTINATION_NMEASERIAL)
+	printf("%snmea_serial%s", prefix, suffix);
+#endif
+
+	/* in case all options are turned off */
+	UNUSED_ARG(prefix);
+	UNUSED_ARG(suffix);
 }
 
 void print_usage(const char * name)

@@ -34,8 +34,43 @@ option(ENABLE_SOURCE_GPSD
 option(ENABLE_FILTER_LUA
 	"Enable filter LUA" ON)
 
+option(ENABLE_FILTER_NMEA
+	"Enable filter NMEA" ON)
+
 option(ENABLE_DESTINATION_LUA
 	"Enable destination LUA" ON)
+
+option(ENABLE_DESTINATION_LOGBOOK
+	"Enable destination Logbook" ON)
+
+option(ENABLE_DESTINATION_NMEASERIAL
+	"Enable destination NMEA serial" ON)
+
+if (false
+		OR ENABLE_SOURCE_LUA
+		OR ENABLE_FILTER_LUA
+		OR ENABLE_DESTINATION_LUA
+		)
+	set(NEEDS_LUA true)
+endif()
+
+if (false
+		OR ENABLE_SOURCE_SEATALKSERIAL
+		OR ENABLE_SOURCE_SEATALKSIMULATOR
+		)
+	set(NEEDS_SEATALK true)
+endif()
+
+if (false
+		OR ENABLE_SOURCE_GPSSERIAL
+		OR ENABLE_SOURCE_GPSSIMULATOR
+		OR ENABLE_SOURCE_GPSD
+		OR ENABLE_FILTER_NMEA
+		OR ENABLE_DESTINATION_LOGBOOK
+		OR ENABLE_DESTINATION_NMEASERIAL
+		)
+	set(NEEDS_NMEA true)
+endif()
 
 ################################################################################
 # build
@@ -78,7 +113,14 @@ message("!  ENABLE_SOURCE_SEATALKSIMULATOR : ${ENABLE_SOURCE_SEATALKSIMULATOR}")
 message("!  ENABLE_SOURCE_SEATALKSERIAL    : ${ENABLE_SOURCE_SEATALKSERIAL}")
 message("!  ENABLE_SOURCE_GPSD             : ${ENABLE_SOURCE_GPSD}")
 message("!  ENABLE_FILTER_LUA              : ${ENABLE_FILTER_LUA}")
+message("!  ENABLE_FILTER_NMEA             : ${ENABLE_FILTER_NMEA}")
 message("!  ENABLE_DESTINATION_LUA         : ${ENABLE_DESTINATION_LUA}")
+message("!  ENABLE_DESTINATION_LOGBOOK     : ${ENABLE_DESTINATION_LOGBOOK}")
+message("!  ENABLE_DESTINATION_NMEASERIAL  : ${ENABLE_DESTINATION_NMEASERIAL}")
+
+message("!  NEEDS_LUA                      : ${NEEDS_LUA}")
+message("!  NEEDS_SEATALK                  : ${NEEDS_SEATALK}")
+message("!  NEEDS_NMEA                     : ${NEEDS_NMEA}")
 
 ################################################################################
 # installation

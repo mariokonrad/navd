@@ -28,26 +28,28 @@ add_executable(serial_hexdump
 	serial_hexdump.c
 	)
 
-add_executable(dump
-	dump.c
-	)
+if (NEEDS_NMEA)
+	add_executable(dump
+		dump.c
+		)
 
-target_link_libraries(dump
-	devices
-	nmea
-	common
-	m
-	)
+	target_link_libraries(dump
+		devices
+		nmea
+		common
+		m
+		)
 
-add_executable(check_size
-	check_size.c
-	)
+	add_executable(check_size
+		check_size.c
+		)
 
-target_link_libraries(check_size
-	devices
-	nmea
-	common
-	)
+	target_link_libraries(check_size
+		devices
+		nmea
+		common
+		)
+endif()
 
 add_executable(config_test
 	config_test.c
@@ -75,10 +77,8 @@ include_directories(
 set(TEST_SOURCES
 	test_strlist.c
 	test_property.c
-	test_nmea.c
 	test_config.c
 	test_filter_null.c
-	test_filter_nmea.c
 	test_filterlist.c
 	test_device.c
 	test_device_simulator_serial_gps.c
@@ -88,15 +88,12 @@ set(TEST_SOURCES
 	test_proc.c
 	test_proc_list.c
 	test_source_timer.c
-	test_destination_nmea_serial.c
-	test_destination_logbook.c
 	test_destination_message_log.c
 	)
 
 set(LIBRARIES
 	navcom
 	config
-	nmea
 	devices
 	)
 
@@ -124,16 +121,33 @@ if (ENABLE_DESTINATION_LUA)
 	set(TEST_SOURCES ${TEST_SOURCES} test_destination_dst_lua.c)
 endif()
 
-if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA OR ENABLE_SOURCE_LUA)
+if (ENABLE_DESTINATION_LOGBOOK)
+	set(TEST_SOURCES ${TEST_SOURCES} test_destination_logbook.c)
+endif()
+
+if (ENABLE_DESTINATION_NMEASERIAL)
+	set(TEST_SOURCES ${TEST_SOURCES} test_destination_nmea_serial.c)
+endif()
+
+if (ENABLE_FILTER_LUA)
 	set(TEST_SOURCES ${TEST_SOURCES} test_filter_lua.c)
 endif()
 
-if (ENABLE_SOURCE_SEATALKSERIAL OR ENABLE_SOURCE_SEATALKSIMULATOR)
+if (ENABLE_FILTER_NMEA)
+	set(TEST_SOURCES ${TEST_SOURCES} test_filter_nmea.c)
+endif()
+
+if (NEEDS_NMEA)
+	set(TEST_SOURCES ${TEST_SOURCES} test_nmea.c)
+	set(LIBRARIES ${LIBRARIES} nmea)
+endif()
+
+if (NEEDS_SEATALK)
 	set(TEST_SOURCES ${TEST_SOURCES} test_seatalk.c)
 	set(LIBRARIES ${LIBRARIES} seatalk)
 endif()
 
-if (ENABLE_FILTER_LUA OR ENABLE_DESTINATION_LUA OR ENABLE_SOURCE_LUA)
+if (NEEDS_LUA)
 	set(TEST_SOURCES ${TEST_SOURCES} test_lua_message.c)
 
 	include_directories(
