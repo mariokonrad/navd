@@ -119,7 +119,7 @@ function exec_scope()
 	cscope -b -i cscope.files
 }
 
-function exec_build()
+function exec_build_meta()
 {
 	exec_prepare
 	cd ${BASE}/build
@@ -132,6 +132,21 @@ function exec_build()
 			-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 			..
 	fi
+
+#
+#			-DENABLE_SOURCE_LUA=OFF \
+#			-DENABLE_DESTINATION_LUA=OFF \
+#			-DENABLE_FILTER_LUA=OFF \
+#			-DENABLE_SOURCE_GPSSIMULATOR=OFF \
+#			-DENABLE_SOURCE_GPSSERIAL=OFF \
+#			-DENABLE_SOURCE_SEATALKSERIAL=OFF \
+#			-DENABLE_SOURCE_SEATALKSIMULATOR=OFF \
+#
+}
+
+function exec_build()
+{
+	exec_build_meta
 	#cmake --build .
 	make
 }

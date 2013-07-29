@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <stdio.h>
 
 #ifdef ENABLE_FILTER_LUA
 	#include <navcom/filter/filter_lua.h>

@@ -13,7 +13,6 @@ add_subdirectory(common)
 add_subdirectory(config)
 add_subdirectory(device)
 add_subdirectory(nmea)
-add_subdirectory(seatalk)
 add_subdirectory(navcom)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -32,12 +31,16 @@ set(LIBRARIES
 	navcom
 	devices
 	nmea
-	seatalk
 	config
 	common
 	)
 
-if (ENABLE_FILTER_LUA)
+if (ENABLE_SOURCE_SEATALKSERIAL OR ENABLE_SOURCE_SEATALKSIMULATOR)
+	add_subdirectory(seatalk)
+	set(LIBRARIES ${LIBRARIES} seatalk)
+endif()
+
+if (ENABLE_FILTER_LUA OR ENABLE_SOURCE_LUA OR ENABLE_DESTINATION_LUA)
 	add_subdirectory(lua)
 	set(LIBRARIES ${LIBRARIES} lua)
 endif()
