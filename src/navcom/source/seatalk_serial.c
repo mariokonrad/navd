@@ -96,8 +96,8 @@ static void seatalk_context_write_cmd(
 		uint8_t c)
 {
 	if (ctx->remaining > 0 && ctx->remaining < 254) {
-		printf("## collision -> restart cmd\n");
 		++ctx->collisions;
+		syslog(LOG_NOTICE, "SeaTalk bus collision (%u)", ctx->collisions);
 	}
 
 	dump(ctx, c, "cmd");
