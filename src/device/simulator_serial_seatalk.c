@@ -76,6 +76,7 @@ static const uint8_t DATA[] =
 	0x00,             /* bit=1 parity=1 : no error : cmd  */
 	0x02,             /* bit=0 parity=0 : no error : data */
 	0xff, 0x00, 0x60, /* bit=0 parity=1 : error    : data */
+	/* collision here, two bytes lost */
 
 	/* apparent wind angle */
 	0xff, 0x00, 0x10, /* bit=1 parity=0 : error    : cmd  */

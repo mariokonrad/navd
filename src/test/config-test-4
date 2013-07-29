@@ -1,0 +1,3 @@
+ser : seatalk_serial { _devicetype_:'simulator_serial_seatalk' };
+log : message_log {};
+ser -> log;

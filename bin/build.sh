@@ -200,6 +200,16 @@ function exec_lcov()
 	exec_lcov_capture
 }
 
+function exec_integration_test_config()
+{
+	binary=${BASE}/build/src/navd
+	config=$1
+
+	echo "--- START: ${config}"
+	${binary} --max-msg 5 --log 7 --config src/test/${config}
+	echo "--- END: ${config}"
+}
+
 function exec_integration_test()
 {
 	binary=${BASE}/build/src/navd
@@ -218,28 +228,20 @@ function exec_integration_test()
 	echo "---"
 	${binary} foobar
 	echo "--- cofnig-test-2"
-	${binary} --config ${BASE}/src/test/config-test-2 --dump-config --log 7 --max-msg 5
+	${binary} --max-msg 5 --log 7 --config ${BASE}/src/test/config-test-2 --dump-config
 	echo "--- testrunner"
 	${BASE}/build/src/test/testrunner
-	echo "--- config-test-1"
-	${binary} --max-msg 5 --log 7 --config src/test/config-test-1
-	echo "--- config-test-3"
-	${binary} --max-msg 5 --log 7 --config src/test/config-test-3
-	echo "--- config-gps_sim"
-	${binary} --max-msg 5 --log 7 --config src/test/config-gps_sim
-	echo "--- config-timer"
-	${binary} --max-msg 5 --log 7 --config src/test/config-timer
-	echo "--- config-logbook"
-	${binary} --max-msg 5 --log 7 --config src/test/config-logbook
-	echo "--- config-filter_lua-1"
-	${binary} --max-msg 5 --log 7 --config src/test/config-filter_lua-1
-	echo "--- config-dst_lua"
-	${binary} --max-msg 5 --log 7 --config src/test/config-dst_lua
-	echo "--- config-src_lua"
-	${binary} --max-msg 5 --log 7 --config src/test/config-src_lua
-	echo "--- config-seatalk_sim"
-	${binary} --max-msg 5 --log 7 --config src/test/config-seatalk_sim
-	echo "---"
+
+	exec_integration_test_config config-test-1
+	exec_integration_test_config config-test-3
+	exec_integration_test_config config-timer
+	exec_integration_test_config config-gps_sim
+	exec_integration_test_config config-logbook
+	exec_integration_test_config config-filter_lua-1
+	exec_integration_test_config config-dst_lua
+	exec_integration_test_config config-src_lua
+	exec_integration_test_config config-seatalk_sim
+	exec_integration_test_config config-test-4
 }
 
 function exec_test()

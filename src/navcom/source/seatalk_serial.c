@@ -137,8 +137,8 @@ static void seatalk_context_write_data(
  *
  * @param[in] config Process configuration
  * @param[out] buf Working context.
- * @retval EXIT_SUCCESS
- * @retval EXIT_FAILURE
+ * @retval EXIT_SUCCESS Success (program working correctly, maybe wrong data)
+ * @retval EXIT_FAILURE Failure
  */
 static int emit_message(
 		const struct proc_config_t * config,
@@ -154,8 +154,11 @@ static int emit_message(
 		rc = message_write(config->wfd, &ctx->msg);
 		if (rc != EXIT_SUCCESS)
 			syslog(LOG_ERR, "unable to write SeaTalk data: %s", strerror(errno));
+	} else if (rc == -4) {
+		syslog(LOG_INFO, "unknown seatalk sentence, discarding");
+		return EXIT_SUCCESS;
 	} else {
-		syslog(LOG_ERR, "parameter error");
+		syslog(LOG_ERR, "error: seatalk_read, rc=%d", rc);
 		return EXIT_FAILURE;
 	}
 
@@ -454,11 +457,29 @@ static int proc(struct proc_config_t * config)
 	return EXIT_SUCCESS;
 }
 
+static void help(void)
+{
+	printf("\n");
+	printf("seatalk_serial\n");
+	printf("\n");
+	printf("Receives navigational data on a serial interface and\n");
+	printf("sends messages accoringly.\n");
+	printf("\n");
+	printf("Configuration options:\n");
+	printf("  device : the device to read data from\n");
+	printf("\n");
+	printf("  _devicetype_ : testing only\n");
+	printf("\n");
+	printf("Example:\n");
+	printf("  seatalk : seatalk_serial { device:'/dev/ttyUSB0' };\n");
+	printf("\n");
+}
+
 const struct proc_desc_t seatalk_serial = {
 	.name = "seatalk_serial",
 	.init = init_proc,
 	.exit = exit_proc,
 	.func = proc,
-	.help = NULL,
+	.help = help,
 };
 

@@ -26,8 +26,8 @@ static const struct seatalk_sentence_t * SENTENCES[] =
  * @param[in] buffer The buffer providing data.
  * @param[in] size Size of the buffer.
  * @retval  0 Success
- * @retval  1 Unknown sentence
  * @retval -1 Parameter error
+ * @retval -4 Unknown sentence
  *
  * @todo Implementation
  */
