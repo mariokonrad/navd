@@ -302,7 +302,7 @@ static int send_terminate(const struct proc_config_t * proc)
 		return 0;
 	memset(&msg, 0, sizeof(msg));
 	msg.type = MSG_SYSTEM;
-	msg.data.system = SYSTEM_TERMINATE;
+	msg.data.attr.system = SYSTEM_TERMINATE;
 	rc = write(proc->wfd, &msg, sizeof(msg));
 	if (rc < 0) {
 		syslog(LOG_CRIT, "unable to send termination message");

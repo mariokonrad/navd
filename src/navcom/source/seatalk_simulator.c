@@ -30,8 +30,8 @@ static void init_message(
 	struct seatalk_depth_below_transducer_t * dpt;
 
 	msg->type = MSG_SEATALK;
-	msg->data.seatalk.type = SEATALK_DEPTH_BELOW_TRANSDUCER;
-	dpt = &msg->data.seatalk.sentence.depth_below_transducer;
+	msg->data.attr.seatalk.type = SEATALK_DEPTH_BELOW_TRANSDUCER;
+	dpt = &msg->data.attr.seatalk.sentence.depth_below_transducer;
 
 	dpt->shallow_depth_alarm_active = 0;
 	dpt->depth_alarm_active         = 0;
@@ -158,7 +158,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							return EXIT_SUCCESS;
 						default:

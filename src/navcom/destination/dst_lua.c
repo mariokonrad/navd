@@ -233,7 +233,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							return EXIT_SUCCESS;
 						default:

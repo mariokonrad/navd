@@ -1,8 +1,16 @@
 #ifndef __MESSAGE__H__
 #define __MESSAGE__H__
 
-#include <nmea/nmea.h>
-#include <seatalk/seatalk.h>
+#include <stdint.h>
+#include <global_config.h>
+
+#if defined(NEEDS_NMEA)
+	#include <nmea/nmea.h>
+#endif
+
+#if defined(NEEDS_SEATALK)
+	#include <seatalk/seatalk.h>
+#endif
 
 /**
  * Message types, defines what type of message it is.
@@ -36,6 +44,24 @@ enum System {
 };
 
 /**
+ * Structure which contains all possible data for a message to
+ * be transmitted.
+ */
+struct message_data_t
+{
+	uint32_t system; /* see enum System */
+	uint32_t timer_id;
+
+#if defined(NEEDS_NMEA)
+	struct nmea_t nmea;
+#endif
+
+#if defined(NEEDS_SEATALK)
+	struct seatalk_t seatalk;
+#endif
+} __attribute__((packed));
+
+/**
  * Structure to represent the date to be sent as message.
  * This structure can hold any possible data to be sent as message,
  * therefore every message in this system has the same size. This
@@ -45,11 +71,8 @@ struct message_t
 {
 	uint32_t type; /* see enum MessageType */
 	union {
-		uint32_t system; /* see enum System */
-		uint32_t timer_id;
-		struct nmea_t nmea;
-		struct seatalk_t seatalk;
-		int8_t buf[sizeof(struct nmea_t)]; /* max size of all members, nmea is the largest */
+		struct message_data_t attr;
+		int8_t buf[sizeof(struct message_data_t)];
 	} data;
 } __attribute__((packed));
 

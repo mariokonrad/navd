@@ -193,20 +193,20 @@ static void test_func_msg_clone(void)
 	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
 
 	msg_in.type = MSG_TIMER;
-	msg_in.data.timer_id = 12345678;
+	msg_in.data.attr.timer_id = 12345678;
 
 	CU_ASSERT_EQUAL(filter->func(&msg_out, NULL, &ctx, &properties), FILTER_FAILURE);
 	CU_ASSERT_EQUAL(filter->func(NULL, &msg_in, &ctx, &properties), FILTER_FAILURE);
 	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_SUCCESS);
 
 	CU_ASSERT_EQUAL(msg_out.type, msg_in.type);
-	CU_ASSERT_EQUAL(msg_out.data.timer_id, msg_in.data.timer_id);
+	CU_ASSERT_EQUAL(msg_out.data.attr.timer_id, msg_in.data.attr.timer_id);
 
 	CU_ASSERT_EQUAL(msg_in.type, MSG_TIMER);
-	CU_ASSERT_EQUAL(msg_in.data.timer_id, 12345678);
+	CU_ASSERT_EQUAL(msg_in.data.attr.timer_id, 12345678);
 
 	CU_ASSERT_EQUAL(msg_out.type, MSG_TIMER);
-	CU_ASSERT_EQUAL(msg_out.data.timer_id, 12345678);
+	CU_ASSERT_EQUAL(msg_out.data.attr.timer_id, 12345678);
 
 	CU_ASSERT_EQUAL(filter->exit(&ctx), FILTER_SUCCESS);
 	proplist_free(&properties);
@@ -344,7 +344,7 @@ static void test_func_msg_to_table_system(void) /* TODO: move test to test_lua_m
 	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 
 	msg_in.type = MSG_SYSTEM;
-	msg_in.data.system = SYSTEM_TERMINATE;
+	msg_in.data.attr.system = SYSTEM_TERMINATE;
 
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
@@ -394,7 +394,7 @@ static void test_func_msg_to_table_timer(void) /* TODO: move test to test_lua_me
 	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 
 	msg_in.type = MSG_TIMER;
-	msg_in.data.timer_id = 12345678;
+	msg_in.data.attr.timer_id = 12345678;
 
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
@@ -446,8 +446,8 @@ static void test_func_msg_to_table_nmea(void)
 	CU_ASSERT_EQUAL_FATAL(rc, EXIT_SUCCESS);
 
 	msg_in.type = MSG_NMEA;
-	msg_in.data.nmea.type = NMEA_RMB;
-	strncpy(msg_in.data.nmea.raw, "hello world", sizeof(msg_in.data.nmea.raw));
+	msg_in.data.attr.nmea.type = NMEA_RMB;
+	strncpy(msg_in.data.attr.nmea.raw, "hello world", sizeof(msg_in.data.attr.nmea.raw));
 
 	rc = filter->func(&msg_out, &msg_in, &ctx, &properties);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
@@ -517,22 +517,22 @@ static void test_func_msg_to_table_nmea_rmc(void) /* TODO: move test to test_lua
 	CU_ASSERT_EQUAL_FATAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
 
 	msg_in.type = MSG_NMEA;
-	msg_in.data.nmea.type = NMEA_RMC;
-	msg_in.data.nmea.sentence.rmc.status = NMEA_STATUS_OK;
-	msg_in.data.nmea.sentence.rmc.lat.d = 1;
-	msg_in.data.nmea.sentence.rmc.lat.m = 30;
-	msg_in.data.nmea.sentence.rmc.lat.s.i = 0;
-	msg_in.data.nmea.sentence.rmc.lat.s.d = 0;
-	msg_in.data.nmea.sentence.rmc.lat_dir = NMEA_NORTH;
-	msg_in.data.nmea.sentence.rmc.lon.d = 1;
-	msg_in.data.nmea.sentence.rmc.lon.m = 30;
-	msg_in.data.nmea.sentence.rmc.lon.s.i = 0;
-	msg_in.data.nmea.sentence.rmc.lon.s.d = 0;
-	msg_in.data.nmea.sentence.rmc.lon_dir = NMEA_WEST;
-	msg_in.data.nmea.sentence.rmc.sog.i = 5;
-	msg_in.data.nmea.sentence.rmc.sog.d = 0;
-	msg_in.data.nmea.sentence.rmc.head.i = 10;
-	msg_in.data.nmea.sentence.rmc.head.d = 0;
+	msg_in.data.attr.nmea.type = NMEA_RMC;
+	msg_in.data.attr.nmea.sentence.rmc.status = NMEA_STATUS_OK;
+	msg_in.data.attr.nmea.sentence.rmc.lat.d = 1;
+	msg_in.data.attr.nmea.sentence.rmc.lat.m = 30;
+	msg_in.data.attr.nmea.sentence.rmc.lat.s.i = 0;
+	msg_in.data.attr.nmea.sentence.rmc.lat.s.d = 0;
+	msg_in.data.attr.nmea.sentence.rmc.lat_dir = NMEA_NORTH;
+	msg_in.data.attr.nmea.sentence.rmc.lon.d = 1;
+	msg_in.data.attr.nmea.sentence.rmc.lon.m = 30;
+	msg_in.data.attr.nmea.sentence.rmc.lon.s.i = 0;
+	msg_in.data.attr.nmea.sentence.rmc.lon.s.d = 0;
+	msg_in.data.attr.nmea.sentence.rmc.lon_dir = NMEA_WEST;
+	msg_in.data.attr.nmea.sentence.rmc.sog.i = 5;
+	msg_in.data.attr.nmea.sentence.rmc.sog.d = 0;
+	msg_in.data.attr.nmea.sentence.rmc.head.i = 10;
+	msg_in.data.attr.nmea.sentence.rmc.head.d = 0;
 
 	CU_ASSERT_EQUAL(filter->func(&msg_out, &msg_in, &ctx, &properties), FILTER_SUCCESS);
 	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);

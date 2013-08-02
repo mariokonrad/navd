@@ -713,7 +713,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							return EXIT_SUCCESS;
 						default:
@@ -722,11 +722,11 @@ static int proc(struct proc_config_t * config)
 					break;
 
 				case MSG_NMEA:
-					process_nmea(&data->current, &msg.data.nmea);
+					process_nmea(&data->current, &msg.data.attr.nmea);
 					break;
 
 				case MSG_TIMER:
-					process_timer(data, msg.data.timer_id);
+					process_timer(data, msg.data.attr.timer_id);
 					break;
 
 				default:

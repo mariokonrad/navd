@@ -34,7 +34,7 @@ static int log_nmea_message(
 		return EXIT_FAILURE;
 
 	memset(buf, 0, sizeof(buf));
-	rc = nmea_write(buf, sizeof(buf), &msg->data.nmea);
+	rc = nmea_write(buf, sizeof(buf), &msg->data.attr.nmea);
 	if (rc < 0) {
 		syslog(LOG_ERR, "unable to write NMEA data to buffer");
 		return EXIT_FAILURE;
@@ -172,7 +172,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							return EXIT_SUCCESS;
 						default:

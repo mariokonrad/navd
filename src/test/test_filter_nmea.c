@@ -75,7 +75,7 @@ static void test_func_invalid(void)
 	memset(&out, 0x00, sizeof(out));
 	memset(&in, 0x00, sizeof(in));
 	in.type = MSG_NMEA;
-	in.data.nmea.type = NMEA_NONE;
+	in.data.attr.nmea.type = NMEA_NONE;
 	rc = filter->func(&out, &in, NULL, &proplist);
 	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
 }
@@ -91,7 +91,7 @@ static void test_func(void)
 	memset(&out, 0x00, sizeof(out));
 	memset(&in, 0x00, sizeof(in));
 	in.type = MSG_NMEA;
-	in.data.nmea.type = NMEA_RMC;
+	in.data.attr.nmea.type = NMEA_RMC;
 	rc = filter->func(&out, &in, NULL, &proplist);
 	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
 
@@ -104,7 +104,7 @@ static void test_func(void)
 	memset(&out, 0x00, sizeof(out));
 	memset(&in, 0x00, sizeof(in));
 	in.type = MSG_NMEA;
-	in.data.nmea.type = NMEA_RMC;
+	in.data.attr.nmea.type = NMEA_RMC;
 	rc = filter->func(&out, &in, NULL, &proplist);
 	CU_ASSERT_EQUAL(rc, FILTER_SUCCESS);
 

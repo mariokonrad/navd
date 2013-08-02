@@ -72,12 +72,18 @@ if (NEEDS_LUA)
 		lua_helper.c
 		lua_syslog.c
 		lua_debug.c
-		lua_nmea.c
 		lua_message.c
 		)
 	include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}/../lua/include
 		)
+
+	if (NEEDS_NMEA)
+		set(COMMON ${COMMON}
+			lua_nmea.c
+			lua_message_nmea.c
+			)
+	endif()
 endif()
 
 add_library(navcom

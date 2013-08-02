@@ -149,7 +149,7 @@ static int emit_message(
 	dump_sentence(ctx);
 
 	ctx->msg.type = MSG_SEATALK;
-	rc = seatalk_read(&ctx->msg.data.seatalk, ctx->data, ctx->index);
+	rc = seatalk_read(&ctx->msg.data.attr.seatalk, ctx->data, ctx->index);
 	if (rc == 0) {
 		rc = message_write(config->wfd, &ctx->msg);
 		if (rc != EXIT_SUCCESS)
@@ -437,7 +437,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							rc = ops->close(&device);
 							if (rc < 0) {

@@ -26,9 +26,9 @@ static int filter(
 	if (properties == NULL)
 		return FILTER_DISCARD;
 
-	nmea = nmea_sentence(in->data.nmea.type);
+	nmea = nmea_sentence(in->data.attr.nmea.type);
 	if (nmea == NULL) {
-		syslog(LOG_WARNING, "unknown NMEA message type: %08x", in->data.nmea.type);
+		syslog(LOG_WARNING, "unknown NMEA message type: %08x", in->data.attr.nmea.type);
 		return FILTER_DISCARD;
 	}
 

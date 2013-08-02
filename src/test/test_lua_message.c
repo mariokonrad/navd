@@ -118,7 +118,7 @@ static void test_msg_system_type(void)
 
 	CU_ASSERT_EQUAL(rc, 1);
 	CU_ASSERT_EQUAL(msg.type, MSG_SYSTEM);
-	CU_ASSERT_EQUAL(msg.data.system, SYSTEM_TERMINATE);
+	CU_ASSERT_EQUAL(msg.data.attr.system, SYSTEM_TERMINATE);
 }
 
 static void test_msg_timer_id(void)
@@ -137,7 +137,7 @@ static void test_msg_timer_id(void)
 
 	CU_ASSERT_EQUAL(rc, 1);
 	CU_ASSERT_EQUAL(msg.type, MSG_TIMER);
-	CU_ASSERT_EQUAL(msg.data.timer_id, 1234);
+	CU_ASSERT_EQUAL(msg.data.attr.timer_id, 1234);
 }
 
 static void test_msg_nmea_rmc(void)
@@ -170,34 +170,34 @@ static void test_msg_nmea_rmc(void)
 
 	CU_ASSERT_EQUAL(rc, 1);
 	CU_ASSERT_EQUAL(msg.type, MSG_NMEA);
-	CU_ASSERT_EQUAL(msg.data.nmea.type, NMEA_RMC);
-	CU_ASSERT_STRING_EQUAL(msg.data.nmea.raw, "");
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.time.h, 12);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.time.m, 34);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.time.s, 56);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.time.ms, 0);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.status, NMEA_STATUS_OK);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lat.d, 12);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lat.m, 34);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lat.s.i, 5);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lat.s.d, 0);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lat_dir, NMEA_NORTH);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lon.d, 123);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lon.m, 45);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lon.s.i, 6);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lon.s.d, 0);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.lon_dir, NMEA_EAST);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.sog.i, 5);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.sog.d, 400000);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.head.i, 123);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.head.d, 500000);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.date.y, 2000);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.date.m, 1);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.date.d, 23);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.m.i, 2);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.m.d, 500000);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.m_dir, NMEA_EAST);
-	CU_ASSERT_EQUAL(msg.data.nmea.sentence.rmc.sig_integrity, 'S');
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.type, NMEA_RMC);
+	CU_ASSERT_STRING_EQUAL(msg.data.attr.nmea.raw, "");
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.time.h, 12);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.time.m, 34);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.time.s, 56);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.time.ms, 0);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.status, NMEA_STATUS_OK);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lat.d, 12);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lat.m, 34);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lat.s.i, 5);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lat.s.d, 0);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lat_dir, NMEA_NORTH);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lon.d, 123);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lon.m, 45);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lon.s.i, 6);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lon.s.d, 0);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.lon_dir, NMEA_EAST);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.sog.i, 5);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.sog.d, 400000);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.head.i, 123);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.head.d, 500000);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.date.y, 2000);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.date.m, 1);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.date.d, 23);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.m.i, 2);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.m.d, 500000);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.m_dir, NMEA_EAST);
+	CU_ASSERT_EQUAL(msg.data.attr.nmea.sentence.rmc.sig_integrity, 'S');
 }
 
 static void test_msg_wr_empty(void)
@@ -233,7 +233,7 @@ static void test_msg_wr_system_terminate(void)
 	memset(&msg_out, 0, sizeof(msg_out));
 
 	msg_in.type = MSG_SYSTEM;
-	msg_in.data.system = SYSTEM_TERMINATE;
+	msg_in.data.attr.system = SYSTEM_TERMINATE;
 
 	CU_ASSERT_EQUAL(call_write_read(SCRIPT, &msg_out, &msg_in), 0);
 	CU_ASSERT_EQUAL(memcmp(&msg_out, &msg_in, sizeof(msg_in)), 0);
@@ -254,7 +254,7 @@ static void test_msg_wr_timer(void)
 	memset(&msg_out, 0, sizeof(msg_out));
 
 	msg_in.type = MSG_TIMER;
-	msg_in.data.timer_id = 0xdeadbeef;
+	msg_in.data.attr.timer_id = 0xdeadbeef;
 
 	CU_ASSERT_EQUAL(call_write_read(SCRIPT, &msg_out, &msg_in), 0);
 	CU_ASSERT_EQUAL(memcmp(&msg_out, &msg_in, sizeof(msg_in)), 0);
@@ -275,27 +275,27 @@ static void test_msg_wr_nmea_rmc(void)
 	memset(&msg_out, 0, sizeof(msg_out));
 
 	msg_in.type = MSG_NMEA;
-	msg_in.data.nmea.type = NMEA_RMC;
-	msg_in.data.nmea.sentence.rmc.time.h = 12;
-	msg_in.data.nmea.sentence.rmc.time.m = 34;
-	msg_in.data.nmea.sentence.rmc.time.s = 56;
-	msg_in.data.nmea.sentence.rmc.status = NMEA_STATUS_OK;
-	msg_in.data.nmea.sentence.rmc.lat.d = 12;
-	msg_in.data.nmea.sentence.rmc.lat.m = 34;
-	msg_in.data.nmea.sentence.rmc.lat.s.i = 57;
-	msg_in.data.nmea.sentence.rmc.lat_dir = NMEA_NORTH;
-	msg_in.data.nmea.sentence.rmc.lon.d = 123;
-	msg_in.data.nmea.sentence.rmc.lon.m = 45;
-	msg_in.data.nmea.sentence.rmc.lon.s.i = 58;
-	msg_in.data.nmea.sentence.rmc.lon_dir = NMEA_EAST;
-	msg_in.data.nmea.sentence.rmc.sog.i = 5;
-	msg_in.data.nmea.sentence.rmc.head.i = 123;
-	msg_in.data.nmea.sentence.rmc.date.y = 2345;
-	msg_in.data.nmea.sentence.rmc.date.m = 12;
-	msg_in.data.nmea.sentence.rmc.date.d = 23;
-	msg_in.data.nmea.sentence.rmc.m.i = 2;
-	msg_in.data.nmea.sentence.rmc.m_dir = NMEA_WEST;
-	msg_in.data.nmea.sentence.rmc.sig_integrity = NMEA_SIG_INT_SIMULATED;
+	msg_in.data.attr.nmea.type = NMEA_RMC;
+	msg_in.data.attr.nmea.sentence.rmc.time.h = 12;
+	msg_in.data.attr.nmea.sentence.rmc.time.m = 34;
+	msg_in.data.attr.nmea.sentence.rmc.time.s = 56;
+	msg_in.data.attr.nmea.sentence.rmc.status = NMEA_STATUS_OK;
+	msg_in.data.attr.nmea.sentence.rmc.lat.d = 12;
+	msg_in.data.attr.nmea.sentence.rmc.lat.m = 34;
+	msg_in.data.attr.nmea.sentence.rmc.lat.s.i = 57;
+	msg_in.data.attr.nmea.sentence.rmc.lat_dir = NMEA_NORTH;
+	msg_in.data.attr.nmea.sentence.rmc.lon.d = 123;
+	msg_in.data.attr.nmea.sentence.rmc.lon.m = 45;
+	msg_in.data.attr.nmea.sentence.rmc.lon.s.i = 58;
+	msg_in.data.attr.nmea.sentence.rmc.lon_dir = NMEA_EAST;
+	msg_in.data.attr.nmea.sentence.rmc.sog.i = 5;
+	msg_in.data.attr.nmea.sentence.rmc.head.i = 123;
+	msg_in.data.attr.nmea.sentence.rmc.date.y = 2345;
+	msg_in.data.attr.nmea.sentence.rmc.date.m = 12;
+	msg_in.data.attr.nmea.sentence.rmc.date.d = 23;
+	msg_in.data.attr.nmea.sentence.rmc.m.i = 2;
+	msg_in.data.attr.nmea.sentence.rmc.m_dir = NMEA_WEST;
+	msg_in.data.attr.nmea.sentence.rmc.sig_integrity = NMEA_SIG_INT_SIMULATED;
 
 	CU_ASSERT_EQUAL(call_write_read(SCRIPT, &msg_out, &msg_in), 0);
 	CU_ASSERT_EQUAL(memcmp(&msg_out, &msg_in, sizeof(msg_in)), 0);

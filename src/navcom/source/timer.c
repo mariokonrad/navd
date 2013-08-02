@@ -110,7 +110,7 @@ static int proc(struct proc_config_t * config)
 
 	/* setup signal handling */
 	timer_message.type = MSG_TIMER;
-	timer_message.data.timer_id = data->timer_id;
+	timer_message.data.attr.timer_id = data->timer_id;
 
 	while (1) {
 		fd_max = -1;
@@ -152,7 +152,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							return EXIT_SUCCESS;
 						default:

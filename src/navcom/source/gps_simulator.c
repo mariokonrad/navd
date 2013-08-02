@@ -41,8 +41,8 @@ static void init_message(
 	struct nmea_rmc_t * rmc;
 
 	msg->type = MSG_NMEA;
-	msg->data.nmea.type = NMEA_RMC;
-	rmc = &msg->data.nmea.sentence.rmc;
+	msg->data.attr.nmea.type = NMEA_RMC;
+	rmc = &msg->data.attr.nmea.sentence.rmc;
 	rmc->time = data->time;
 	rmc->status = NMEA_STATUS_OK;
 	rmc->lat = data->lat;
@@ -191,7 +191,7 @@ static int proc(struct proc_config_t * config)
 	init_message(&sim_message, data);
 
 	/* prepare send buffer */
-	rc = nmea_write(buf, sizeof(buf), &sim_message.data.nmea);
+	rc = nmea_write(buf, sizeof(buf), &sim_message.data.attr.nmea);
 	if (rc < 0) {
 		syslog(LOG_WARNING, "invalid RMC data, rc=%d", rc);
 		return EXIT_FAILURE;
@@ -238,7 +238,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							return EXIT_SUCCESS;
 						default:

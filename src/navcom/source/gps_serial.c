@@ -113,12 +113,12 @@ static int process_nmea(
 {
 	int rc;
 
-	nmea_init(&buf->msg.data.nmea);
+	nmea_init(&buf->msg.data.attr.nmea);
 	switch (buf->raw) {
 		case '\r':
 			break;
 		case '\n':
-			rc = nmea_read(&buf->msg.data.nmea, buf->data);
+			rc = nmea_read(&buf->msg.data.attr.nmea, buf->data);
 			if (rc == 0) {
 				rc = message_write(config->wfd, &buf->msg);
 				if (rc != EXIT_SUCCESS)
@@ -292,7 +292,7 @@ static int proc(struct proc_config_t * config)
 				return EXIT_FAILURE;
 			switch (msg.type) {
 				case MSG_SYSTEM:
-					switch (msg.data.system) {
+					switch (msg.data.attr.system) {
 						case SYSTEM_TERMINATE:
 							rc = ops->close(&device);
 							if (rc < 0) {
