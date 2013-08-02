@@ -107,6 +107,9 @@ static void seatalk_context_write_cmd(
 	ctx->remaining = 254;
 }
 
+/**
+ * Writes data into the read context buffer.
+ */
 static void seatalk_context_write_data(
 		struct seatalk_context_t * ctx,
 		uint8_t c)
@@ -167,6 +170,14 @@ static int emit_message(
 
 /**
  * Processes SeaTalk data read from the device.
+ *
+ * This function contains a state machine, which does the handling
+ * of the SeaTalk specific feature: misusing the parity bit as
+ * indicator for command bytes.
+ * Since termios is in use, which provides parity error information
+ * as quoting bytes, a non-trivial implementation is needed to
+ * distinguish between normal and command bytes. Also, collision
+ * detection on this pseudo-bus (SeaTalk) is handled.
  *
  * @param[in] config Process configuration
  * @param[out] buf Working context.
