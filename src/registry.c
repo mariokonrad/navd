@@ -40,6 +40,10 @@
 	#include <navcom/filter/filter_nmea.h>
 #endif
 
+#ifdef ENABLE_FILTER_SEATALK_TO_NMEA
+	#include <navcom/filter/filter_seatalk_to_nmea.h>
+#endif
+
 #include <navcom/destination/message_log.h>
 
 #ifdef ENABLE_DESTINATION_NMEASERIAL
@@ -231,6 +235,10 @@ void register_filters(void)
 
 #ifdef ENABLE_FILTER_LUA
 	filterlist_append(&desc_filters, &filter_lua);
+#endif
+
+#ifdef ENABLE_FILTER_SEATALK_TO_NMEA
+	filterlist_append(&desc_filters, &filter_seatalk_to_nmea);
 #endif
 
 	for (i = 0; i < desc_filters.num; ++i) {

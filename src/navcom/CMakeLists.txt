@@ -56,6 +56,10 @@ if (ENABLE_FILTER_NMEA)
 	set(FILTERS ${FILTERS} filter/filter_nmea.c)
 endif()
 
+if (ENABLE_FILTER_SEATALK_TO_NMEA)
+	set(FILTERS ${FILTERS} filter/filter_seatalk_to_nmea.c)
+endif()
+
 # common
 
 set(COMMON

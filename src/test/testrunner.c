@@ -45,6 +45,10 @@
 	#include <test_filter_lua.h>
 #endif
 
+#if defined(ENABLE_FILTER_SEATALK_TO_NMEA)
+	#include <test_filter_seatalk_to_nmea.h>
+#endif
+
 #if defined(NEEDS_LUA)
 	#include <test_lua_message.h>
 #endif
@@ -102,6 +106,10 @@ int main()
 
 #if defined(ENABLE_FILTER_NMEA)
 	register_suite_filter_nmea();
+#endif
+
+#if defined(ENABLE_FILTER_SEATALK_TO_NMEA)
+	register_suite_filter_seatalk_to_nmea();
 #endif
 
 #if defined(ENABLE_SOURCE_LUA)

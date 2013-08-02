@@ -137,6 +137,10 @@ if (ENABLE_FILTER_NMEA)
 	set(TEST_SOURCES ${TEST_SOURCES} test_filter_nmea.c)
 endif()
 
+if (ENABLE_FILTER_SEATALK_TO_NMEA)
+	set(TEST_SOURCES ${TEST_SOURCES} test_filter_seatalk_to_nmea.c)
+endif()
+
 if (NEEDS_NMEA)
 	set(TEST_SOURCES ${TEST_SOURCES} test_nmea.c)
 	set(LIBRARIES ${LIBRARIES} nmea)
