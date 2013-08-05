@@ -64,6 +64,12 @@ static void test_func_unsupported(void)
 	in.type = MSG_TIMER;
 	rc = filter->func(&out, &in, NULL, &proplist);
 	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
+
+	memset(&out, 0x00, sizeof(out));
+	memset(&in, 0x00, sizeof(in));
+	in.type = MSG_SEATALK;
+	rc = filter->func(&out, &in, NULL, &proplist);
+	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
 }
 
 static void test_func_invalid(void)

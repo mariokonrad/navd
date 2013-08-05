@@ -47,6 +47,31 @@ static void test_func_parameter(void)
 	CU_ASSERT_EQUAL(rc, FILTER_FAILURE);
 }
 
+static void test_func_unsupported(void)
+{
+	int rc;
+	struct message_t out;
+	struct message_t in;
+
+	memset(&out, 0x00, sizeof(out));
+	memset(&in, 0x00, sizeof(in));
+	in.type = MSG_SYSTEM;
+	rc = filter->func(&out, &in, NULL, &proplist);
+	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
+
+	memset(&out, 0x00, sizeof(out));
+	memset(&in, 0x00, sizeof(in));
+	in.type = MSG_TIMER;
+	rc = filter->func(&out, &in, NULL, &proplist);
+	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
+
+	memset(&out, 0x00, sizeof(out));
+	memset(&in, 0x00, sizeof(in));
+	in.type = MSG_NMEA;
+	rc = filter->func(&out, &in, NULL, &proplist);
+	CU_ASSERT_EQUAL(rc, FILTER_DISCARD);
+}
+
 void register_suite_filter_seatalk_to_nmea(void)
 {
 	CU_Suite * suite;
@@ -54,5 +79,6 @@ void register_suite_filter_seatalk_to_nmea(void)
 	CU_add_test(suite, "init", test_init);
 	CU_add_test(suite, "exit", test_exit);
 	CU_add_test(suite, "func: parameter", test_func_parameter);
+	CU_add_test(suite, "func: unsupported message types", test_func_unsupported);
 }
 

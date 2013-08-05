@@ -79,9 +79,12 @@ static void test_exit(void)
 
 void register_suite_destination_nmea_serial(void)
 {
+	char name[128];
 	CU_Suite * suite;
-	suite = CU_add_suite("destination/nmea_serial", NULL, NULL);
 
+	snprintf(name, sizeof(name), "destination/%s", proc->name);
+
+	suite = CU_add_suite(name, NULL, NULL);
 	CU_add_test(suite, "existance", test_existance);
 	CU_add_test(suite, "exit", test_exit);
 	CU_add_test(suite, "init", test_init);
