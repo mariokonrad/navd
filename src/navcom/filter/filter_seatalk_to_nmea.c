@@ -1,6 +1,7 @@
 #include <navcom/filter/filter_seatalk_to_nmea.h>
 #include <common/macros.h>
 #include <string.h>
+#include <stdlib.h>
 #include <syslog.h>
 
 /**
@@ -23,6 +24,7 @@ static int convert_00(
 		struct nmea_t * nmea,
 		const struct seatalk_t * seatalk)
 {
+	UNUSED_ARG(data);
 	UNUSED_ARG(nmea);
 	UNUSED_ARG(seatalk);
 
@@ -36,6 +38,7 @@ static int convert_01(
 		struct nmea_t * nmea,
 		const struct seatalk_t * seatalk)
 {
+	UNUSED_ARG(data);
 	UNUSED_ARG(nmea);
 	UNUSED_ARG(seatalk);
 
@@ -44,11 +47,15 @@ static int convert_01(
 	return FILTER_DISCARD;
 }
 
+/**
+ * Writes SeaTalk data into the MWV sentence.
+ */
 static int convert_10(
 		struct filter_seatalk_to_nmea_data_t * data,
 		struct nmea_t * nmea,
 		const struct seatalk_t * seatalk)
 {
+	UNUSED_ARG(data);
 	UNUSED_ARG(nmea);
 	UNUSED_ARG(seatalk);
 
@@ -62,6 +69,7 @@ static int convert_11(
 		struct nmea_t * nmea,
 		const struct seatalk_t * seatalk)
 {
+	UNUSED_ARG(data);
 	UNUSED_ARG(nmea);
 	UNUSED_ARG(seatalk);
 
@@ -75,6 +83,7 @@ static int convert_20(
 		struct nmea_t * nmea,
 		const struct seatalk_t * seatalk)
 {
+	UNUSED_ARG(data);
 	UNUSED_ARG(nmea);
 	UNUSED_ARG(seatalk);
 
@@ -127,6 +136,46 @@ static int convert(
 	return FILTER_DISCARD;
 }
 
+static int init_filter(
+		struct filter_context_t * ctx,
+		const struct property_list_t * properties)
+{
+	struct filter_seatalk_to_nmea_data_t * data = NULL;
+
+	if (ctx == NULL)
+		return EXIT_FAILURE;
+	if (properties == NULL)
+		return EXIT_FAILURE;
+	if (ctx->data != NULL)
+		return EXIT_FAILURE;
+
+	data = (struct filter_seatalk_to_nmea_data_t *)malloc(sizeof(struct filter_seatalk_to_nmea_data_t));
+	if (data == NULL)
+		return EXIT_FAILURE;
+
+	ctx->data = data;
+	memset(data, 0, sizeof(*data));
+
+	return EXIT_SUCCESS;
+}
+
+static int exit_filter(struct filter_context_t * ctx)
+{
+	struct filter_seatalk_to_nmea_data_t * data = NULL;
+
+	if (ctx == NULL)
+		return EXIT_FAILURE;
+	if (ctx->data == NULL)
+		return EXIT_FAILURE;
+
+	data = (struct filter_seatalk_to_nmea_data_t *)ctx->data;
+
+	free(data);
+	ctx->data = NULL;
+
+	return EXIT_SUCCESS;
+}
+
 static int filter(
 		struct message_t * out,
 		const struct message_t * in,
@@ -135,12 +184,15 @@ static int filter(
 {
 	struct filter_seatalk_to_nmea_data_t * data = NULL;
 
-	UNUSED_ARG(ctx);
 	UNUSED_ARG(properties);
 
 	if (out == NULL)
 		return FILTER_FAILURE;
 	if (in == NULL)
+		return FILTER_FAILURE;
+	if (ctx == NULL)
+		return FILTER_FAILURE;
+	if (ctx->data == NULL)
 		return FILTER_FAILURE;
 
 	if (in->type != MSG_SEATALK) {
@@ -148,7 +200,7 @@ static int filter(
 		return FILTER_DISCARD;
 	}
 
-	/* TODO: define 'data' */
+	data = (struct filter_seatalk_to_nmea_data_t *)ctx->data;
 
 	memset(out, 0, sizeof(*out));
 	out->type = MSG_NMEA;
@@ -171,8 +223,8 @@ static void help(void)
 
 const struct filter_desc_t filter_seatalk_to_nmea = {
 	.name = "filter_seatalk_to_nmea",
-	.init = NULL,
-	.exit = NULL,
+	.init = init_filter,
+	.exit = exit_filter,
 	.func = filter,
 	.help = help,
 };

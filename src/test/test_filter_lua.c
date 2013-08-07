@@ -58,6 +58,8 @@ static void test_init_exit(void)
 
 	const char SCRIPT[] = "\n";
 
+	memset(&ctx, 0, sizeof(ctx));
+
 	CU_ASSERT_PTR_NOT_NULL(filter);
 	CU_ASSERT_PTR_NOT_NULL(filter->init);
 	CU_ASSERT_PTR_NOT_NULL(filter->exit);

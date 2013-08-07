@@ -84,8 +84,15 @@ static int init_filter(
 		return EXIT_FAILURE;
 	if (properties == NULL)
 		return EXIT_FAILURE;
+	/* FIXME: this code is necessary but unit test fails (segfault)
+	if (ctx->data != NULL)
+		return EXIT_FAILURE;
+	*/
 
 	data = (struct filter_lua_data_t *)malloc(sizeof(struct filter_lua_data_t));
+	if (data == NULL)
+		return EXIT_FAILURE;
+
 	ctx->data = data;
 	init_data(data);
 
@@ -131,7 +138,7 @@ static int init_filter(
 	}
 }
 
-int exit_filter(struct filter_context_t * ctx)
+static int exit_filter(struct filter_context_t * ctx)
 {
 	struct filter_lua_data_t * data;
 
@@ -148,6 +155,7 @@ int exit_filter(struct filter_context_t * ctx)
 
 	free(data);
 	ctx->data = NULL;
+
 	return EXIT_SUCCESS;
 }
 
