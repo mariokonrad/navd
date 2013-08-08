@@ -217,20 +217,55 @@ static void test_func_wind_speed_to_mwv(void)
 	proplist_free(&properties);
 }
 
-static void test_func_speed_through_water_to_vhw(void)
+static void test_speed_through_water(
+		uint32_t expected_speed_knots_i,
+		uint32_t expected_speed_knots_d,
+		uint16_t speed_10th_knots,
+		struct filter_context_t * ctx,
+		struct property_list_t * properties)
 {
 	struct message_t out;
 	struct message_t in;
-	struct filter_context_t ctx;
-	struct property_list_t properties;
+
+	uint32_t expected_speed_kmh_i = 0;
+	uint32_t expected_speed_kmh_d = 0;
+	CU_FAIL(); /* TODO: calculate kmh from knots */
 
 	memset(&in, 0, sizeof(in));
 	memset(&out, 0, sizeof(out));
+
+	in.type = MSG_SEATALK;
+	in.data.attr.seatalk.type = SEATALK_SPEED_THROUGH_WATER;
+	in.data.attr.seatalk.sentence.speed_through_water.speed = speed_10th_knots;
+
+	CU_ASSERT_EQUAL(filter->func(&out, &in, ctx, properties), FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(out.type, MSG_NMEA);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.type, NMEA_II_VHW);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_vhw.degrees_true, NMEA_TRUE);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_vhw.speed_knots.i, expected_speed_knots_i);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_vhw.speed_knots.d, expected_speed_knots_d);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_vhw.speed_knots_unit, NMEA_UNIT_KNOT);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_vhw.speed_kmh.i, expected_speed_kmh_i);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_vhw.speed_kmh.d, expected_speed_kmh_d);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_vhw.speed_kmh_unit, NMEA_UNIT_KMH);
+}
+
+static void test_func_speed_through_water_to_vhw(void)
+{
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+
 	memset(&ctx, 0, sizeof(ctx));
 	proplist_init(&properties);
 	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
-	CU_FAIL(); /* TODO: Implement test */
-	CU_ASSERT_EQUAL(filter->func(&out, &in, &ctx, &properties), FILTER_SUCCESS);
+
+	test_speed_through_water( 0,      0,   0, &ctx, &properties);
+	test_speed_through_water( 0, 500000,   5, &ctx, &properties);
+	test_speed_through_water( 1,      0,  10, &ctx, &properties);
+	test_speed_through_water(10,      0, 100, &ctx, &properties);
+	test_speed_through_water(10, 500000, 105, &ctx, &properties);
+
 	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
 }
