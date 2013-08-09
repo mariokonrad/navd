@@ -233,6 +233,16 @@ static void test_sentence_reading_20()
 	}
 }
 
+static void test_sentence_reading_23()
+{
+	CU_FAIL(); /* TODO: implementation */
+}
+
+static void test_sentence_reading_27()
+{
+	CU_FAIL(); /* TODO: implementation */
+}
+
 void register_suite_seatalk(void)
 {
 	CU_Suite * suite;
@@ -246,5 +256,7 @@ void register_suite_seatalk(void)
 	CU_add_test(suite, "sentence reading: 10", test_sentence_reading_10);
 	CU_add_test(suite, "sentence reading: 11", test_sentence_reading_11);
 	CU_add_test(suite, "sentence reading: 20", test_sentence_reading_20);
+	CU_add_test(suite, "sentence reading: 23", test_sentence_reading_23);
+	CU_add_test(suite, "sentence reading: 27", test_sentence_reading_27);
 }
 
