@@ -111,14 +111,14 @@ static void test_depth_below_transducer(
 	struct message_t out;
 	struct message_t in;
 
-	memset(&in, 0, sizeof(in));
-	memset(&out, 0, sizeof(out));
-
-	/* TODO: calculate meter and fathom */
 	uint32_t expected_depth_meter_i = 0;
 	uint32_t expected_depth_meter_d = 0;
 	uint32_t expected_depth_fathom_i = 0;
 	uint32_t expected_depth_fathom_d = 0;
+	CU_FAIL(); /* TODO: calculate meter and fathom */
+
+	memset(&in, 0, sizeof(in));
+	memset(&out, 0, sizeof(out));
 
 	in.type = MSG_SEATALK;
 	in.data.attr.seatalk.type = SEATALK_DEPTH_BELOW_TRANSDUCER;
