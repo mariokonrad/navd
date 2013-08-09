@@ -36,6 +36,8 @@ struct seatalk_t
 		struct seatalk_apparent_wind_angle_t apparent_wind_angle;
 		struct seatalk_apparent_wind_speed_t apparent_wind_speed;
 		struct seatalk_speed_through_water_t speed_through_water;
+		struct seatalk_water_temperature_1_t water_temperature_1;
+		struct seatalk_water_temperature_2_t water_temperature_2;
 		/* TODO: add other SeaTalk sentences */
 	} sentence;
 } __attribute((packed));

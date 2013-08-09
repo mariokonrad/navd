@@ -334,7 +334,25 @@ static void test_func_trip_log_to_vlw(void)
 	proplist_free(&properties);
 }
 
-static void test_func_water_temperature_to_mtw(void)
+static void test_func_water_temperature_1_to_mtw(void)
+{
+	struct message_t out;
+	struct message_t in;
+	struct filter_context_t ctx;
+	struct property_list_t properties;
+
+	memset(&in, 0, sizeof(in));
+	memset(&out, 0, sizeof(out));
+	memset(&ctx, 0, sizeof(ctx));
+	proplist_init(&properties);
+	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
+	CU_FAIL(); /* TODO: Implement test */
+	CU_ASSERT_EQUAL(filter->func(&out, &in, &ctx, &properties), FILTER_SUCCESS);
+	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
+	proplist_free(&properties);
+}
+
+static void test_func_water_temperature_2_to_mtw(void)
 {
 	struct message_t out;
 	struct message_t in;
@@ -366,6 +384,7 @@ void register_suite_filter_seatalk_to_nmea(void)
 	CU_add_test(suite, "func: wind speed to MWV", test_func_wind_speed_to_mwv);
 	CU_add_test(suite, "func: speed through water to VHW", test_func_speed_through_water_to_vhw);
 	CU_add_test(suite, "func: trip log to VLW", test_func_trip_log_to_vlw);
-	CU_add_test(suite, "func: water temperature to MTW", test_func_water_temperature_to_mtw);
+	CU_add_test(suite, "func: water temperature1 to MTW", test_func_water_temperature_1_to_mtw);
+	CU_add_test(suite, "func: water temperature2 to MTW", test_func_water_temperature_2_to_mtw);
 }
 

@@ -10,6 +10,10 @@
 #define SEATALK_APPARENT_WIND_ANGLE    0x10
 #define SEATALK_APPARENT_WIND_SPEED    0x11
 #define SEATALK_SPEED_THROUGH_WATER    0x20
+#define SEATALK_WATER_TEMPERATURE_1    0x23
+#define SEATALK_SPEED_THROUGH_WATER_2  0x26
+#define SEATALK_WATER_TEMPERATURE_2    0x27
+#define SEATALK_DEVICE_IDENTIFICATION  0x90
 #define SEATALK_NONE                   0xff
 
 #define SEATALK_UNIT_KNOT             0x01
@@ -44,7 +48,7 @@ struct seatalk_depth_below_transducer_t
  */
 struct seatalk_equipment_id_t
 {
-	uint8_t id[6]; /* TODO: change to uint32_t for easier handling? */
+	uint8_t id[6];
 } __attribute__((packed));
 
 /**
@@ -76,6 +80,28 @@ struct seatalk_apparent_wind_speed_t
 struct seatalk_speed_through_water_t
 {
 	uint16_t speed; /* speed in 10th of knots */
+} __attribute__((packed));
+
+/**
+ * Water temperature (ST50)
+ *
+ * (corresponding NMEA senteces: MTW)
+ */
+struct seatalk_water_temperature_1_t
+{
+	uint8_t sensor_defect;
+	uint8_t temperature_celsius; /* degrees celsius */
+	uint8_t temperature_fahrenheit; /* degrees fahrenheit */
+} __attribute__((packed));
+
+/**
+ * Water temperature
+ *
+ * (corresponding NMEA senteces: MTW)
+ */
+struct seatalk_water_temperature_2_t
+{
+	uint16_t temperature; /* (temperature - 100) / 10 degrees celsius */
 } __attribute__((packed));
 
 #endif
