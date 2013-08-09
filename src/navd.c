@@ -362,6 +362,69 @@ static void terminate_graceful(const struct config_t const * config)
 	registry_free();
 }
 
+static int setup_subprocesses(struct config_t * config)
+{
+	prepare_proc_configs(config);
+	if (setup_procs(config->num_destinations, proc_cfg_base_dst, registry_destinations()) < 0) {
+		terminate_graceful(config);
+		return EXIT_FAILURE;
+	}
+	if (setup_procs(config->num_sources, proc_cfg_base_src, registry_sources()) < 0) {
+		terminate_graceful(config);
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int setup_routes(struct config_t * config)
+{
+	route_init(config);
+	if (route_setup(config, proc_cfg, proc_cfg_base_src, proc_cfg_base_dst) < 0) {
+		terminate_graceful(config);
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int setup_signal_handling(sigset_t * signal_mask, int * signal_fd)
+{
+	sigemptyset(signal_mask);
+	sigaddset(signal_mask, SIGINT);
+	sigaddset(signal_mask, SIGTERM);
+	sigaddset(signal_mask, SIGALRM);
+	if (sigprocmask(SIG_BLOCK, signal_mask, NULL) < 0) {
+		syslog(LOG_ERR, "unable to initialize signal handling");
+		return EXIT_FAILURE;
+	}
+	*signal_fd = signalfd(-1, signal_mask, 0);
+	if (*signal_fd < 0) {
+		syslog(LOG_ERR, "unable to obtain file descriptor for signal handling");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int handle_common_options(int argc, char ** argv, struct options_data_t * option)
+{
+	if (parse_options(argc, argv, option) < 0)
+		return EXIT_FAILURE;
+
+	if (option->help) {
+		if (strlen(option->help_specific) > 0) {
+			registry_print_help_for(option->help_specific);
+		} else {
+			print_usage(argv[0]);
+		}
+		return EXIT_FAILURE;
+	}
+
+	if (setlogmask(LOG_UPTO(option->log_mask)) < 0) {
+		syslog(LOG_CRIT, "unable to set log mask");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 /* TODO: move filters to their own process like sources and destinations? */
 /* TODO: treat sources, filters and destinations the same (as their own processes), implicit routing through pipes */
 int main(int argc, char ** argv)
@@ -372,7 +435,6 @@ int main(int argc, char ** argv)
 	int rc;
 	fd_set rfds;
 	int fd_max;
-	int fd;
 	struct config_t config;
 	struct options_data_t option;
 
@@ -385,22 +447,8 @@ int main(int argc, char ** argv)
 	registry_register();
 
 	/* command line arguments handling */
-	if (parse_options(argc, argv, &option) < 0)
+	if (handle_common_options(argc, argv, &option) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-
-	if (option.help) {
-		if (strlen(option.help_specific) > 0) {
-			registry_print_help_for(option.help_specific);
-		} else {
-			print_usage(argv[0]);
-		}
-		return EXIT_FAILURE;
-	}
-
-	if (setlogmask(LOG_UPTO(option.log_mask)) < 0) {
-		syslog(LOG_CRIT, "unable to set log mask");
-		return EXIT_FAILURE;
-	}
 
 	/* list registered objects */
 	if (option.list || option.list_compact) {
@@ -424,44 +472,24 @@ int main(int argc, char ** argv)
 		daemonize();
 
 	/* setup subprocesses */
-	prepare_proc_configs(&config);
-	if (setup_procs(config.num_destinations, proc_cfg_base_dst, registry_destinations()) < 0) {
-		terminate_graceful(&config);
+	if (setup_subprocesses(&config) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	}
-	if (setup_procs(config.num_sources, proc_cfg_base_src, registry_sources()) < 0) {
-		terminate_graceful(&config);
-		return EXIT_FAILURE;
-	}
 
 	/* setup routes */
-	route_init(&config);
-	if (route_setup(&config, proc_cfg, proc_cfg_base_src, proc_cfg_base_dst) < 0) {
-		terminate_graceful(&config);
+	if (setup_routes(&config) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	}
 
 	/* setup signal handling */
-	sigemptyset(&signal_mask);
-	sigaddset(&signal_mask, SIGINT);
-	sigaddset(&signal_mask, SIGTERM);
-	sigaddset(&signal_mask, SIGALRM);
-	if (sigprocmask(SIG_BLOCK, &signal_mask, NULL) < 0) {
-		syslog(LOG_ERR, "unable to initialize signal handling");
+	signal_fd = -1;
+	if (setup_signal_handling(&signal_mask, &signal_fd) != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	}
-	signal_fd = signalfd(-1, &signal_mask, 0);
-	if (signal_fd < 0) {
-		syslog(LOG_ERR, "unable to obtain file descriptor for signal handling");
-		return EXIT_FAILURE;
-	}
 
 	/* main / hub process */
 	while (!graceful_termination) {
 		FD_ZERO(&rfds);
 		fd_max = 0;
 		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
-			fd = proc_cfg[i].rfd;
+			int fd = proc_cfg[i].rfd;
 			if (fd <= 0)
 				continue;
 			FD_SET(fd, &rfds);
@@ -494,7 +522,7 @@ int main(int argc, char ** argv)
 		}
 
 		for (i = 0; i < config.num_sources + config.num_destinations; ++i) {
-			fd = proc_cfg[i].rfd;
+			int fd = proc_cfg[i].rfd;
 			if (fd <= 0)
 				continue;
 			if (!FD_ISSET(fd, &rfds))
