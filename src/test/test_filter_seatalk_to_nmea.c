@@ -101,6 +101,46 @@ static void test_func_unsupported(void)
 	proplist_free(&properties);
 }
 
+static void test_depth_below_transducer(
+		uint32_t expected_depth_i,
+		uint32_t expected_depth_d,
+		uint16_t depth,
+		struct filter_context_t * ctx,
+		struct property_list_t * properties)
+{
+	struct message_t out;
+	struct message_t in;
+
+	memset(&in, 0, sizeof(in));
+	memset(&out, 0, sizeof(out));
+
+	/* TODO: calculate meter and fathom */
+	uint32_t expected_depth_meter_i = 0;
+	uint32_t expected_depth_meter_d = 0;
+	uint32_t expected_depth_fathom_i = 0;
+	uint32_t expected_depth_fathom_d = 0;
+
+	in.type = MSG_SEATALK;
+	in.data.attr.seatalk.type = SEATALK_DEPTH_BELOW_TRANSDUCER;
+	in.data.attr.seatalk.sentence.depth_below_transducer.depth = depth;
+
+	CU_ASSERT_EQUAL(filter->func(&out, &in, ctx, properties), FILTER_SUCCESS);
+
+	CU_ASSERT_EQUAL(out.type, MSG_NMEA);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.type, NMEA_II_DBT);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_feet.i, expected_depth_i);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_feet.d, expected_depth_d);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_unit_feet, NMEA_UNIT_FEET);
+
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_meter.i, expected_depth_meter_i);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_meter.d, expected_depth_meter_d);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_unit_meter, NMEA_UNIT_METER);
+
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_fathom.i, expected_depth_fathom_i);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_fathom.d, expected_depth_fathom_d);
+	CU_ASSERT_EQUAL(out.data.attr.nmea.sentence.ii_dbt.depth_unit_fathom, NMEA_UNIT_FATHOM);
+}
+
 static void test_func_depth_below_transducer_to_dbt(void)
 {
 	struct message_t out;
@@ -113,7 +153,13 @@ static void test_func_depth_below_transducer_to_dbt(void)
 	memset(&ctx, 0, sizeof(ctx));
 	proplist_init(&properties);
 	CU_ASSERT_EQUAL(filter->init(&ctx, &properties), EXIT_SUCCESS);
-	CU_FAIL(); /* TODO: Implement test */
+
+	test_depth_below_transducer(  0,      0,   0, &ctx, &properties);
+	test_depth_below_transducer(  0, 500000,   5, &ctx, &properties);
+	test_depth_below_transducer(  1,      0,  10, &ctx, &properties);
+	test_depth_below_transducer( 10,      0, 100, &ctx, &properties);
+	test_depth_below_transducer( 10, 500000, 105, &ctx, &properties);
+
 	CU_ASSERT_EQUAL(filter->func(&out, &in, &ctx, &properties), FILTER_SUCCESS);
 	CU_ASSERT_EQUAL(filter->exit(&ctx), EXIT_SUCCESS);
 	proplist_free(&properties);
